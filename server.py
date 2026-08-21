@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 import uuid
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -27,21 +28,65 @@ SESSION_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
 QUESTION_IDS = set()
+QUESTION_ORDER = []
 CHOICES_BY_QUESTION = {}
+ANSWERS_LOCK = threading.Lock()
 
 
 def load_questions():
     payload = json.loads(QUESTIONS_PATH.read_text(encoding="utf-8"))
     QUESTION_IDS.clear()
+    QUESTION_ORDER.clear()
     CHOICES_BY_QUESTION.clear()
     for item in payload["questions"]:
         qid = item["id"]
         QUESTION_IDS.add(qid)
+        QUESTION_ORDER.append(qid)
         CHOICES_BY_QUESTION[qid] = {choice["id"] for choice in item["choices"]}
     return payload
 
 
 load_questions()
+
+
+def compute_stats():
+    counts = {
+        qid: {cid: 0 for cid in CHOICES_BY_QUESTION[qid]} for qid in QUESTION_ORDER
+    }
+    totals = {qid: 0 for qid in QUESTION_ORDER}
+    sessions = set()
+    with ANSWERS_LOCK:
+        if ANSWERS_PATH.exists():
+            lines = ANSWERS_PATH.read_text(encoding="utf-8").splitlines()
+        else:
+            lines = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        qid = rec.get("question_id")
+        selected = rec.get("selected")
+        if qid in counts and selected in counts[qid]:
+            counts[qid][selected] += 1
+            totals[qid] += 1
+        session_id = rec.get("session_id")
+        if isinstance(session_id, str) and session_id:
+            sessions.add(session_id)
+    questions = {}
+    for qid in QUESTION_ORDER:
+        total = totals[qid]
+        questions[qid] = {
+            "total": total,
+            "counts": counts[qid],
+            "rates": {
+                cid: (counts[qid][cid] / total if total else 0)
+                for cid in CHOICES_BY_QUESTION[qid]
+            },
+        }
+    return {"ok": True, "sessions": len(sessions), "questions": questions}
 
 
 def parse_timestamp(value):
@@ -83,6 +128,13 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/":
             html = (STATIC / "index.html").read_bytes()
             self._send(200, html, "text/html; charset=utf-8")
+            return
+        if path == "/api/stats":
+            self._send(
+                200,
+                json.dumps(compute_stats(), ensure_ascii=False),
+                "application/json; charset=utf-8",
+            )
             return
         if path == "/api/answers":
             self._json_error(405, "method_not_allowed")
@@ -154,8 +206,9 @@ class Handler(SimpleHTTPRequestHandler):
             "timestamp": timestamp,
         }
         DATA_DIR.mkdir(exist_ok=True)
-        with ANSWERS_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        with ANSWERS_LOCK:
+            with ANSWERS_PATH.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
         self._send(200, json.dumps({"ok": True}), "application/json; charset=utf-8")
 
 

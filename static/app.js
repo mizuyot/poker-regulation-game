@@ -1,4 +1,5 @@
 const STORAGE_KEY = "regulation-max-game-session";
+const COUNTER_API = "https://countapi.mileshilliard.com/api/v1";
 
 const state = {
   data: null,
@@ -7,6 +8,9 @@ const state = {
   answers: {},
   revealed: false,
   sessionId: getOrCreateSessionId(),
+  saveJobs: [],
+  stats: null,
+  statsSource: null,
 };
 
 function getOrCreateSessionId() {
@@ -26,6 +30,9 @@ function resetSession() {
   state.index = 0;
   state.answers = {};
   state.revealed = false;
+  state.saveJobs = [];
+  state.stats = null;
+  state.statsSource = null;
   state.sessionId = crypto.randomUUID();
   try {
     sessionStorage.setItem(STORAGE_KEY, state.sessionId);
@@ -229,11 +236,10 @@ function onChoose(choiceId) {
   render();
 }
 
-function onNext() {
+async function onNext() {
   if (!state.revealed) return;
   if (state.index >= state.data.questions.length - 1) {
-    state.view = "finale";
-    render();
+    await showFinale();
     return;
   }
   state.index += 1;
@@ -242,22 +248,201 @@ function onNext() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-async function saveAnswer(payload) {
-  try {
-    await fetch("api/answers", {
+function counterKey(questionId, choiceId) {
+  const prefix = state.data.meta.counterPrefix || "kop-regmax";
+  return `${prefix}-${questionId}-${choiceId}`;
+}
+
+function saveAnswer(payload) {
+  const job = Promise.all([
+    fetch("api/answers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+    }).catch((err) => {
+      console.warn("answer save failed", err);
+    }),
+    fetch(`${COUNTER_API}/hit/${encodeURIComponent(counterKey(payload.question_id, payload.selected))}`).catch(
+      (err) => {
+        console.warn("counter hit failed", err);
+      }
+    ),
+  ]);
+  state.saveJobs.push(job);
+}
+
+async function showFinale() {
+  state.view = "finale";
+  state.stats = null;
+  state.statsSource = "loading";
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  await Promise.all(state.saveJobs);
+  const loaded = await loadStats();
+  state.stats = loaded.stats;
+  state.statsSource = loaded.source;
+  render();
+}
+
+function emptyStats() {
+  const questions = {};
+  state.data.questions.forEach((question) => {
+    const counts = {};
+    question.choices.forEach((choice) => {
+      counts[choice.id] = 0;
     });
-  } catch (err) {
-    console.warn("answer save failed", err);
-  }
+    questions[question.id] = { total: 0, counts, rates: {} };
+  });
+  return { sessions: 0, questions };
+}
+
+function statsFromSession() {
+  const stats = emptyStats();
+  Object.entries(state.answers).forEach(([qid, selected]) => {
+    if (!stats.questions[qid] || !(selected in stats.questions[qid].counts)) return;
+    stats.questions[qid].counts[selected] += 1;
+    stats.questions[qid].total += 1;
+  });
+  Object.values(stats.questions).forEach((item) => {
+    item.rates = {};
+    Object.keys(item.counts).forEach((cid) => {
+      item.rates[cid] = item.total ? item.counts[cid] / item.total : 0;
+    });
+  });
+  stats.sessions = 1;
+  return stats;
+}
+
+function withRates(stats) {
+  Object.values(stats.questions || {}).forEach((item) => {
+    item.rates = item.rates || {};
+    Object.keys(item.counts || {}).forEach((cid) => {
+      item.rates[cid] = item.total ? item.counts[cid] / item.total : 0;
+    });
+  });
+  return stats;
+}
+
+async function fetchLocalStats() {
+  const response = await fetch("api/stats");
+  if (!response.ok) return null;
+  const data = await response.json();
+  if (!data || !data.ok || !data.questions) return null;
+  if (!data.sessions) return null;
+  return withRates({ sessions: data.sessions, questions: data.questions });
+}
+
+async function fetchPublicStats() {
+  const stats = emptyStats();
+  const jobs = [];
+  state.data.questions.forEach((question) => {
+    question.choices.forEach((choice) => {
+      jobs.push(
+        fetch(`${COUNTER_API}/get/${encodeURIComponent(counterKey(question.id, choice.id))}`)
+          .then(async (response) => {
+            if (response.status === 404) return 0;
+            if (!response.ok) return 0;
+            const data = await response.json();
+            return Number(data.value) || 0;
+          })
+          .then((value) => {
+            stats.questions[question.id].counts[choice.id] = value;
+          })
+          .catch(() => {})
+      );
+    });
+  });
+  await Promise.all(jobs);
+  let maxTotal = 0;
+  Object.values(stats.questions).forEach((item) => {
+    item.total = Object.values(item.counts).reduce((sum, value) => sum + value, 0);
+    maxTotal = Math.max(maxTotal, item.total);
+    item.rates = {};
+    Object.keys(item.counts).forEach((cid) => {
+      item.rates[cid] = item.total ? item.counts[cid] / item.total : 0;
+    });
+  });
+  stats.sessions = maxTotal;
+  return maxTotal > 0 ? stats : null;
+}
+
+async function loadStats() {
+  const [localResult, publicResult] = await Promise.allSettled([
+    fetchLocalStats(),
+    fetchPublicStats(),
+  ]);
+  const local = localResult.status === "fulfilled" ? localResult.value : null;
+  const pub = publicResult.status === "fulfilled" ? publicResult.value : null;
+  if (pub) return { stats: pub, source: "public" };
+  if (local) return { stats: local, source: "local" };
+  return { stats: statsFromSession(), source: "session" };
 }
 
 function shareOnX() {
   const text = state.data.meta.shareText || state.data.meta.title;
   const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function percentLabel(rate) {
+  return `${Math.round((rate || 0) * 100)}%`;
+}
+
+function renderStats() {
+  if (state.statsSource === "loading" || !state.stats) {
+    return `
+      <div class="finale-block">
+        <h2>みんなの選択</h2>
+        <p class="lead">集計しています…</p>
+      </div>`;
+  }
+  const stats = state.stats;
+  const note =
+    state.statsSource === "session"
+      ? "全体の集計に届かなかったため、今回の回答のみを表示しています。"
+      : `匿名の回答 ${stats.sessions} 件をもとに、各選択肢が選ばれた割合です。`;
+  const blocks = state.data.questions
+    .map((question, index) => {
+      const item = stats.questions[question.id] || { total: 0, counts: {}, rates: {} };
+      const rows = question.choices
+        .map((choice) => {
+          const rate = (item.rates && item.rates[choice.id]) || 0;
+          const count = (item.counts && item.counts[choice.id]) || 0;
+          const badges = [];
+          if (state.answers[question.id] === choice.id) badges.push("あなた");
+          if (question.mode === "compare" && question.designerChoice === choice.id) {
+            badges.push("設計者");
+          }
+          return `
+            <div class="stat-row">
+              <div class="stat-head">
+                <span>${escapeHtml(choice.text)}</span>
+                <span class="stat-pct">${percentLabel(rate)}　${count}件</span>
+              </div>
+              <div class="stat-track" aria-hidden="true">
+                <div class="stat-fill" style="width:${Math.round(rate * 100)}%"></div>
+              </div>
+              ${
+                badges.length
+                  ? `<p class="stat-badges">${badges.map((b) => `<span>${escapeHtml(b)}</span>`).join("")}</p>`
+                  : ""
+              }
+            </div>`;
+        })
+        .join("");
+      return `
+        <article class="stat-card">
+          <h3><span>${String(index + 1).padStart(2, "0")}</span> ${escapeHtml(question.prompt)}</h3>
+          ${rows}
+        </article>`;
+    })
+    .join("");
+  return `
+    <div class="finale-block">
+      <h2>みんなの選択</h2>
+      <p class="lead">${escapeHtml(note)}</p>
+      <div class="stats">${blocks}</div>
+    </div>`;
 }
 
 function renderFinale() {
@@ -270,6 +455,7 @@ function renderFinale() {
       <p>${escapeHtml(finale.background)}</p>
       <p>${escapeHtml(finale.definition)}</p>
     </div>
+    ${renderStats()}
     <div class="finale-block">
       <h2>主要な設計方針</h2>
       <ul class="principles">${items}</ul>

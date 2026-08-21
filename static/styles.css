@@ -297,6 +297,71 @@ button.ghost {
   margin: 0 0 22px;
 }
 
+.stats {
+  display: grid;
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.stat-card h3 {
+  margin: 0 0 12px;
+  font-family: "Shippori Mincho", serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.stat-card h3 span {
+  color: var(--gold);
+  margin-right: 6px;
+}
+
+.stat-row {
+  margin-bottom: 10px;
+}
+
+.stat-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.stat-pct {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.stat-track {
+  height: 6px;
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stat-fill {
+  height: 100%;
+  background: var(--gold);
+  width: 0;
+  transition: width 240ms ease;
+}
+
+.stat-badges {
+  margin: 4px 0 0;
+  display: flex;
+  gap: 6px;
+}
+
+.stat-badges span {
+  font-size: 11px;
+  color: var(--gold-2);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+}
+
 .site-footer {
   margin-top: 32px;
   padding-top: 16px;
