@@ -2,6 +2,8 @@
 
 ポーカー大会の設計方針を選択肢にし、設計者の考えと業界の認識がどこで割れるかを可視化するゲームです。法的助言ではありません。
 
+**公開URL:** https://mizuyot.github.io/poker-regulation-game/
+
 ## 起動
 
 macOS 標準の Python 3 だけで動きます。追加パッケージは不要です。

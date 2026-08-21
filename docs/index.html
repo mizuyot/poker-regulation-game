@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>規制内最大化ゲーム — 合法ポーカー大会設計</title>
+    <meta
+      name="description"
+      content="ポーカー大会の設計方針を選択肢にし、設計者の考えと業界の認識がどこで割れるかを可視化するゲーム。適法性の判断ではありません。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&family=Shippori+Mincho:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="frame">
+      <header class="topbar">
+        <p class="brand">規制内最大化ゲーム</p>
+        <p class="brand-sub">合法ポーカー大会設計</p>
+      </header>
+      <div class="progress" aria-hidden="true">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <main id="app" class="app">
+        <p class="loading">読み込み中…</p>
+      </main>
+      <footer class="site-footer">
+        <p id="footer-disclaimer"></p>
+        <p id="footer-data"></p>
+        <p class="privacy" id="footer-privacy"></p>
+      </footer>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

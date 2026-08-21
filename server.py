@@ -84,6 +84,9 @@ class Handler(SimpleHTTPRequestHandler):
             html = (STATIC / "index.html").read_bytes()
             self._send(200, html, "text/html; charset=utf-8")
             return
+        if path == "/api/answers":
+            self._json_error(405, "method_not_allowed")
+            return
         if path == "/questions.json":
             self._send(
                 200,

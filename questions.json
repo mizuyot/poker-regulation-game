@@ -6,7 +6,7 @@
     "legalNote": "本ゲームは法的助言ではありません。設計者の現時点の考えを、他者と突き合わせるためのものです。",
     "dataNotice": "ここでいただいた皆様のデータは、匿名化して、保存しております。今後のポーカー界の発展のためにのみ、使用することをお約束します。",
     "distributionPromise": "回答は匿名で集計し、後日「業界の意見がどこで割れたか」として公開します。",
-    "shareText": "「規制内最大化ゲーム」——各事業者が、面白くかつ安心したトーナメントをどう開催するかを考えるゲームです。",
+    "shareText": "「規制内最大化ゲーム」——各事業者が、面白くかつ安心したトーナメントをどう開催するかを考えるゲームです。\nhttps://mizuyot.github.io/poker-regulation-game/",
     "privacy": {
       "stored": ["session_id", "question_id", "selected", "is_match", "timestamp"],
       "notStored": ["IPアドレス", "User-Agent", "リファラ", "個人を特定できる情報"],

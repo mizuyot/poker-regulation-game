@@ -244,7 +244,7 @@ function onNext() {
 
 async function saveAnswer(payload) {
   try {
-    await fetch("/api/answers", {
+    await fetch("api/answers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -288,7 +288,7 @@ function renderFinale() {
 async function boot() {
   const app = document.getElementById("app");
   try {
-    const response = await fetch("/questions.json");
+    const response = await fetch("questions.json");
     if (!response.ok) throw new Error("failed to load questions");
     state.data = await response.json();
     document.title = `${state.data.meta.title} — ${state.data.meta.subtitle}`;
