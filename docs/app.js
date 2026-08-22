@@ -1,6 +1,6 @@
 const COUNTER_API = "https://countapi.mileshilliard.com/api/v1";
 const HURDLES = ["hurdle1", "hurdle2", "hurdle3", "hurdle4"];
-const DESIGN_IDS = ["d1", "d2", "d3", "d4", "d5", "d6", "d7"];
+const DESIGN_IDS = ["q01", "d1", "d2", "d3"];
 
 const state = {
   data: null,
@@ -56,7 +56,10 @@ function currentQuestion() {
 function progressRatio() {
   if (state.view === "intro") return 0;
   if (state.view === "finale") return 1;
-  return state.index / state.data.questions.length;
+  const total = state.data.questions.length + 2;
+  if (state.view === "designSheet") return DESIGN_IDS.length / total;
+  if (state.view === "hurdleMap") return (indexOfId("q00") + 1) / total;
+  return (state.index + 1) / total;
 }
 
 function updateProgress() {
@@ -65,16 +68,30 @@ function updateProgress() {
 }
 
 function interpolate(template) {
-  return String(template || "").replace(/\{\{(d[1-7])\}\}/g, (_, id) => selectedLabel(id) || "（未選択）");
+  return String(template || "").replace(/\{\{(q01|d[1-3])\}\}/g, (_, id) => selectedLabel(id) || "（未選択）");
 }
 
-function sectionLeadText(section) {
+function fundingLeadKey() {
+  const selected = state.answers.d3;
+  if (selected === "1") return "fullReturn";
+  if (selected === "3") return "separated";
+  return "unseparated";
+}
+
+function sectionLeadText(section, sectionId) {
   if (!section) return "";
-  let lead = interpolate(section.lead);
-  if (section.leadExtraIfSponsor && state.answers.d5 === "3") {
-    lead += section.leadExtraIfSponsor;
+  if (sectionId === "hurdle1" && section.leadByFunding) {
+    return interpolate(section.leadByFunding[fundingLeadKey()]);
   }
-  return lead;
+  return interpolate(section.lead);
+}
+
+function indexOfId(id) {
+  return state.data.questions.findIndex((question) => question.id === id);
+}
+
+function isLastDesignQuestion(question) {
+  return question && question.id === DESIGN_IDS[DESIGN_IDS.length - 1];
 }
 
 function hurdleQuestions(sectionId) {
@@ -113,14 +130,12 @@ function scaleValue(id) {
 }
 
 function qualitativeCompare() {
-  const d1 = scaleValue("d1");
-  const d2 = scaleValue("d2");
-  const d3 = scaleValue("d3");
-  if (d1 == null || d2 == null || d3 == null) return "";
-  const avg = (d1 + d2) / 2;
-  if (d3 > avg) return "賞金の規模感は、参加費収入を大きく上回りそう";
-  if (d3 < avg) return "賞金の規模感は、参加費収入を下回りそう";
-  return "賞金の規模感は、参加費収入と同じくらいになりそう";
+  const scale = scaleValue("d1");
+  const prize = scaleValue("d2");
+  if (scale == null || prize == null) return "";
+  if (prize > scale) return "賞金の規模感は、大会の規模を大きく上回りそう";
+  if (prize < scale) return "賞金の規模感は、大会の規模を下回りそう";
+  return "賞金の規模感は、大会の規模と同じくらいになりそう";
 }
 
 function compareSummary() {
@@ -152,6 +167,28 @@ function render() {
       state.index = 0;
       state.revealed = false;
       render();
+    });
+    return;
+  }
+  if (state.view === "designSheet") {
+    app.innerHTML = renderDesignReveal();
+    document.getElementById("continue-btn").addEventListener("click", () => {
+      state.view = "question";
+      state.index = indexOfId("q00");
+      state.revealed = Boolean(state.answers.q00);
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    return;
+  }
+  if (state.view === "hurdleMap") {
+    app.innerHTML = renderHurdleMapPage();
+    document.getElementById("continue-btn").addEventListener("click", () => {
+      state.view = "question";
+      state.index = indexOfId("q18");
+      state.revealed = Boolean(state.answers.q18);
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
     return;
   }
@@ -189,10 +226,14 @@ function renderIntro() {
 }
 
 function renderPlay() {
+  const showMap = HURDLES.includes(currentQuestion().section);
   return `
     <div class="play-layout">
       <div class="play-main">${renderQuestion()}</div>
-      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
+      <aside class="sheet-panel-wrap">
+        ${renderPlayerSheet()}
+        ${showMap ? renderHurdleMapCompact() : ""}
+      </aside>
     </div>
   `;
 }
@@ -260,9 +301,15 @@ function renderQuestion() {
       <div class="inline-blueprint">${renderBlueprint()}</div>`;
   }
 
-  const nextLabel = state.index === total - 1 ? "まとめを見る" : "次へ";
+  const nextLabel = isLastDesignQuestion(question)
+    ? "あなたの大会を見る"
+    : question.id === "q00"
+      ? "ハードルを見る"
+      : state.index === total - 1
+        ? "まとめを見る"
+        : "次へ";
   const lead = showSectionLead
-    ? `<p class="kicker">${escapeHtml(section.title)}</p><p class="lead">${escapeHtml(sectionLeadText(section))}</p>`
+    ? `<p class="kicker">${escapeHtml(section.title)}</p><p class="lead">${escapeHtml(sectionLeadText(section, question.section))}</p>`
     : "";
   return `
     ${lead}
@@ -307,6 +354,73 @@ function renderPlayerSheet() {
       ${compare ? `<p class="sheet-compare">${escapeHtml(compare)}</p>` : ""}
       ${renderSheetCards(hurdleIds, "Part 2の解決")}
     </details>
+  `;
+}
+
+function hurdleItemState(hurdleId) {
+  if (hurdleComplete(hurdleId) || state.view === "finale") return "cleared";
+  if (state.view === "hurdleMap") return hurdleId === "hurdle1" ? "current" : "locked";
+  const current = state.view === "question" ? currentQuestion() : null;
+  if (current && current.section === hurdleId) return "current";
+  const currentIndex = current ? HURDLES.indexOf(current.section) : -1;
+  const thisIndex = HURDLES.indexOf(hurdleId);
+  if (currentIndex >= 0 && thisIndex < currentIndex) return "cleared";
+  return "locked";
+}
+
+function renderHurdleMapList() {
+  return HURDLES.map((id) => {
+    const section = state.data.sections[id];
+    const status = hurdleItemState(id);
+    const mark = status === "cleared" ? "解錠" : status === "current" ? "いま" : "未解錠";
+    const lock = status === "locked" ? "🔒" : status === "cleared" ? "🔓" : "▶";
+    return `
+      <article class="hurdle-map-item is-${status}">
+        <span class="hurdle-map-lock" aria-hidden="true">${lock}</span>
+        <div>
+          <p class="hurdle-map-status">${mark}</p>
+          <h3>${escapeHtml(section.title)}</h3>
+        </div>
+      </article>`;
+  }).join("");
+}
+
+function renderHurdleMapCompact() {
+  const map = state.data.hurdleMap || {};
+  return `
+    <div class="hurdle-map compact">
+      <p class="sheet-heading">${escapeHtml(map.preface || "この4つを越えてきた。")}</p>
+      ${renderHurdleMapList()}
+    </div>
+  `;
+}
+
+function renderDesignReveal() {
+  const reveal = state.data.designReveal || {};
+  return `
+    <div class="play-layout">
+      <div class="play-main">
+        <p class="kicker">${escapeHtml(reveal.kicker || "Part 1")}</p>
+        <h1>${escapeHtml(reveal.title || "あなたの大会")}</h1>
+        <p class="lead">${escapeHtml(reveal.lead || "")}</p>
+        <div class="actions">
+          <button class="primary" id="continue-btn" type="button">${escapeHtml(reveal.continueLabel || "次へ")}</button>
+        </div>
+      </div>
+      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
+    </div>
+  `;
+}
+
+function renderHurdleMapPage() {
+  const map = state.data.hurdleMap || {};
+  return `
+    <p class="kicker">${escapeHtml(map.kicker || "Part 2")}</p>
+    <p class="lead">${escapeHtml(map.preface)}</p>
+    <div class="hurdle-map page">${renderHurdleMapList()}</div>
+    <div class="actions">
+      <button class="primary" id="continue-btn" type="button">${escapeHtml(map.continueLabel || "最初のハードルへ")}</button>
+    </div>
   `;
 }
 
@@ -395,6 +509,19 @@ function onChoose(choiceId) {
 
 async function onNext() {
   if (!state.revealed) return;
+  const question = currentQuestion();
+  if (isLastDesignQuestion(question)) {
+    state.view = "designSheet";
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+  if (question.id === "q00") {
+    state.view = "hurdleMap";
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
   if (state.index >= state.data.questions.length - 1) {
     await showFinale();
     return;

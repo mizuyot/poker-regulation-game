@@ -485,6 +485,61 @@ button.ghost {
   font-size: 13px;
 }
 
+.hurdle-map {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.hurdle-map.page {
+  margin: 20px 0;
+}
+
+.hurdle-map-item {
+  display: grid;
+  grid-template-columns: 2em 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.hurdle-map-item.is-locked {
+  opacity: 0.55;
+}
+
+.hurdle-map-item.is-current {
+  border-color: var(--gold);
+}
+
+.hurdle-map-item.is-cleared {
+  opacity: 1;
+}
+
+.hurdle-map-lock {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.hurdle-map-status {
+  margin: 0 0 2px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+}
+
+.hurdle-map-item h3 {
+  margin: 0;
+  font-size: 14px;
+  font-family: "Shippori Mincho", serif;
+  color: var(--gold-2);
+}
+
+.compact.hurdle-map {
+  margin-top: 18px;
+}
+
 .inline-blueprint {
   position: static;
   margin-top: 16px;
