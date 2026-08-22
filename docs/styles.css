@@ -10,6 +10,35 @@
   --split: #e0b07a;
   --card: #1c2330;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  --diagram-ink: #f3eee4;
+  --diagram-fill: rgba(28, 35, 48, 0.9);
+  --diagram-stroke: rgba(196, 165, 116, 0.7);
+  --diagram-blocked: #d27a6a;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f1e8;
+    --bg-2: #fffaf2;
+    --ink: #1c1814;
+    --muted: #6f675c;
+    --line: rgba(122, 96, 58, 0.28);
+    --gold: #8a6a3a;
+    --gold-2: #6d542e;
+    --same: #2f7d8a;
+    --split: #a56a2a;
+    --card: #fffdf8;
+    --shadow: 0 18px 40px rgba(60, 40, 10, 0.08);
+    --diagram-ink: #1c1814;
+    --diagram-fill: #fffdf8;
+    --diagram-stroke: rgba(122, 96, 58, 0.55);
+    --diagram-blocked: #b55244;
+  }
+
+  html,
+  body {
+    background: radial-gradient(1200px 600px at 10% -10%, #efe4d0 0%, var(--bg) 42%);
+  }
 }
 
 * {
@@ -31,7 +60,7 @@ body {
 }
 
 .frame {
-  max-width: 760px;
+  max-width: 1120px;
   margin: 0 auto;
   min-height: calc(100vh - 32px);
   display: flex;
@@ -54,8 +83,9 @@ body {
 
 .brand {
   font-family: "Shippori Mincho", serif;
-  font-size: 18px;
-  letter-spacing: 0.04em;
+  font-size: 16px;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
 }
 
 .brand-sub {
@@ -374,6 +404,98 @@ button.ghost {
   margin: 0 0 8px;
 }
 
+.play-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  align-items: start;
+}
+
+.blueprint-panel,
+.finale-blueprint {
+  position: sticky;
+  top: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 14px;
+}
+
+.finale-blueprint {
+  position: static;
+  margin-bottom: 28px;
+}
+
+.blueprint-kicker {
+  margin: 0 0 6px;
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.blueprint-note {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.blueprint {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.blueprint .node {
+  fill: var(--diagram-fill);
+  stroke: var(--diagram-stroke);
+}
+
+.blueprint text {
+  fill: var(--diagram-ink);
+  font-size: 12px;
+  font-family: "IBM Plex Sans JP", sans-serif;
+}
+
+.blueprint .label {
+  font-size: 10px;
+  fill: var(--muted);
+}
+
+.blueprint .flow {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.5;
+}
+
+.blueprint .blocked {
+  fill: none;
+  stroke: var(--diagram-blocked);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.blueprint .block-x {
+  fill: none;
+  stroke: var(--diagram-blocked);
+  stroke-width: 2.4;
+  stroke-linecap: square;
+}
+
+.blueprint .part {
+  opacity: 0.16;
+}
+
+.blueprint.is-gate1 .part-gate1,
+.blueprint.is-gate2 .part-gate2,
+.blueprint.is-gate3 .part-gate3,
+.blueprint.is-gate4 .part-gate4 {
+  opacity: 1;
+}
+
+.split-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
 @media (max-width: 640px) {
   body {
     padding: 12px;
@@ -382,5 +504,16 @@ button.ghost {
   .topbar {
     flex-direction: column;
     gap: 2px;
+  }
+}
+
+@media (max-width: 960px) {
+  .play-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .blueprint-panel {
+    position: static;
+    order: 2;
   }
 }
