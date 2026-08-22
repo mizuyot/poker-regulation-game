@@ -115,6 +115,62 @@ function diagnosisHook() {
   return isNoPrize() ? hooks.noprize : hooks.prize;
 }
 
+const LETTERS = ["A", "B", "C", "D"];
+let advancing = false;
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 960px)").matches;
+}
+
+function choiceLetter(choiceId) {
+  const index = Number(choiceId) - 1;
+  return LETTERS[index] || String(choiceId);
+}
+
+function hurdleShortTitle(id) {
+  const title = (state.data.sections[id] && state.data.sections[id].title) || "";
+  return title.replace(/^ハードル\d｜/, "");
+}
+
+function hurdleIndexLabel(id) {
+  return String(HURDLES.indexOf(id) + 1).padStart(2, "0");
+}
+
+function diagnosisTypeLines() {
+  const name = typeName();
+  if (!name) return { type: "", prize: "" };
+  if (isNoPrize()) return { type: name, prize: "" };
+  const prize = state.data.diagnosis.prize[state.answers.d4];
+  return { type: name, prize: prize ? `× ${prize.name}` : "" };
+}
+
+function diagnosisFundingBlurb() {
+  const funding = state.data.diagnosis && state.data.diagnosis.funding[state.answers.d3];
+  return funding ? funding.blurb : "";
+}
+
+function diagnosisPrizeBlurb() {
+  if (isNoPrize()) return "";
+  const prize = state.data.diagnosis && state.data.diagnosis.prize[state.answers.d4];
+  return prize ? prize.blurb : "";
+}
+
+function updateChrome() {
+  document.body.classList.remove("is-intro", "is-playing", "is-diagnosis", "is-finale");
+  if (state.view === "intro") document.body.classList.add("is-intro");
+  else if (state.view === "designSheet") document.body.classList.add("is-diagnosis");
+  else if (state.view === "finale") document.body.classList.add("is-finale");
+  else document.body.classList.add("is-playing");
+}
+
+function designAnsweredCount() {
+  return visibleDesignIds().filter((id) => Boolean(state.answers[id])).length;
+}
+
 function sectionLeadText(section, sectionId) {
   if (!section) return "";
   let lead = interpolate(section.lead);
@@ -203,6 +259,7 @@ function renderFooter() {
 
 function render() {
   const app = document.getElementById("app");
+  updateChrome();
   updateProgress();
   if (
     state.view === "question" &&
@@ -269,14 +326,10 @@ function renderIntro() {
 }
 
 function renderPlay() {
-  const showMap = HURDLES.includes(currentQuestion().section);
   return `
     <div class="play-layout">
-      <div class="play-main">${renderQuestion()}</div>
-      <aside class="sheet-panel-wrap">
-        ${renderPlayerSheet()}
-        ${showMap ? renderHurdleMapCompact() : ""}
-      </aside>
+      <div class="play-main is-entering">${renderQuestion()}</div>
+      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
     </div>
   `;
 }
@@ -308,33 +361,39 @@ function renderQuestion() {
       let dataState = "";
       if (selected === choice.id && (state.revealed || isSurvey)) dataState = "selected";
       if (state.revealed && !isSurvey && choice.id === designer) {
-        dataState = dataState || "designer";
+        dataState = selected === choice.id ? "selected" : "designer";
       }
+      const letter = isSurvey
+        ? ""
+        : `<span class="choice-letter">${escapeHtml(choiceLetter(choice.id))}</span>`;
       return `
         <button
-          class="choice"
+          class="choice ${isSurvey ? "is-survey" : ""}"
           type="button"
           data-choice="${escapeHtml(choice.id)}"
           data-state="${dataState}"
           ${state.revealed && !isSurvey ? "disabled" : ""}
-        >${escapeHtml(choice.text)}</button>`;
+        >${letter}<span class="choice-text">${escapeHtml(choice.text)}</span><span class="choice-arrow" aria-hidden="true">→</span></button>`;
     })
     .join("");
 
   let followup = "";
   if (state.revealed && question.mode === "compare") {
     const same = selected === designer;
+    const letter = choiceLetter(designer);
     followup = `
       <section class="compare" aria-live="polite">
-        <p class="compare-label">比較</p>
         <p class="compare-result ${same ? "same" : "split"}">${
           same ? "同じ考えでした" : "考えが分かれました"
         }</p>
-        <p>設計者の選択：${escapeHtml(choiceText(question, designer))}</p>
+        <p>${
+          same
+            ? `設計者の選択も ${escapeHtml(letter)} でした`
+            : `設計者の選択は ${escapeHtml(letter)} でした`
+        }</p>
       </section>
       <section class="explanation">
         <p class="disclaimer">${escapeHtml(state.data.meta.disclaimer)}</p>
-        <p><strong>設計者の考え方</strong></p>
         ${renderParagraphs(question.explanation)}
       </section>`;
   }
@@ -349,10 +408,7 @@ function renderQuestion() {
       <div class="inline-blueprint">${renderBlueprint()}</div>`;
   }
 
-  const nextLabel = state.index === total - 1 ? "まとめを見る" : "次へ";
-  const lead = showSectionLead
-    ? `<p class="kicker">${escapeHtml(section.title)}</p><p class="lead">${escapeHtml(sectionLeadText(section, question.section))}</p>`
-    : "";
+  const nextLabel = state.index === total - 1 ? "まとめを見る →" : "次の問いへ →";
   const back =
     question.section === "design"
       ? `<button class="back-link" id="back-link" type="button">← 戻る</button>`
@@ -361,52 +417,111 @@ function renderQuestion() {
     isSurvey
       ? ""
       : `<div class="actions">
-      <button class="primary" id="next-btn" type="button" ${state.revealed ? "" : "disabled"}>${nextLabel}</button>
+      <button class="text-next" id="next-btn" type="button" ${state.revealed ? "" : "disabled"}>${nextLabel}</button>
     </div>`;
+
+  if (isSurvey) {
+    const seq = visibleDesignIds();
+    const ratio = Math.round((designAnsweredCount() / Math.max(seq.length, 1)) * 100);
+    const lead = showSectionLead
+      ? `<div class="part-head">
+          <p class="part-label">Part 1</p>
+          <h2>${escapeHtml(section.title.replace(/^Part 1｜/, ""))}</h2>
+          <p class="lead">${escapeHtml(section.lead)}</p>
+        </div>`
+      : `<p class="part-label">Part 1</p>`;
+    return `
+      ${back}
+      ${lead}
+      <div class="design-progress" aria-hidden="true">
+        <p>大会を設計中</p>
+        <div class="design-progress-track"><div class="design-progress-fill" style="width:${ratio}%"></div></div>
+      </div>
+      <h2 class="prompt">${escapeHtml(question.prompt)}</h2>
+      <div class="choices" role="group" aria-label="選択肢">${choices}</div>
+    `;
+  }
+
+  const hurdleId = question.section;
+  const qs = hurdleQuestions(hurdleId);
+  const step = qs.findIndex((item) => item.id === question.id) + 1;
+  const lead = showSectionLead
+    ? `<div class="part-head">
+        <p class="part-label">Hurdle ${HURDLES.indexOf(hurdleId) + 1}</p>
+        <h2>${escapeHtml(hurdleShortTitle(hurdleId))}</h2>
+        <p class="lead">${escapeHtml(sectionLeadText(section, hurdleId))}</p>
+      </div>`
+    : `<p class="part-label">Hurdle ${HURDLES.indexOf(hurdleId) + 1}</p>
+       <p class="hurdle-place">Hurdle ${HURDLES.indexOf(hurdleId) + 1} — ${step}つ目の問い</p>`;
   return `
     ${lead}
-    <div class="meta-row">
-      <span>${escapeHtml(question.axisLabel)}</span>
-    </div>
+    <p class="mobile-hurdle hurdle-place">${escapeHtml(hurdleShortTitle(hurdleId))} — ${step}つ目の問い</p>
     <h2 class="prompt">${escapeHtml(question.prompt)}</h2>
-    <div class="choices">${choices}</div>
+    <div class="choices" role="group" aria-label="選択肢">${choices}</div>
     ${followup}
     ${next}
-    ${back}
   `;
 }
 
-function renderSheetCards(ids, heading) {
-  const cards = ids
+function renderSheetRows(ids) {
+  return ids
     .map((id) => {
       const question = questionById(id);
       const label = selectedLabel(id);
       if (!question || !label) return "";
       const title = question.sheetLabel || question.axisLabel;
       return `
-        <article class="sheet-card">
+        <div class="sheet-row">
           <p class="sheet-kicker">${escapeHtml(title)}</p>
           <p class="sheet-value">${escapeHtml(label)}</p>
-        </article>`;
+        </div>`;
     })
     .join("");
-  if (!cards) return "";
-  return `<p class="sheet-heading">${escapeHtml(heading)}</p><div class="sheet-cards">${cards}</div>`;
 }
 
-function renderPlayerSheet() {
+function latestHurdlePick(hurdleId) {
+  const answered = hurdleQuestions(hurdleId).filter(
+    (question) => state.answers[question.id] && question.sheetLabel
+  );
+  if (!answered.length) return "";
+  const last = answered[answered.length - 1];
+  const text = selectedLabel(last.id);
+  return text.length > 22 ? `${text.slice(0, 22)}…` : text;
+}
+
+function renderPlayerSheet(options) {
+  const finale = Boolean(options && options.finale);
   const compare = isNoPrize() ? "" : qualitativeCompare();
-  const hurdleIds = state.data.questions.filter((q) => HURDLES.includes(q.section)).map((q) => q.id);
+  const lines = diagnosisTypeLines();
   const lockup = diagnosisReady()
-    ? `<p class="sheet-type">${escapeHtml(diagnosisLockup())}</p>`
+    ? `<p class="sheet-type">${escapeHtml(lines.type)}${
+        lines.prize ? `<span class="times">${escapeHtml(lines.prize)}</span>` : ""
+      }</p>`
     : "";
-  return `
-    <details class="sheet-panel" open>
-      <summary>あなたの大会</summary>
+  const inPart2 =
+    state.view === "question" &&
+    currentQuestion() &&
+    HURDLES.includes(currentQuestion().section);
+  const map = inPart2
+    ? `<p class="sheet-heading">4つのハードル</p><div class="hurdle-map compact">${renderHurdleMapList(true)}</div>`
+    : "";
+  const rows = renderSheetRows(visibleDesignIds());
+  if (finale) {
+    return `
       ${lockup}
-      ${renderSheetCards(visibleDesignIds(), "Part 1")}
+      <div class="sheet-rows">${rows}</div>
       ${compare ? `<p class="sheet-compare">${escapeHtml(compare)}</p>` : ""}
-      ${renderSheetCards(hurdleIds, "Part 2の解決")}
+    `;
+  }
+  const open = isMobileLayout() ? "" : "open";
+  const summary = isMobileLayout() ? "あなたの大会を見る" : "あなたの大会";
+  return `
+    <details class="sheet-panel" ${open}>
+      <summary>${summary}</summary>
+      ${lockup}
+      <div class="sheet-rows">${rows}</div>
+      ${compare ? `<p class="sheet-compare">${escapeHtml(compare)}</p>` : ""}
+      ${map}
     </details>
   `;
 }
@@ -422,51 +537,71 @@ function hurdleItemState(hurdleId) {
   return "locked";
 }
 
-function renderHurdleMapList() {
+function renderHurdleMapList(compact) {
   return HURDLES.map((id) => {
-    const section = state.data.sections[id];
     const status = hurdleItemState(id);
-    const mark = status === "cleared" ? "解錠" : status === "current" ? "いま" : "未解錠";
-    const lock = status === "locked" ? "🔒" : status === "cleared" ? "🔓" : "▶";
+    const mark =
+      status === "cleared" ? "見た" : status === "current" ? "← 現在" : compact ? "" : "LOCKED";
+    const pick = compact ? latestHurdlePick(id) : "";
     return `
       <article class="hurdle-map-item is-${status}">
-        <span class="hurdle-map-lock" aria-hidden="true">${lock}</span>
+        <span class="hurdle-map-num">${hurdleIndexLabel(id)}</span>
         <div>
-          <p class="hurdle-map-status">${mark}</p>
-          <h3>${escapeHtml(section.title)}</h3>
+          <h3>${escapeHtml(hurdleShortTitle(id))}</h3>
+          ${
+            compact && mark
+              ? `<p class="hurdle-map-status">${mark}</p>`
+              : ""
+          }
+          ${pick ? `<p class="hurdle-picked">${escapeHtml(pick)}</p>` : ""}
         </div>
+        ${compact ? "" : `<p class="hurdle-map-status">${mark}</p>`}
       </article>`;
   }).join("");
 }
 
-function renderHurdleMapCompact() {
-  const map = state.data.hurdleMap || {};
-  return `
-    <div class="hurdle-map compact">
-      <p class="sheet-heading">${escapeHtml(map.preface || "この4つを越えてきた。")}</p>
-      ${renderHurdleMapList()}
-    </div>
-  `;
-}
-
 function renderDesignReveal() {
-  const reveal = state.data.designReveal || {};
   const map = state.data.hurdleMap || {};
-  const blurb = diagnosisBlurb();
+  const lines = diagnosisTypeLines();
+  const funding = diagnosisFundingBlurb();
+  const prize = diagnosisPrizeBlurb();
+  const scale = selectedLabel("d2");
+  const fundingParas = funding
+    .split(/(?<=。)/)
+    .filter(Boolean)
+    .map((p) => `<p>${escapeHtml(p)}</p>`)
+    .join("");
+  const prizeParas = prize
+    .split(/(?<=。)/)
+    .filter(Boolean)
+    .map((p) => `<p>${escapeHtml(p)}</p>`)
+    .join("");
+  const turn = escapeHtml(map.preface || "").replace("。そして、", "。<br />そして、");
   return `
     <div class="play-layout">
-      <div class="play-main">
-        <p class="kicker">${escapeHtml(reveal.kicker || "Part 1")}</p>
-        <p class="diagnosis-kicker">${escapeHtml(state.data.diagnosis.heading)}</p>
-        <h1 class="diagnosis-lockup">${escapeHtml(diagnosisLockup())}</h1>
-        <div class="prose">${blurb.split(/(?<=。)/).filter(Boolean).map((p) => `<p>${escapeHtml(p)}</p>`).join("")}</div>
-        <p class="diagnosis-hook">${escapeHtml(diagnosisHook())}</p>
-        <p class="lead">${escapeHtml(map.preface)}</p>
-        <div class="hurdle-map page">${renderHurdleMapList()}</div>
-        <div class="actions">
-          <button class="primary" id="continue-btn" type="button">${escapeHtml(map.continueLabel || "ハードル1へ進む")}</button>
-        </div>
+      <div class="play-main diagnosis-screen">
         <button class="back-link" id="back-link" type="button">← 戻る</button>
+        <p class="diagnosis-kicker">${escapeHtml(state.data.diagnosis.heading)}</p>
+        <h1 class="diagnosis-lockup">${escapeHtml(lines.type)}${
+          lines.prize ? `<span class="times">${escapeHtml(lines.prize)}</span>` : ""
+        }</h1>
+        <div class="diagnosis-copy prose">${fundingParas}${prizeParas}</div>
+        ${
+          scale && !isNoPrize()
+            ? `<div class="diagnosis-scale">
+                <p class="sheet-kicker">賞金・賞品の規模感</p>
+                <p class="sheet-value">${escapeHtml(scale)}</p>
+              </div>`
+            : ""
+        }
+        <p class="diagnosis-hook">${escapeHtml(diagnosisHook())}</p>
+        <p class="turn-copy">${turn}</p>
+        <div class="hurdle-map page">${renderHurdleMapList(false)}</div>
+        <div class="actions">
+          <button class="continue" id="continue-btn" type="button">${escapeHtml(
+            map.continueLabel || "ハードル1へ進む"
+          )} →</button>
+        </div>
       </div>
       <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
     </div>
@@ -489,49 +624,63 @@ function renderBlueprint(options) {
   return `
     <p class="blueprint-kicker">${escapeHtml(heading)}</p>
     <p class="blueprint-note">${escapeHtml(note)}</p>
-    <svg class="blueprint" viewBox="0 0 360 620" role="img" aria-label="設計者の大会設計図">
+    <svg class="blueprint" viewBox="0 0 360 560" role="img" aria-label="設計者の大会設計図。参加費は運営費のみに充当し、賞金プールへは通さない。">
       <g class="${partClass("hurdle1", revealed)} part-hurdle1">
-        <rect class="node" x="16" y="16" width="110" height="44" rx="4"></rect>
-        <text x="71" y="43" text-anchor="middle">参加者</text>
-        <path class="flow" d="M71 60 v28"></path>
-        <text class="label" x="118" y="78">参加費→運営費のみ</text>
-        <rect class="node" x="16" y="92" width="110" height="44" rx="4"></rect>
-        <text x="71" y="119" text-anchor="middle">運営費</text>
-        <path class="blocked" d="M126 38 H210"></path>
-        <path class="block-x" d="M160 28 l20 20 M180 28 l-20 20"></path>
-        <text class="label blocked-label" x="168" y="22">遮断</text>
-        <rect class="node prize" x="210" y="16" width="134" height="44" rx="4"></rect>
-        <text x="277" y="43" text-anchor="middle">賞金プール</text>
-        <path class="flow" d="M277 60 v118"></path>
-        <rect class="node" x="210" y="182" width="134" height="44" rx="4"></rect>
-        <text x="277" y="209" text-anchor="middle">入賞者</text>
+        <rect class="node" x="18" y="18" width="108" height="40" rx="0"></rect>
+        <text x="72" y="43" text-anchor="middle">参加者</text>
+        <path class="flow quiet" d="M72 58 v24"></path>
+        <text class="label" x="124" y="74">参加費は運営費のみ</text>
+        <rect class="node" x="18" y="86" width="108" height="40" rx="0"></rect>
+        <text x="72" y="111" text-anchor="middle">運営費</text>
+        <path class="blocked" d="M126 38 H158"></path>
+        <text class="block-x" x="176" y="43" text-anchor="middle">×</text>
+        <path class="blocked" d="M194 38 H210"></path>
+        <rect class="node" x="210" y="18" width="132" height="40" rx="0"></rect>
+        <text x="276" y="43" text-anchor="middle">賞金プール</text>
+        <path class="flow" d="M276 58 v96"></path>
+        <rect class="node" x="210" y="158" width="132" height="40" rx="0"></rect>
+        <text x="276" y="183" text-anchor="middle">入賞者</text>
       </g>
       <g class="${partClass("hurdle2", revealed)} part-hurdle2">
-        <rect class="node sponsor" x="16" y="250" width="328" height="52" rx="4"></rect>
-        <text x="180" y="272" text-anchor="middle">全国のアミューズ店舗（分散スポンサー）</text>
-        <text class="label" x="180" y="292" text-anchor="middle">スポンサー料 → 賞金プール</text>
-        <path class="flow" d="M277 250 V60"></path>
-        <path class="flow return" d="M40 302 v48 H277 v-48"></path>
-        <text class="label" x="158" y="338" text-anchor="middle">広告掲出・優先権（価値は小さく保つ）</text>
+        <rect class="node" x="18" y="230" width="324" height="48" rx="0"></rect>
+        <text x="180" y="250" text-anchor="middle">全国のアミューズ店舗（分散スポンサー）</text>
+        <text class="label" x="180" y="268" text-anchor="middle">スポンサー料 → 賞金プール</text>
+        <path class="flow" d="M276 230 V58"></path>
+        <path class="flow quiet" d="M48 278 v36 H276 v-36"></path>
+        <text class="label" x="162" y="308" text-anchor="middle">広告掲出・優先権（価値は小さく保つ）</text>
       </g>
       <g class="${partClass("hurdle3", revealed)} part-hurdle3">
-        <rect class="node venue" x="16" y="390" width="200" height="52" rx="4"></rect>
-        <text x="116" y="413" text-anchor="middle">会場：許可店の外</text>
-        <text class="label" x="116" y="431" text-anchor="middle">独立会場</text>
-        <rect class="node cal" x="232" y="390" width="112" height="52" rx="4"></rect>
-        <text x="288" y="413" text-anchor="middle">年2回</text>
-        <text class="label" x="288" y="431" text-anchor="middle">カレンダー</text>
+        <rect class="node" x="18" y="360" width="196" height="48" rx="0"></rect>
+        <text x="116" y="380" text-anchor="middle">会場：許可店の外</text>
+        <text class="label" x="116" y="396" text-anchor="middle">独立会場</text>
+        <rect class="node" x="230" y="360" width="112" height="48" rx="0"></rect>
+        <text x="286" y="380" text-anchor="middle">年2回</text>
+        <text class="label" x="286" y="396" text-anchor="middle">カレンダー</text>
       </g>
       <g class="${partClass("hurdle4", revealed)} part-hurdle4">
-        <rect class="node ledger" x="16" y="470" width="328" height="56" rx="4"></rect>
-        <text x="180" y="494" text-anchor="middle">記録・証憑</text>
-        <text class="label" x="180" y="512" text-anchor="middle">契約書 / 資金フロー</text>
+        <rect class="node" x="18" y="438" width="324" height="48" rx="0"></rect>
+        <text x="180" y="458" text-anchor="middle">記録・証憑</text>
+        <text class="label" x="180" y="474" text-anchor="middle">契約書 / 資金フロー</text>
       </g>
     </svg>
   `;
 }
 
+function onChoiceKey(event) {
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  if (state.view !== "question" || state.revealed) return;
+  const question = currentQuestion();
+  if (!question || question.mode !== "compare") return;
+  const id = { a: "1", b: "2", c: "3", d: "4", "1": "1", "2": "2", "3": "3", "4": "4" }[
+    event.key.toLowerCase()
+  ];
+  if (!id || !question.choices.some((choice) => choice.id === id)) return;
+  event.preventDefault();
+  onChoose(id);
+}
+
 function bindQuestion() {
+  window.removeEventListener("keydown", onChoiceKey);
   document.querySelectorAll(".choice").forEach((button) => {
     button.addEventListener("click", () => onChoose(button.dataset.choice));
   });
@@ -539,9 +688,11 @@ function bindQuestion() {
   if (next) next.addEventListener("click", onNext);
   const back = document.getElementById("back-link");
   if (back) back.addEventListener("click", goBackDesign);
+  window.addEventListener("keydown", onChoiceKey);
 }
 
 function goBackDesign() {
+  advancing = false;
   const seq = visibleDesignIds();
   if (state.view === "designSheet") {
     state.view = "question";
@@ -565,6 +716,7 @@ function goBackDesign() {
 function onChoose(choiceId) {
   const question = currentQuestion();
   if (question.mode === "compare" && state.revealed) return;
+  if (advancing) return;
   state.answers[question.id] = choiceId;
   if (question.id === "d3" && choiceId === "4") delete state.answers.d4;
   const isMatch =
@@ -577,13 +729,24 @@ function onChoose(choiceId) {
     timestamp: new Date().toISOString(),
   });
   if (question.mode !== "compare") {
-    advanceDesign();
+    advancing = true;
+    render();
+    const wait = prefersReducedMotion() ? 0 : 130;
+    window.setTimeout(() => {
+      advancing = false;
+      advanceDesign();
+    }, wait);
     return;
   }
   state.revealed = true;
   render();
-  const compare = document.querySelector(".compare");
-  if (compare) compare.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  const payoff = document.querySelector(".fun-payoff");
+  if (payoff) {
+    payoff.scrollIntoView({
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+      block: "nearest",
+    });
+  }
 }
 
 function advanceDesign() {
@@ -598,7 +761,7 @@ function advanceDesign() {
   state.index = indexOfId(seq[i + 1]);
   state.revealed = false;
   render();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
 async function onNext() {
@@ -613,7 +776,7 @@ async function onNext() {
   }
   state.revealed = Boolean(state.answers[currentQuestion().id]);
   render();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
 function counterKey(questionId, choiceId) {
@@ -761,13 +924,14 @@ function renderCompareSummary() {
   const splits =
     summary.split.length === 0
       ? "<p>今回、考えが分かれた設問はありませんでした。</p>"
-      : `<ul class="split-list">${summary.split
+      : `<p>特に考えが分かれたのは——</p><ul class="split-list">${summary.split
           .map((q) => `<li>${escapeHtml(q.prompt)}</li>`)
           .join("")}</ul>`;
   return `
     <div class="finale-block">
       <h2>比較サマリ</h2>
-      <p>設計者と同じ考えだった設問は ${summary.total} 問中 ${summary.same.length} 問。考えが分かれたのは ${summary.split.length} 問です。</p>
+      <p>設計者と同じ考えだった問い：${summary.same.length}</p>
+      <p>考えが分かれた問い：${summary.split.length}</p>
       ${splits}
     </div>
   `;
@@ -829,16 +993,19 @@ function renderFinale() {
   const labels = (finale.designerLabels || [])
     .map((label) => `<li>${escapeHtml(label)}</li>`)
     .join("");
+  const closing = escapeHtml(finale.closing).replace("。", "。<br />");
   return `
-    <p class="kicker">Part 3｜両立</p>
+    <p class="part-label">Part 3</p>
     <h1>${escapeHtml(finale.title)}</h1>
     <div class="finale-compare-grid">
       <section class="finale-side">
-        ${renderPlayerSheet()}
+        <p class="finale-side-label">あなたの大会</p>
+        ${renderPlayerSheet({ finale: true })}
       </section>
       <section class="finale-side">
-        ${renderBlueprint({ complete: true })}
+        <p class="finale-side-label">設計者の大会</p>
         <ul class="designer-labels">${labels}</ul>
+        ${renderBlueprint({ complete: true })}
       </section>
     </div>
     ${renderCompareSummary()}
@@ -847,10 +1014,10 @@ function renderFinale() {
       <p class="note">${escapeHtml(finale.distributionPromise)}</p>
       ${renderStats()}
     </div>
-    <p class="closing">${escapeHtml(finale.closing)}</p>
+    <p class="closing">${closing}</p>
     <p class="note">${escapeHtml(finale.disclaimer)}</p>
     <div class="actions">
-      <button class="primary" id="restart-btn" type="button">もう一度最初から</button>
+      <button class="ghost" id="restart-btn" type="button">もう一度最初から</button>
       <button class="ghost" id="share-x-btn" type="button">Xで広める</button>
     </div>
   `;
