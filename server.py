@@ -17,10 +17,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-STATIC = ROOT / "static"
+DOCS = ROOT / "docs"
 DATA_DIR = ROOT / "data"
 ANSWERS_PATH = DATA_DIR / "answers.jsonl"
-QUESTIONS_PATH = ROOT / "questions.json"
+QUESTIONS_PATH = DOCS / "questions.json"
 HOST = "127.0.0.1"
 PORT = 8765
 
@@ -126,7 +126,7 @@ class Handler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         if path == "/":
-            html = (STATIC / "index.html").read_bytes()
+            html = (DOCS / "index.html").read_bytes()
             self._send(200, html, "text/html; charset=utf-8")
             return
         if path == "/api/stats":
@@ -147,7 +147,7 @@ class Handler(SimpleHTTPRequestHandler):
             )
             return
         if path in ("/styles.css", "/app.js"):
-            file_path = STATIC / path.lstrip("/")
+            file_path = DOCS / path.lstrip("/")
             content_type = (
                 "text/css; charset=utf-8"
                 if path.endswith(".css")
@@ -215,7 +215,7 @@ class Handler(SimpleHTTPRequestHandler):
 def main():
     DATA_DIR.mkdir(exist_ok=True)
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("規制内最大化ゲーム", flush=True)
+    print("合法ポーカー大会設計ゲーム", flush=True)
     print("http://%s:%s" % (HOST, PORT), flush=True)
     print("回答ログ: %s" % ANSWERS_PATH, flush=True)
     print("停止: Ctrl+C", flush=True)
