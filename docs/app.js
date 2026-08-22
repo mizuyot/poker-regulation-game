@@ -1,6 +1,6 @@
-const STORAGE_KEY = "regulation-max-game-session";
 const COUNTER_API = "https://countapi.mileshilliard.com/api/v1";
-const GATES = ["gate1", "gate2", "gate3", "gate4"];
+const HURDLES = ["hurdle1", "hurdle2", "hurdle3", "hurdle4"];
+const DESIGN_IDS = ["d1", "d2", "d3", "d4", "d5", "d6", "d7"];
 
 const state = {
   data: null,
@@ -8,23 +8,11 @@ const state = {
   index: 0,
   answers: {},
   revealed: false,
-  sessionId: getOrCreateSessionId(),
+  sessionId: crypto.randomUUID(),
   saveJobs: [],
   stats: null,
   statsSource: null,
 };
-
-function getOrCreateSessionId() {
-  try {
-    const existing = sessionStorage.getItem(STORAGE_KEY);
-    if (existing) return existing;
-    const created = crypto.randomUUID();
-    sessionStorage.setItem(STORAGE_KEY, created);
-    return created;
-  } catch (err) {
-    return crypto.randomUUID();
-  }
-}
 
 function resetSession() {
   state.view = "intro";
@@ -35,11 +23,6 @@ function resetSession() {
   state.stats = null;
   state.statsSource = null;
   state.sessionId = crypto.randomUUID();
-  try {
-    sessionStorage.setItem(STORAGE_KEY, state.sessionId);
-  } catch (err) {
-    /* ignore */
-  }
 }
 
 function escapeHtml(value) {
@@ -51,9 +34,19 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function questionById(id) {
+  return state.data.questions.find((question) => question.id === id);
+}
+
 function choiceText(question, choiceId) {
+  if (!question) return "";
   const found = question.choices.find((choice) => choice.id === choiceId);
   return found ? found.text : "";
+}
+
+function selectedLabel(id) {
+  const question = questionById(id);
+  return choiceText(question, state.answers[id]);
 }
 
 function currentQuestion() {
@@ -71,18 +64,63 @@ function updateProgress() {
   bar.style.width = `${Math.round(progressRatio() * 100)}%`;
 }
 
-function gateState() {
-  const result = { gate1: false, gate2: false, gate3: false, gate4: false };
-  GATES.forEach((gate) => {
-    const qs = state.data.questions.filter((q) => q.section === gate);
-    result[gate] = qs.length > 0 && qs.every((q) => Boolean(state.answers[q.id]));
+function interpolate(template) {
+  return String(template || "").replace(/\{\{(d[1-7])\}\}/g, (_, id) => selectedLabel(id) || "（未選択）");
+}
+
+function sectionLeadText(section) {
+  if (!section) return "";
+  let lead = interpolate(section.lead);
+  if (section.leadExtraIfSponsor && state.answers.d5 === "3") {
+    lead += section.leadExtraIfSponsor;
+  }
+  return lead;
+}
+
+function hurdleQuestions(sectionId) {
+  return state.data.questions.filter((question) => question.section === sectionId);
+}
+
+function hurdleComplete(sectionId) {
+  const qs = hurdleQuestions(sectionId);
+  return qs.length > 0 && qs.every((question) => Boolean(state.answers[question.id]));
+}
+
+function isLastInHurdle(question) {
+  if (!HURDLES.includes(question.section)) return false;
+  const qs = hurdleQuestions(question.section);
+  return qs[qs.length - 1].id === question.id;
+}
+
+function hurdleState() {
+  const result = { hurdle1: false, hurdle2: false, hurdle3: false, hurdle4: false };
+  HURDLES.forEach((hurdle) => {
+    result[hurdle] = hurdleComplete(hurdle);
   });
   if (state.view === "finale") {
-    GATES.forEach((gate) => {
-      result[gate] = true;
+    HURDLES.forEach((hurdle) => {
+      result[hurdle] = true;
     });
   }
   return result;
+}
+
+function scaleValue(id) {
+  const selected = state.answers[id];
+  if (!selected) return null;
+  const value = Number(selected);
+  return Number.isFinite(value) ? value : null;
+}
+
+function qualitativeCompare() {
+  const d1 = scaleValue("d1");
+  const d2 = scaleValue("d2");
+  const d3 = scaleValue("d3");
+  if (d1 == null || d2 == null || d3 == null) return "";
+  const avg = (d1 + d2) / 2;
+  if (d3 > avg) return "賞金の規模感は、参加費収入を大きく上回りそう";
+  if (d3 < avg) return "賞金の規模感は、参加費収入を下回りそう";
+  return "賞金の規模感は、参加費収入と同じくらいになりそう";
 }
 
 function compareSummary() {
@@ -101,7 +139,7 @@ function renderFooter() {
   document.getElementById("footer-disclaimer").textContent = meta.legalNote;
   document.getElementById("footer-data").textContent = meta.distributionPromise;
   document.getElementById("footer-privacy").textContent =
-    `保存するのは ${meta.privacy.stored.join("、")} のみ。${meta.privacy.notStored.join("・")}は取得しません。保持期間は${meta.privacy.retention}。`;
+    `保存するのはセッションID・設問ID・選択肢・時刻のみ。${meta.privacy.notStored.join("・")}は取得しません。保持期間は${meta.privacy.retention}。`;
 }
 
 function render() {
@@ -137,26 +175,13 @@ function render() {
 function renderIntro() {
   const intro = state.data.intro;
   const meta = state.data.meta;
-  const gates = (intro.gates || [])
-    .map(
-      (gate) => `
-        <article class="axis-card">
-          <h3>${escapeHtml(gate.label)}</h3>
-          <p class="axis-law">${escapeHtml(gate.law)}</p>
-          <p>${escapeHtml(gate.asks)}</p>
-        </article>`
-    )
-    .join("");
   const body = intro.body.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
   return `
     <p class="kicker">${escapeHtml(intro.kicker)}</p>
     <h1>${escapeHtml(meta.title)}<br /><span style="font-size:0.62em;color:var(--muted)">${escapeHtml(meta.subtitle)}</span></h1>
     <p class="lead">${escapeHtml(intro.lead)}</p>
     <div class="prose">${body}</div>
-    <p class="lead">${escapeHtml(intro.gatesLead)}</p>
-    <div class="axes">${gates}</div>
     <p class="note">${escapeHtml(intro.close)}</p>
-    <p class="note">${escapeHtml(meta.disclaimer)} ${escapeHtml(meta.legalNote)}</p>
     <div class="actions">
       <button class="primary" id="start-btn" type="button">始める</button>
     </div>
@@ -167,9 +192,17 @@ function renderPlay() {
   return `
     <div class="play-layout">
       <div class="play-main">${renderQuestion()}</div>
-      <aside class="blueprint-panel">${renderBlueprint()}</aside>
+      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
     </div>
   `;
+}
+
+function renderParagraphs(text) {
+  return String(text || "")
+    .split(/\n\n+/)
+    .filter(Boolean)
+    .map((p) => `<p>${escapeHtml(p)}</p>`)
+    .join("");
 }
 
 function renderQuestion() {
@@ -200,39 +233,39 @@ function renderQuestion() {
     .join("");
 
   let followup = "";
-  if (state.revealed) {
-    if (question.mode === "compare") {
-      const same = selected === designer;
-      followup = `
-        <section class="compare" aria-live="polite">
-          <p class="compare-label">比較</p>
-          <p class="compare-result ${same ? "same" : "split"}">${
-            same ? "同じ考えでした" : "考えが分かれました"
-          }</p>
-          <p>設計者の選択：${escapeHtml(choiceText(question, designer))}</p>
-        </section>`;
-    } else {
-      followup = `
-        <section class="survey-note" aria-live="polite">
-          <p class="compare-label">アンケート</p>
-          <p>この問いに比較はありません。規模の理想に、法的な正誤はないためです。</p>
-        </section>`;
-    }
-    followup += `
+  if (state.revealed && question.mode === "compare") {
+    const same = selected === designer;
+    followup = `
+      <section class="compare" aria-live="polite">
+        <p class="compare-label">比較</p>
+        <p class="compare-result ${same ? "same" : "split"}">${
+          same ? "同じ考えでした" : "考えが分かれました"
+        }</p>
+        <p>設計者の選択：${escapeHtml(choiceText(question, designer))}</p>
+      </section>
       <section class="explanation">
         <p class="disclaimer">${escapeHtml(state.data.meta.disclaimer)}</p>
         <p><strong>設計者の考え方</strong></p>
-        <p>${escapeHtml(question.explanation)}</p>
+        ${renderParagraphs(question.explanation)}
       </section>`;
   }
 
+  if (state.revealed && isLastInHurdle(question) && hurdleComplete(question.section)) {
+    const hurdle = state.data.sections[question.section];
+    followup += `
+      <section class="fun-payoff" aria-live="polite">
+        <p class="compare-label">この制約が生む面白さ</p>
+        <p>${escapeHtml(hurdle.funPayoff)}</p>
+      </section>
+      <div class="inline-blueprint">${renderBlueprint()}</div>`;
+  }
+
   const nextLabel = state.index === total - 1 ? "まとめを見る" : "次へ";
+  const lead = showSectionLead
+    ? `<p class="kicker">${escapeHtml(section.title)}</p><p class="lead">${escapeHtml(sectionLeadText(section))}</p>`
+    : "";
   return `
-    ${
-      showSectionLead
-        ? `<p class="kicker">${escapeHtml(section.title)}</p><p class="lead">${escapeHtml(section.lead)}</p>`
-        : ""
-    }
+    ${lead}
     <div class="meta-row">
       <span>${String(state.index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}</span>
       <span>${escapeHtml(question.axisLabel)}</span>
@@ -246,27 +279,59 @@ function renderQuestion() {
   `;
 }
 
-function blueprintClassList(gates) {
-  return GATES.filter((gate) => gates[gate])
-    .map((gate) => `is-${gate}`)
-    .join(" ");
+function renderSheetCards(ids, heading) {
+  const cards = ids
+    .map((id) => {
+      const question = questionById(id);
+      const label = selectedLabel(id);
+      if (!question || !label) return "";
+      const title = question.sheetLabel || question.axisLabel;
+      return `
+        <article class="sheet-card">
+          <p class="sheet-kicker">${escapeHtml(title)}</p>
+          <p class="sheet-value">${escapeHtml(label)}</p>
+        </article>`;
+    })
+    .join("");
+  if (!cards) return "";
+  return `<p class="sheet-heading">${escapeHtml(heading)}</p><div class="sheet-cards">${cards}</div>`;
+}
+
+function renderPlayerSheet() {
+  const compare = qualitativeCompare();
+  const hurdleIds = state.data.questions.filter((q) => HURDLES.includes(q.section)).map((q) => q.id);
+  return `
+    <details class="sheet-panel" open>
+      <summary>あなたの大会</summary>
+      ${renderSheetCards(DESIGN_IDS, "Part 1")}
+      ${compare ? `<p class="sheet-compare">${escapeHtml(compare)}</p>` : ""}
+      ${renderSheetCards(hurdleIds, "Part 2の解決")}
+    </details>
+  `;
+}
+
+function partClass(hurdle, revealed) {
+  return revealed[hurdle] ? "part revealed" : "part locked";
 }
 
 function renderBlueprint(options) {
   const complete = Boolean(options && options.complete);
-  const gates = complete
-    ? { gate1: true, gate2: true, gate3: true, gate4: true }
-    : gateState();
-  const heading = complete ? "これが、今の法律の枠組みで作れる形" : "大会の設計図";
+  const revealed = complete
+    ? { hurdle1: true, hurdle2: true, hurdle3: true, hurdle4: true }
+    : hurdleState();
+  const heading = complete ? "設計者の大会" : "設計者の設計図";
+  const note = complete
+    ? state.data.finale.diagramNote
+    : "図は設計者の設計です。ハードルを考え終えると、構造が組み上がります。";
   return `
     <p class="blueprint-kicker">${escapeHtml(heading)}</p>
-    <p class="blueprint-note">図は設計者の設計です。関門を考え終えると、構造が組み上がります。</p>
-    <svg class="blueprint ${blueprintClassList(gates)}" viewBox="0 0 360 620" role="img" aria-label="大会の設計図">
-      <g class="part part-gate1">
+    <p class="blueprint-note">${escapeHtml(note)}</p>
+    <svg class="blueprint" viewBox="0 0 360 620" role="img" aria-label="設計者の大会設計図">
+      <g class="${partClass("hurdle1", revealed)} part-hurdle1">
         <rect class="node" x="16" y="16" width="110" height="44" rx="4"></rect>
         <text x="71" y="43" text-anchor="middle">参加者</text>
         <path class="flow" d="M71 60 v28"></path>
-        <text class="label" x="118" y="78">参加費</text>
+        <text class="label" x="118" y="78">参加費→運営費のみ</text>
         <rect class="node" x="16" y="92" width="110" height="44" rx="4"></rect>
         <text x="71" y="119" text-anchor="middle">運営費</text>
         <path class="blocked" d="M126 38 H210"></path>
@@ -278,23 +343,23 @@ function renderBlueprint(options) {
         <rect class="node" x="210" y="182" width="134" height="44" rx="4"></rect>
         <text x="277" y="209" text-anchor="middle">入賞者</text>
       </g>
-      <g class="part part-gate2">
+      <g class="${partClass("hurdle2", revealed)} part-hurdle2">
         <rect class="node sponsor" x="16" y="250" width="328" height="52" rx="4"></rect>
         <text x="180" y="272" text-anchor="middle">全国のアミューズ店舗（分散スポンサー）</text>
-        <text class="label" x="180" y="292" text-anchor="middle">スポンサー料</text>
+        <text class="label" x="180" y="292" text-anchor="middle">スポンサー料 → 賞金プール</text>
         <path class="flow" d="M277 250 V60"></path>
         <path class="flow return" d="M40 302 v48 H277 v-48"></path>
         <text class="label" x="158" y="338" text-anchor="middle">広告掲出・優先権（価値は小さく保つ）</text>
       </g>
-      <g class="part part-gate3">
+      <g class="${partClass("hurdle3", revealed)} part-hurdle3">
         <rect class="node venue" x="16" y="390" width="200" height="52" rx="4"></rect>
         <text x="116" y="413" text-anchor="middle">会場：許可店の外</text>
         <text class="label" x="116" y="431" text-anchor="middle">独立会場</text>
         <rect class="node cal" x="232" y="390" width="112" height="52" rx="4"></rect>
         <text x="288" y="413" text-anchor="middle">年2回</text>
-        <text class="label" x="288" y="431" text-anchor="middle">事業上の判断</text>
+        <text class="label" x="288" y="431" text-anchor="middle">カレンダー</text>
       </g>
-      <g class="part part-gate4">
+      <g class="${partClass("hurdle4", revealed)} part-hurdle4">
         <rect class="node ledger" x="16" y="470" width="328" height="56" rx="4"></rect>
         <text x="180" y="494" text-anchor="middle">記録・証憑</text>
         <text class="label" x="180" y="512" text-anchor="middle">契約書 / 資金フロー</text>
@@ -550,11 +615,20 @@ function renderStats() {
 
 function renderFinale() {
   const finale = state.data.finale;
+  const labels = (finale.designerLabels || [])
+    .map((label) => `<li>${escapeHtml(label)}</li>`)
+    .join("");
   return `
-    <p class="kicker">最終画面</p>
+    <p class="kicker">Part 3｜両立</p>
     <h1>${escapeHtml(finale.title)}</h1>
-    <div class="finale-blueprint">
-      ${renderBlueprint({ complete: true })}
+    <div class="finale-compare-grid">
+      <section class="finale-side">
+        ${renderPlayerSheet()}
+      </section>
+      <section class="finale-side">
+        ${renderBlueprint({ complete: true })}
+        <ul class="designer-labels">${labels}</ul>
+      </section>
     </div>
     ${renderCompareSummary()}
     <div class="finale-block">
@@ -562,6 +636,7 @@ function renderFinale() {
       <p class="note">${escapeHtml(finale.distributionPromise)}</p>
       ${renderStats()}
     </div>
+    <p class="closing">${escapeHtml(finale.closing)}</p>
     <p class="note">${escapeHtml(finale.disclaimer)}</p>
     <div class="actions">
       <button class="primary" id="restart-btn" type="button">もう一度最初から</button>
@@ -599,8 +674,13 @@ async function boot() {
     document.title = `${state.data.meta.title} — ${state.data.meta.subtitle}`;
     const brand = document.querySelector(".brand");
     const brandSub = document.querySelector(".brand-sub");
+    const headerDisclaimer = document.getElementById("header-disclaimer");
     if (brand) brand.textContent = state.data.meta.title;
     if (brandSub) brandSub.textContent = state.data.meta.subtitle;
+    if (headerDisclaimer) {
+      headerDisclaimer.textContent =
+        state.data.meta.headerDisclaimer || "このゲームは適法性の判断・法的助言ではありません。";
+    }
     renderFooter();
     render();
   } catch (err) {
