@@ -1,6 +1,5 @@
 const COUNTER_API = "https://countapi.mileshilliard.com/api/v1";
 const HURDLES = ["hurdle1", "hurdle2", "hurdle3", "hurdle4"];
-const DESIGN_IDS = ["q01", "d1", "d2", "d3"];
 
 const state = {
   data: null,
@@ -56,9 +55,8 @@ function currentQuestion() {
 function progressRatio() {
   if (state.view === "intro") return 0;
   if (state.view === "finale") return 1;
-  const total = state.data.questions.length + 2;
-  if (state.view === "designSheet") return DESIGN_IDS.length / total;
-  if (state.view === "hurdleMap") return (indexOfId("q00") + 1) / total;
+  const total = state.data.questions.length + 1;
+  if (state.view === "designSheet") return visibleDesignIds().length / total;
   return (state.index + 1) / total;
 }
 
@@ -68,22 +66,67 @@ function updateProgress() {
 }
 
 function interpolate(template) {
-  return String(template || "").replace(/\{\{(q01|d[1-3])\}\}/g, (_, id) => selectedLabel(id) || "（未選択）");
+  return String(template || "")
+    .replaceAll("{{typeName}}", typeName() || "（未選択）")
+    .replace(/\{\{(q01|d[1-4])\}\}/g, (_, id) => selectedLabel(id) || "（未選択）");
 }
 
-function fundingLeadKey() {
-  const selected = state.answers.d3;
-  if (selected === "1") return "fullReturn";
-  if (selected === "3") return "separated";
-  return "unseparated";
+function isNoPrize() {
+  return state.answers.d3 === "4";
+}
+
+function visibleDesignIds() {
+  const ids = ["q01", "d1", "d2", "d3"];
+  if (state.answers.d3 && state.answers.d3 !== "4") ids.push("d4");
+  return ids;
+}
+
+function typeName() {
+  const funding = state.data.diagnosis && state.data.diagnosis.funding[state.answers.d3];
+  return funding ? funding.name : "";
+}
+
+function diagnosisLockup() {
+  const name = typeName();
+  if (!name) return "";
+  if (isNoPrize()) return name;
+  const prize = state.data.diagnosis.prize[state.answers.d4];
+  return prize ? `${name} × ${prize.name}` : name;
+}
+
+function diagnosisReady() {
+  return Boolean(state.answers.d3 && (isNoPrize() || state.answers.d4));
+}
+
+function diagnosisBlurb() {
+  const diag = state.data.diagnosis;
+  if (!diag || !state.answers.d3) return "";
+  const funding = diag.funding[state.answers.d3];
+  if (!funding) return "";
+  if (isNoPrize()) return funding.blurb;
+  const prize = diag.prize[state.answers.d4];
+  const scale = interpolate(diag.scaleLine);
+  return [funding.blurb, prize ? prize.blurb : "", scale].filter(Boolean).join("");
+}
+
+function diagnosisHook() {
+  const hooks = state.data.diagnosis && state.data.diagnosis.hooks;
+  if (!hooks) return "";
+  return isNoPrize() ? hooks.noprize : hooks.prize;
 }
 
 function sectionLeadText(section, sectionId) {
   if (!section) return "";
-  if (sectionId === "hurdle1" && section.leadByFunding) {
-    return interpolate(section.leadByFunding[fundingLeadKey()]);
+  let lead = interpolate(section.lead);
+  if (sectionId === "hurdle1" && section.conditionByFunding) {
+    const d3 = state.answers.d3;
+    let extra = "";
+    if (d3 === "1" || d3 === "2") extra = section.conditionByFunding.includesEntry;
+    else if (d3 === "3") extra = section.conditionByFunding.separated;
+    else if (d3 === "4") extra = section.conditionByFunding.noprize;
+    lead += extra;
   }
-  return interpolate(section.lead);
+  return lead;
 }
 
 function indexOfId(id) {
@@ -91,7 +134,8 @@ function indexOfId(id) {
 }
 
 function isLastDesignQuestion(question) {
-  return question && question.id === DESIGN_IDS[DESIGN_IDS.length - 1];
+  const seq = visibleDesignIds();
+  return question && question.id === seq[seq.length - 1];
 }
 
 function hurdleQuestions(sectionId) {
@@ -160,6 +204,14 @@ function renderFooter() {
 function render() {
   const app = document.getElementById("app");
   updateProgress();
+  if (
+    state.view === "question" &&
+    currentQuestion() &&
+    currentQuestion().id === "d4" &&
+    isNoPrize()
+  ) {
+    state.view = "designSheet";
+  }
   if (state.view === "intro") {
     app.innerHTML = renderIntro();
     document.getElementById("start-btn").addEventListener("click", () => {
@@ -179,17 +231,8 @@ function render() {
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
-    return;
-  }
-  if (state.view === "hurdleMap") {
-    app.innerHTML = renderHurdleMapPage();
-    document.getElementById("continue-btn").addEventListener("click", () => {
-      state.view = "question";
-      state.index = indexOfId("q18");
-      state.revealed = Boolean(state.answers.q18);
-      render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    const back = document.getElementById("back-link");
+    if (back) back.addEventListener("click", goBackDesign);
     return;
   }
   if (state.view === "finale") {
@@ -238,11 +281,15 @@ function renderPlay() {
   `;
 }
 
+function formatInline(text) {
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
 function renderParagraphs(text) {
   return String(text || "")
     .split(/\n\n+/)
     .filter(Boolean)
-    .map((p) => `<p>${escapeHtml(p)}</p>`)
+    .map((p) => `<p>${formatInline(p)}</p>`)
     .join("");
 }
 
@@ -255,11 +302,12 @@ function renderQuestion() {
     question.section !== state.data.questions[state.index - 1].section;
   const selected = state.answers[question.id];
   const designer = question.designerChoice;
+  const isSurvey = question.mode !== "compare";
   const choices = question.choices
     .map((choice) => {
       let dataState = "";
-      if (state.revealed && selected === choice.id) dataState = "selected";
-      if (state.revealed && question.mode === "compare" && choice.id === designer) {
+      if (selected === choice.id && (state.revealed || isSurvey)) dataState = "selected";
+      if (state.revealed && !isSurvey && choice.id === designer) {
         dataState = dataState || "designer";
       }
       return `
@@ -268,7 +316,7 @@ function renderQuestion() {
           type="button"
           data-choice="${escapeHtml(choice.id)}"
           data-state="${dataState}"
-          ${state.revealed ? "disabled" : ""}
+          ${state.revealed && !isSurvey ? "disabled" : ""}
         >${escapeHtml(choice.text)}</button>`;
     })
     .join("");
@@ -301,28 +349,30 @@ function renderQuestion() {
       <div class="inline-blueprint">${renderBlueprint()}</div>`;
   }
 
-  const nextLabel = isLastDesignQuestion(question)
-    ? "あなたの大会を見る"
-    : question.id === "q00"
-      ? "ハードルを見る"
-      : state.index === total - 1
-        ? "まとめを見る"
-        : "次へ";
+  const nextLabel = state.index === total - 1 ? "まとめを見る" : "次へ";
   const lead = showSectionLead
     ? `<p class="kicker">${escapeHtml(section.title)}</p><p class="lead">${escapeHtml(sectionLeadText(section, question.section))}</p>`
     : "";
+  const back =
+    question.section === "design"
+      ? `<button class="back-link" id="back-link" type="button">← 戻る</button>`
+      : "";
+  const next =
+    isSurvey
+      ? ""
+      : `<div class="actions">
+      <button class="primary" id="next-btn" type="button" ${state.revealed ? "" : "disabled"}>${nextLabel}</button>
+    </div>`;
   return `
     ${lead}
     <div class="meta-row">
-      <span>${String(state.index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}</span>
       <span>${escapeHtml(question.axisLabel)}</span>
     </div>
     <h2 class="prompt">${escapeHtml(question.prompt)}</h2>
     <div class="choices">${choices}</div>
     ${followup}
-    <div class="actions">
-      <button class="primary" id="next-btn" type="button" ${state.revealed ? "" : "disabled"}>${nextLabel}</button>
-    </div>
+    ${next}
+    ${back}
   `;
 }
 
@@ -345,12 +395,16 @@ function renderSheetCards(ids, heading) {
 }
 
 function renderPlayerSheet() {
-  const compare = qualitativeCompare();
+  const compare = isNoPrize() ? "" : qualitativeCompare();
   const hurdleIds = state.data.questions.filter((q) => HURDLES.includes(q.section)).map((q) => q.id);
+  const lockup = diagnosisReady()
+    ? `<p class="sheet-type">${escapeHtml(diagnosisLockup())}</p>`
+    : "";
   return `
     <details class="sheet-panel" open>
       <summary>あなたの大会</summary>
-      ${renderSheetCards(DESIGN_IDS, "Part 1")}
+      ${lockup}
+      ${renderSheetCards(visibleDesignIds(), "Part 1")}
       ${compare ? `<p class="sheet-compare">${escapeHtml(compare)}</p>` : ""}
       ${renderSheetCards(hurdleIds, "Part 2の解決")}
     </details>
@@ -359,7 +413,7 @@ function renderPlayerSheet() {
 
 function hurdleItemState(hurdleId) {
   if (hurdleComplete(hurdleId) || state.view === "finale") return "cleared";
-  if (state.view === "hurdleMap") return hurdleId === "hurdle1" ? "current" : "locked";
+  if (state.view === "designSheet") return "locked";
   const current = state.view === "question" ? currentQuestion() : null;
   if (current && current.section === hurdleId) return "current";
   const currentIndex = current ? HURDLES.indexOf(current.section) : -1;
@@ -397,29 +451,24 @@ function renderHurdleMapCompact() {
 
 function renderDesignReveal() {
   const reveal = state.data.designReveal || {};
+  const map = state.data.hurdleMap || {};
+  const blurb = diagnosisBlurb();
   return `
     <div class="play-layout">
       <div class="play-main">
         <p class="kicker">${escapeHtml(reveal.kicker || "Part 1")}</p>
-        <h1>${escapeHtml(reveal.title || "あなたの大会")}</h1>
-        <p class="lead">${escapeHtml(reveal.lead || "")}</p>
+        <p class="diagnosis-kicker">${escapeHtml(state.data.diagnosis.heading)}</p>
+        <h1 class="diagnosis-lockup">${escapeHtml(diagnosisLockup())}</h1>
+        <div class="prose">${blurb.split(/(?<=。)/).filter(Boolean).map((p) => `<p>${escapeHtml(p)}</p>`).join("")}</div>
+        <p class="diagnosis-hook">${escapeHtml(diagnosisHook())}</p>
+        <p class="lead">${escapeHtml(map.preface)}</p>
+        <div class="hurdle-map page">${renderHurdleMapList()}</div>
         <div class="actions">
-          <button class="primary" id="continue-btn" type="button">${escapeHtml(reveal.continueLabel || "次へ")}</button>
+          <button class="primary" id="continue-btn" type="button">${escapeHtml(map.continueLabel || "ハードル1へ進む")}</button>
         </div>
+        <button class="back-link" id="back-link" type="button">← 戻る</button>
       </div>
       <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
-    </div>
-  `;
-}
-
-function renderHurdleMapPage() {
-  const map = state.data.hurdleMap || {};
-  return `
-    <p class="kicker">${escapeHtml(map.kicker || "Part 2")}</p>
-    <p class="lead">${escapeHtml(map.preface)}</p>
-    <div class="hurdle-map page">${renderHurdleMapList()}</div>
-    <div class="actions">
-      <button class="primary" id="continue-btn" type="button">${escapeHtml(map.continueLabel || "最初のハードルへ")}</button>
     </div>
   `;
 }
@@ -487,14 +536,37 @@ function bindQuestion() {
     button.addEventListener("click", () => onChoose(button.dataset.choice));
   });
   const next = document.getElementById("next-btn");
-  next.addEventListener("click", onNext);
+  if (next) next.addEventListener("click", onNext);
+  const back = document.getElementById("back-link");
+  if (back) back.addEventListener("click", goBackDesign);
+}
+
+function goBackDesign() {
+  const seq = visibleDesignIds();
+  if (state.view === "designSheet") {
+    state.view = "question";
+    state.index = indexOfId(seq[seq.length - 1]);
+    state.revealed = false;
+    render();
+    return;
+  }
+  const question = currentQuestion();
+  const i = seq.indexOf(question.id);
+  if (i <= 0) {
+    state.view = "intro";
+    render();
+    return;
+  }
+  state.index = indexOfId(seq[i - 1]);
+  state.revealed = false;
+  render();
 }
 
 function onChoose(choiceId) {
-  if (state.revealed) return;
   const question = currentQuestion();
+  if (question.mode === "compare" && state.revealed) return;
   state.answers[question.id] = choiceId;
-  state.revealed = true;
+  if (question.id === "d3" && choiceId === "4") delete state.answers.d4;
   const isMatch =
     question.mode === "compare" ? choiceId === question.designerChoice : null;
   saveAnswer({
@@ -504,29 +576,41 @@ function onChoose(choiceId) {
     is_match: isMatch,
     timestamp: new Date().toISOString(),
   });
+  if (question.mode !== "compare") {
+    advanceDesign();
+    return;
+  }
+  state.revealed = true;
   render();
+  const compare = document.querySelector(".compare");
+  if (compare) compare.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-async function onNext() {
-  if (!state.revealed) return;
-  const question = currentQuestion();
-  if (isLastDesignQuestion(question)) {
+function advanceDesign() {
+  if (isLastDesignQuestion(currentQuestion())) {
     state.view = "designSheet";
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
-  if (question.id === "q00") {
-    state.view = "hurdleMap";
-    render();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    return;
-  }
+  const seq = visibleDesignIds();
+  const i = seq.indexOf(currentQuestion().id);
+  state.index = indexOfId(seq[i + 1]);
+  state.revealed = false;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function onNext() {
+  if (!state.revealed) return;
   if (state.index >= state.data.questions.length - 1) {
     await showFinale();
     return;
   }
   state.index += 1;
+  if (currentQuestion().id === "d4" && isNoPrize()) {
+    state.index = indexOfId("q00");
+  }
   state.revealed = Boolean(state.answers[currentQuestion().id]);
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });

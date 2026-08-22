@@ -478,11 +478,51 @@ button.ghost {
   font-size: 14px;
 }
 
+.diagnosis-kicker {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.diagnosis-lockup {
+  font-family: "Shippori Mincho", serif;
+  font-size: clamp(28px, 5vw, 42px);
+  line-height: 1.35;
+  margin: 0 0 18px;
+}
+
+.diagnosis-hook {
+  font-family: "Shippori Mincho", serif;
+  font-size: clamp(18px, 3vw, 24px);
+  line-height: 1.5;
+  margin: 24px 0;
+}
+
+.sheet-type {
+  margin: 10px 0 0;
+  font-family: "Shippori Mincho", serif;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
 .sheet-compare {
   margin: 14px 0 0;
   padding: 10px;
   border-left: 2px solid var(--gold);
   font-size: 13px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .hurdle-map {
@@ -656,7 +696,7 @@ button.ghost {
 
   .sheet-panel-wrap {
     position: static;
-    order: 2;
+    order: -1;
   }
 
   .sheet-panel summary::-webkit-details-marker {
