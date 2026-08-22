@@ -1,5 +1,6 @@
 const STORAGE_KEY = "regulation-max-game-session";
 const COUNTER_API = "https://countapi.mileshilliard.com/api/v1";
+const GATES = ["gate1", "gate2", "gate3", "gate4"];
 
 const state = {
   data: null,
@@ -70,10 +71,35 @@ function updateProgress() {
   bar.style.width = `${Math.round(progressRatio() * 100)}%`;
 }
 
+function gateState() {
+  const result = { gate1: false, gate2: false, gate3: false, gate4: false };
+  GATES.forEach((gate) => {
+    const qs = state.data.questions.filter((q) => q.section === gate);
+    result[gate] = qs.length > 0 && qs.every((q) => Boolean(state.answers[q.id]));
+  });
+  if (state.view === "finale") {
+    GATES.forEach((gate) => {
+      result[gate] = true;
+    });
+  }
+  return result;
+}
+
+function compareSummary() {
+  const compareQs = state.data.questions.filter((q) => q.mode === "compare");
+  const same = [];
+  const split = [];
+  compareQs.forEach((q) => {
+    if (state.answers[q.id] === q.designerChoice) same.push(q);
+    else split.push(q);
+  });
+  return { same, split, total: compareQs.length };
+}
+
 function renderFooter() {
   const meta = state.data.meta;
   document.getElementById("footer-disclaimer").textContent = meta.legalNote;
-  document.getElementById("footer-data").textContent = meta.dataNotice;
+  document.getElementById("footer-data").textContent = meta.distributionPromise;
   document.getElementById("footer-privacy").textContent =
     `保存するのは ${meta.privacy.stored.join("、")} のみ。${meta.privacy.notStored.join("・")}は取得しません。保持期間は${meta.privacy.retention}。`;
 }
@@ -93,46 +119,55 @@ function render() {
   }
   if (state.view === "finale") {
     app.innerHTML = renderFinale();
-    document.getElementById("restart-btn").addEventListener("click", () => {
-      resetSession();
-      render();
-    });
-    document.getElementById("share-x-btn").addEventListener("click", shareOnX);
+    const restart = document.getElementById("restart-btn");
+    if (restart) {
+      restart.addEventListener("click", () => {
+        resetSession();
+        render();
+      });
+    }
+    const share = document.getElementById("share-x-btn");
+    if (share) share.addEventListener("click", shareOnX);
     return;
   }
-  app.innerHTML = renderQuestion();
+  app.innerHTML = renderPlay();
   bindQuestion();
 }
 
 function renderIntro() {
-  const { intro, meta, title, subtitle } = {
-    intro: state.data.intro,
-    meta: state.data.meta,
-    title: state.data.meta.title,
-    subtitle: state.data.meta.subtitle,
-  };
-  const axes = intro.axes
+  const intro = state.data.intro;
+  const meta = state.data.meta;
+  const gates = (intro.gates || [])
     .map(
-      (axis) => `
+      (gate) => `
         <article class="axis-card">
-          <h3>${escapeHtml(axis.label)}</h3>
-          <p class="axis-law">${escapeHtml(axis.law)}</p>
-          <p>${escapeHtml(axis.asks)}</p>
+          <h3>${escapeHtml(gate.label)}</h3>
+          <p class="axis-law">${escapeHtml(gate.law)}</p>
+          <p>${escapeHtml(gate.asks)}</p>
         </article>`
     )
     .join("");
   const body = intro.body.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
   return `
     <p class="kicker">${escapeHtml(intro.kicker)}</p>
-    <h1>${escapeHtml(title)}<br /><span style="font-size:0.62em;color:var(--muted)">${escapeHtml(subtitle)}</span></h1>
+    <h1>${escapeHtml(meta.title)}<br /><span style="font-size:0.62em;color:var(--muted)">${escapeHtml(meta.subtitle)}</span></h1>
     <p class="lead">${escapeHtml(intro.lead)}</p>
     <div class="prose">${body}</div>
-    <h2>${escapeHtml(intro.axesTitle)}</h2>
-    <div class="axes">${axes}</div>
-    <p class="note">${escapeHtml(intro.axesNote)}</p>
+    <p class="lead">${escapeHtml(intro.gatesLead)}</p>
+    <div class="axes">${gates}</div>
+    <p class="note">${escapeHtml(intro.close)}</p>
     <p class="note">${escapeHtml(meta.disclaimer)} ${escapeHtml(meta.legalNote)}</p>
     <div class="actions">
       <button class="primary" id="start-btn" type="button">始める</button>
+    </div>
+  `;
+}
+
+function renderPlay() {
+  return `
+    <div class="play-layout">
+      <div class="play-main">${renderQuestion()}</div>
+      <aside class="blueprint-panel">${renderBlueprint()}</aside>
     </div>
   `;
 }
@@ -208,6 +243,63 @@ function renderQuestion() {
     <div class="actions">
       <button class="primary" id="next-btn" type="button" ${state.revealed ? "" : "disabled"}>${nextLabel}</button>
     </div>
+  `;
+}
+
+function blueprintClassList(gates) {
+  return GATES.filter((gate) => gates[gate])
+    .map((gate) => `is-${gate}`)
+    .join(" ");
+}
+
+function renderBlueprint(options) {
+  const complete = Boolean(options && options.complete);
+  const gates = complete
+    ? { gate1: true, gate2: true, gate3: true, gate4: true }
+    : gateState();
+  const heading = complete ? "これが、今の法律の枠組みで作れる形" : "大会の設計図";
+  return `
+    <p class="blueprint-kicker">${escapeHtml(heading)}</p>
+    <p class="blueprint-note">図は設計者の設計です。関門を考え終えると、構造が組み上がります。</p>
+    <svg class="blueprint ${blueprintClassList(gates)}" viewBox="0 0 360 620" role="img" aria-label="大会の設計図">
+      <g class="part part-gate1">
+        <rect class="node" x="16" y="16" width="110" height="44" rx="4"></rect>
+        <text x="71" y="43" text-anchor="middle">参加者</text>
+        <path class="flow" d="M71 60 v28"></path>
+        <text class="label" x="118" y="78">参加費</text>
+        <rect class="node" x="16" y="92" width="110" height="44" rx="4"></rect>
+        <text x="71" y="119" text-anchor="middle">運営費</text>
+        <path class="blocked" d="M126 38 H210"></path>
+        <path class="block-x" d="M160 28 l20 20 M180 28 l-20 20"></path>
+        <text class="label blocked-label" x="168" y="22">遮断</text>
+        <rect class="node prize" x="210" y="16" width="134" height="44" rx="4"></rect>
+        <text x="277" y="43" text-anchor="middle">賞金プール</text>
+        <path class="flow" d="M277 60 v118"></path>
+        <rect class="node" x="210" y="182" width="134" height="44" rx="4"></rect>
+        <text x="277" y="209" text-anchor="middle">入賞者</text>
+      </g>
+      <g class="part part-gate2">
+        <rect class="node sponsor" x="16" y="250" width="328" height="52" rx="4"></rect>
+        <text x="180" y="272" text-anchor="middle">全国のアミューズ店舗（分散スポンサー）</text>
+        <text class="label" x="180" y="292" text-anchor="middle">スポンサー料</text>
+        <path class="flow" d="M277 250 V60"></path>
+        <path class="flow return" d="M40 302 v48 H277 v-48"></path>
+        <text class="label" x="158" y="338" text-anchor="middle">広告掲出・優先権（価値は小さく保つ）</text>
+      </g>
+      <g class="part part-gate3">
+        <rect class="node venue" x="16" y="390" width="200" height="52" rx="4"></rect>
+        <text x="116" y="413" text-anchor="middle">会場：許可店の外</text>
+        <text class="label" x="116" y="431" text-anchor="middle">独立会場</text>
+        <rect class="node cal" x="232" y="390" width="112" height="52" rx="4"></rect>
+        <text x="288" y="413" text-anchor="middle">年2回</text>
+        <text class="label" x="288" y="431" text-anchor="middle">事業上の判断</text>
+      </g>
+      <g class="part part-gate4">
+        <rect class="node ledger" x="16" y="470" width="328" height="56" rx="4"></rect>
+        <text x="180" y="494" text-anchor="middle">記録・証憑</text>
+        <text class="label" x="180" y="512" text-anchor="middle">契約書 / 資金フロー</text>
+      </g>
+    </svg>
   `;
 }
 
@@ -388,13 +480,26 @@ function percentLabel(rate) {
   return `${Math.round((rate || 0) * 100)}%`;
 }
 
+function renderCompareSummary() {
+  const summary = compareSummary();
+  const splits =
+    summary.split.length === 0
+      ? "<p>今回、考えが分かれた設問はありませんでした。</p>"
+      : `<ul class="split-list">${summary.split
+          .map((q) => `<li>${escapeHtml(q.prompt)}</li>`)
+          .join("")}</ul>`;
+  return `
+    <div class="finale-block">
+      <h2>比較サマリ</h2>
+      <p>設計者と同じ考えだった設問は ${summary.total} 問中 ${summary.same.length} 問。考えが分かれたのは ${summary.split.length} 問です。</p>
+      ${splits}
+    </div>
+  `;
+}
+
 function renderStats() {
   if (state.statsSource === "loading" || !state.stats) {
-    return `
-      <div class="finale-block">
-        <h2>みんなの選択</h2>
-        <p class="lead">集計しています…</p>
-      </div>`;
+    return `<p class="lead">集計しています…</p>`;
   }
   const stats = state.stats;
   const note =
@@ -438,32 +543,26 @@ function renderStats() {
     })
     .join("");
   return `
-    <div class="finale-block">
-      <h2>みんなの選択</h2>
-      <p class="lead">${escapeHtml(note)}</p>
-      <div class="stats">${blocks}</div>
-    </div>`;
+    <p class="lead">${escapeHtml(note)}</p>
+    <div class="stats">${blocks}</div>
+  `;
 }
 
 function renderFinale() {
   const finale = state.data.finale;
-  const items = finale.principles.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   return `
     <p class="kicker">最終画面</p>
     <h1>${escapeHtml(finale.title)}</h1>
-    <div class="finale-block prose">
-      <p>${escapeHtml(finale.background)}</p>
-      <p>${escapeHtml(finale.definition)}</p>
+    <div class="finale-blueprint">
+      ${renderBlueprint({ complete: true })}
     </div>
-    ${renderStats()}
+    ${renderCompareSummary()}
     <div class="finale-block">
-      <h2>主要な設計方針</h2>
-      <ul class="principles">${items}</ul>
+      <h2>分布の公開</h2>
+      <p class="note">${escapeHtml(finale.distributionPromise)}</p>
+      ${renderStats()}
     </div>
-    <p class="note">${escapeHtml(finale.caveat)}</p>
-    <p class="note">${escapeHtml(state.data.meta.disclaimer)}</p>
-    <p class="note">${escapeHtml(state.data.meta.distributionPromise)}</p>
-    <p class="note">${escapeHtml(state.data.meta.dataNotice)}</p>
+    <p class="note">${escapeHtml(finale.disclaimer)}</p>
     <div class="actions">
       <button class="primary" id="restart-btn" type="button">もう一度最初から</button>
       <button class="ghost" id="share-x-btn" type="button">Xで広める</button>
@@ -478,6 +577,10 @@ async function boot() {
     if (!response.ok) throw new Error("failed to load questions");
     state.data = await response.json();
     document.title = `${state.data.meta.title} — ${state.data.meta.subtitle}`;
+    const brand = document.querySelector(".brand");
+    const brandSub = document.querySelector(".brand-sub");
+    if (brand) brand.textContent = state.data.meta.title;
+    if (brandSub) brandSub.textContent = state.data.meta.subtitle;
     renderFooter();
     render();
   } catch (err) {
