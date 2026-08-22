@@ -15,7 +15,7 @@ python3 server.py
 ## RAG用データの生成
 
 ```bash
-python3 scripts/build_rag.py   # docs/questions.json → data/questions_rag.jsonl
+python3 scripts/build_rag.py   # docs/questions.json → data/questions_rag.jsonl と docs/index.html への埋め込み
 ```
 
 手で `questions_rag.jsonl` を編集しないこと。正本は常に `docs/questions.json`。

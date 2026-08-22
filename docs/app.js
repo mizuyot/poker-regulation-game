@@ -570,12 +570,32 @@ function renderFinale() {
   `;
 }
 
+function questionsUrl() {
+  const script = document.querySelector("script[src*='app.js']");
+  const base = script && script.src ? script.src : window.location.href;
+  return new URL("questions.json", base).toString();
+}
+
+function readEmbeddedQuestions() {
+  const node = document.getElementById("questions-data");
+  if (!node) return null;
+  const raw = node.textContent.trim();
+  if (!raw || raw === "{}") return null;
+  return JSON.parse(raw);
+}
+
+async function loadQuestions() {
+  const embedded = readEmbeddedQuestions();
+  if (embedded) return embedded;
+  const response = await fetch(questionsUrl(), { cache: "no-store" });
+  if (!response.ok) throw new Error("failed to load questions");
+  return response.json();
+}
+
 async function boot() {
   const app = document.getElementById("app");
   try {
-    const response = await fetch("questions.json");
-    if (!response.ok) throw new Error("failed to load questions");
-    state.data = await response.json();
+    state.data = await loadQuestions();
     document.title = `${state.data.meta.title} — ${state.data.meta.subtitle}`;
     const brand = document.querySelector(".brand");
     const brandSub = document.querySelector(".brand-sub");
@@ -584,7 +604,8 @@ async function boot() {
     renderFooter();
     render();
   } catch (err) {
-    app.innerHTML = `<p class="error">設問データを読み込めませんでした。python3 server.py で起動してください。</p>`;
+    app.innerHTML =
+      `<p class="error">設問データを読み込めませんでした。ページを再読み込みするか、ローカルなら <code>python3 server.py</code> で開いてください。</p>`;
   }
 }
 

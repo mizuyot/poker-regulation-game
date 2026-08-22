@@ -8,11 +8,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs" / "questions.json"
+INDEX = ROOT / "docs" / "index.html"
 OUTPUT = ROOT / "data" / "questions_rag.jsonl"
+EMBED_START = '<script type="application/json" id="questions-data">'
+EMBED_END = "</script>"
+
+
+def sync_index_embed(data: dict) -> None:
+    html = INDEX.read_text(encoding="utf-8")
+    start = html.index(EMBED_START) + len(EMBED_START)
+    end = html.index(EMBED_END, start)
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    INDEX.write_text(html[:start] + "\n" + payload + "\n    " + html[end:], encoding="utf-8")
+    print("wrote", INDEX, "questions embed")
 
 
 def main():
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
+    sync_index_embed(data)
     default_sources = data.get("meta", {}).get("sources", [])
     OUTPUT.parent.mkdir(exist_ok=True)
     with OUTPUT.open("w", encoding="utf-8") as handle:
