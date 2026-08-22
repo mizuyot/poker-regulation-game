@@ -37,4 +37,3 @@ python3 scripts/build_rag.py   # docs/questions.json → data/questions_rag.json
 - q11：解釈運用基準の引用は、特定遊興飲食店営業に関する節の記載。一般化してよいか
 - hurdle3リード：風営法23条2項と類型の説明
 - q13 / q14 の実質論の書き方
-- このブランチ（`design-first-restructure`）の Pages 反映は、リーガルレビュー完了まで行わない
