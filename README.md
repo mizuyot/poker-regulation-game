@@ -25,7 +25,7 @@ python3 scripts/build_rag.py   # docs/questions.json → data/questions_rag.json
 | ファイル | 役割 |
 |---|---|
 | `docs/questions.json` | 設問・選択肢・設計者の選択・解説の正本 |
-| `data/answers.jsonl` | 1行1回答。`session_id`, `question_id`, `selected`, `is_match`, `timestamp` のみ。d1〜d7 は `is_match: null` |
+| `data/answers.jsonl` | 1行1回答。`session_id`, `question_id`, `selected`, `is_match`, `timestamp` のみ。q01・d1〜d4 は `is_match: null`（ノープライズ型では d4 の行なし） |
 | `data/questions_rag.jsonl` | RAG投入用。`scripts/build_rag.py` で生成 |
 
 保存するのはセッションID・設問ID・選択肢・時刻のみ（ログ内部には比較結果 `is_match` も持つ）。IPアドレス、User-Agent、リファラ、個人を特定できる情報は保存しません。保持期間は集計公開後24か月、または保存開始から24か月のいずれか早い時点です。
