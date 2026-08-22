@@ -32,11 +32,11 @@ def main():
         for question in data["questions"]:
             record = {
                 "id": question["id"],
-                "gate": question["section"],
+                "section": question["section"],
                 "prompt": question["prompt"],
                 "choices": question["choices"],
-                "designerChoice": question["designerChoice"],
-                "explanation": question["explanation"],
+                "designerChoice": question.get("designerChoice"),
+                "explanation": question.get("explanation", ""),
                 "source_urls": question.get("source_urls", default_sources),
             }
             if "axis" in question:
