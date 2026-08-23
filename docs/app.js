@@ -66,21 +66,42 @@ function updateProgress() {
 function interpolate(template) {
   return String(template || "")
     .replaceAll("{{typeName}}", typeName() || "（未選択）")
-    .replace(/\{\{(q01|d[1-4])\}\}/g, (_, id) => selectedLabel(id) || "（未選択）");
+    .replaceAll("{{d0ラベル}}", selectedLabel("d0") || "（未選択）")
+    .replaceAll("{{d1ラベル}}", selectedLabel("d1") || "（未選択）")
+    .replace(/\{\{(d[0-3])\}\}/g, (_, id) => {
+      const label = selectedLabel(id);
+      if (label) return label;
+      if (id === "d2" && isNoPrize()) return "（仮定）";
+      return "（未選択）";
+    });
 }
 
 function isNoPrize() {
-  return state.answers.d3 === "4";
+  return state.answers.d0 === "5";
+}
+
+function hasPrize() {
+  return Boolean(state.answers.d0 && state.answers.d0 !== "5");
+}
+
+function isNational() {
+  return state.answers.d1 === "3" || state.answers.d1 === "4";
 }
 
 function visibleDesignIds() {
-  const ids = ["q01", "d1", "d2", "d3"];
-  if (state.answers.d3 && state.answers.d3 !== "4") ids.push("d4");
+  const ids = ["d0", "d1"];
+  if (hasPrize()) ids.push("d2", "d3");
   return ids;
 }
 
 function typeName() {
-  const funding = state.data.diagnosis && state.data.diagnosis.funding[state.answers.d3];
+  const diag = state.data.diagnosis;
+  if (!diag) return "";
+  if (isNoPrize()) {
+    const noprize = diag.funding["4"];
+    return noprize ? noprize.name : "";
+  }
+  const funding = diag.funding[state.answers.d3];
   return funding ? funding.name : "";
 }
 
@@ -88,21 +109,26 @@ function diagnosisLockup() {
   const name = typeName();
   if (!name) return "";
   if (isNoPrize()) return name;
-  const prize = state.data.diagnosis.prize[state.answers.d4];
+  const prize = state.data.diagnosis.prize[state.answers.d0];
   return prize ? `${name} × ${prize.name}` : name;
 }
 
 function diagnosisReady() {
-  return Boolean(state.answers.d3 && (isNoPrize() || state.answers.d4));
+  if (!state.answers.d0 || !state.answers.d1) return false;
+  if (isNoPrize()) return true;
+  return Boolean(state.answers.d2 && state.answers.d3);
 }
 
 function diagnosisBlurb() {
   const diag = state.data.diagnosis;
-  if (!diag || !state.answers.d3) return "";
+  if (!diag || !state.answers.d0) return "";
+  if (isNoPrize()) {
+    const noprize = diag.funding["4"];
+    return noprize ? noprize.blurb : "";
+  }
   const funding = diag.funding[state.answers.d3];
   if (!funding) return "";
-  if (isNoPrize()) return funding.blurb;
-  const prize = diag.prize[state.answers.d4];
+  const prize = diag.prize[state.answers.d0];
   const scale = interpolate(diag.scaleLine);
   return [funding.blurb, prize ? prize.blurb : "", scale].filter(Boolean).join("");
 }
@@ -142,18 +168,24 @@ function diagnosisTypeLines() {
   const name = typeName();
   if (!name) return { type: "", prize: "" };
   if (isNoPrize()) return { type: name, prize: "" };
-  const prize = state.data.diagnosis.prize[state.answers.d4];
+  const prize = state.data.diagnosis.prize[state.answers.d0];
   return { type: name, prize: prize ? `× ${prize.name}` : "" };
 }
 
 function diagnosisFundingBlurb() {
-  const funding = state.data.diagnosis && state.data.diagnosis.funding[state.answers.d3];
+  const diag = state.data.diagnosis;
+  if (!diag) return "";
+  if (isNoPrize()) {
+    const noprize = diag.funding["4"];
+    return noprize ? noprize.blurb : "";
+  }
+  const funding = diag.funding[state.answers.d3];
   return funding ? funding.blurb : "";
 }
 
 function diagnosisPrizeBlurb() {
   if (isNoPrize()) return "";
-  const prize = state.data.diagnosis && state.data.diagnosis.prize[state.answers.d4];
+  const prize = state.data.diagnosis && state.data.diagnosis.prize[state.answers.d0];
   return prize ? prize.blurb : "";
 }
 
@@ -176,10 +208,13 @@ function sectionLeadText(section, sectionId) {
   if (sectionId === "hurdle1" && section.conditionByFunding) {
     const d3 = state.answers.d3;
     let extra = "";
-    if (d3 === "1" || d3 === "2") extra = section.conditionByFunding.includesEntry;
+    if (isNoPrize()) extra = section.conditionByFunding.noprize;
+    else if (d3 === "1" || d3 === "2") extra = section.conditionByFunding.includesEntry;
     else if (d3 === "3") extra = section.conditionByFunding.separated;
-    else if (d3 === "4") extra = section.conditionByFunding.noprize;
     lead += extra;
+  }
+  if ((sectionId === "hurdle2" || sectionId === "hurdle4") && isNoPrize() && section.conditionByNoPrize) {
+    lead += section.conditionByNoPrize;
   }
   return lead;
 }
@@ -259,14 +294,6 @@ function render() {
   const app = document.getElementById("app");
   updateChrome();
   updateProgress();
-  if (
-    state.view === "question" &&
-    currentQuestion() &&
-    currentQuestion().id === "d4" &&
-    isNoPrize()
-  ) {
-    state.view = "designSheet";
-  }
   if (state.view === "intro") {
     app.innerHTML = renderIntro();
     document.getElementById("start-btn").addEventListener("click", () => {
@@ -287,6 +314,7 @@ function render() {
     });
     const back = document.getElementById("back-link");
     if (back) back.addEventListener("click", goBackDesign);
+    bindProvisionUi();
     return;
   }
   if (state.view === "typeLaw") {
@@ -591,9 +619,12 @@ function renderBeliefFollowup(question) {
     ${matrix}`;
 }
 
+function typeLawKey() {
+  return isNoPrize() ? "4" : state.answers.d3 || "3";
+}
+
 function renderTypeLawCard() {
-  const d3 = state.answers.d3 || "4";
-  const card = (state.data.typeLawCards || {})[d3] || {};
+  const card = (state.data.typeLawCards || {})[typeLawKey()] || {};
   const name = typeName() || "（未選択）";
   const badge = card.tier ? renderBadge(card.tier) : "";
   return `<section class="type-law-card">
@@ -719,6 +750,15 @@ function renderQuestion() {
   const hurdleId = question.section;
   const qs = hurdleQuestions(hurdleId);
   const step = qs.findIndex((item) => item.id === question.id) + 1;
+  const nationalLead =
+    question.id === "q09" && isNational()
+      ? `<p class="lead condition-lead">${escapeHtml(
+          (state.data.sections.hurdle2 &&
+            state.data.sections.hurdle2.conditionByScale &&
+            state.data.sections.hurdle2.conditionByScale.national) ||
+            ""
+        )}</p>`
+      : "";
   const lead = showSectionLead
     ? `<div class="part-head">
         <p class="part-label">Hurdle ${HURDLES.indexOf(hurdleId) + 1}</p>
@@ -726,7 +766,8 @@ function renderQuestion() {
         <p class="lead">${escapeHtml(sectionLeadText(section, hurdleId))}</p>
       </div>`
     : `<p class="part-label">Hurdle ${HURDLES.indexOf(hurdleId) + 1}</p>
-       <p class="hurdle-place">Hurdle ${HURDLES.indexOf(hurdleId) + 1} — ${step}つ目の問い</p>`;
+       <p class="hurdle-place">Hurdle ${HURDLES.indexOf(hurdleId) + 1} — ${step}つ目の問い</p>
+       ${nationalLead}`;
   return `
     ${lead}
     <p class="mobile-hurdle hurdle-place">${escapeHtml(hurdleShortTitle(hurdleId))} — ${step}つ目の問い</p>
@@ -752,6 +793,56 @@ function renderSheetRows(ids) {
         </div>`;
     })
     .join("");
+}
+
+function issueIsOpen(item) {
+  if (!item || item.when === "always") return true;
+  if (item.when === "hasPrize") return hasPrize();
+  if (item.when === "national") return hasPrize() && isNational();
+  return true;
+}
+
+function hurdleRelevance(hurdleId) {
+  if (hurdleId === "hurdle3") return "open";
+  return hasPrize() ? "open" : "na";
+}
+
+function renderIssueAgenda() {
+  const agenda = state.data.issueAgenda;
+  if (!agenda) return "";
+  const openCount = (agenda.items || []).filter((item) => issueIsOpen(item)).length;
+  const summary = isNoPrize()
+    ? `<p class="issue-summary">${formatInline(agenda.noprizeSummary)}</p>`
+    : `<p class="issue-summary">${escapeHtml(agenda.summary.replace("{{n}}", String(openCount)))}</p>`;
+  const rows = (agenda.items || [])
+    .map((item) => {
+      const open = issueIsOpen(item);
+      const status = open ? agenda.statusOpen : agenda.statusNa;
+      const reason = open ? interpolate(item.reason) : agenda.naReason;
+      const sub =
+        item.sub && issueIsOpen(item.sub)
+          ? `<article class="issue-row issue-sub is-open">
+              <p class="issue-status">${escapeHtml(agenda.statusOpen)}</p>
+              <h4>${escapeHtml(item.sub.title)}</h4>
+              <p class="issue-reason">${escapeHtml(interpolate(item.sub.reason))}</p>
+              ${renderProvisionChips(item.sub.provisionIds)}
+            </article>`
+          : "";
+      return `<article class="issue-row is-${open ? "open" : "na"}">
+        <p class="issue-status">${escapeHtml(status)}</p>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p class="issue-reason">${escapeHtml(reason)}</p>
+        ${renderProvisionChips(item.provisionIds)}
+        ${sub}
+      </article>`;
+    })
+    .join("");
+  return `<section class="issue-agenda" aria-label="現状整理">
+    <h2>${escapeHtml(agenda.heading)}</h2>
+    ${summary}
+    <div class="issue-list">${rows}</div>
+    <p class="issue-disclaimer">${escapeHtml(agenda.disclaimer)}</p>
+  </section>`;
 }
 
 function latestHurdlePick(hurdleId) {
@@ -817,24 +908,24 @@ function hurdleItemState(hurdleId) {
 }
 
 function renderHurdleMapList(compact) {
+  const agenda = state.data.issueAgenda || {};
   return HURDLES.map((id) => {
     const status = hurdleItemState(id);
-    const mark =
-      status === "cleared" ? "見た" : status === "current" ? "← 現在" : compact ? "" : "LOCKED";
+    const relevance = hurdleRelevance(id);
+    const relevanceLabel =
+      relevance === "na" ? agenda.statusNa || "対象外（仮定の問いとして読めます）" : agenda.statusOpen || "要検討";
+    const progressMark =
+      status === "cleared" ? "見た" : status === "current" ? "← 現在" : "";
+    const mark = [relevanceLabel, progressMark].filter(Boolean).join(" · ");
     const pick = compact ? latestHurdlePick(id) : "";
     return `
-      <article class="hurdle-map-item is-${status}">
+      <article class="hurdle-map-item is-${status} is-${relevance}">
         <span class="hurdle-map-num">${hurdleIndexLabel(id)}</span>
         <div>
           <h3>${escapeHtml(hurdleShortTitle(id))}</h3>
-          ${
-            compact && mark
-              ? `<p class="hurdle-map-status">${mark}</p>`
-              : ""
-          }
+          ${mark ? `<p class="hurdle-map-status">${escapeHtml(mark)}</p>` : ""}
           ${pick ? `<p class="hurdle-picked">${escapeHtml(pick)}</p>` : ""}
         </div>
-        ${compact ? "" : `<p class="hurdle-map-status">${mark}</p>`}
       </article>`;
   }).join("");
 }
@@ -875,7 +966,7 @@ function renderDesignReveal() {
         }
         <p class="diagnosis-hook">${escapeHtml(diagnosisHook())}</p>
         <p class="turn-copy">${turn}</p>
-        <div class="hurdle-map page">${renderHurdleMapList(false)}</div>
+        ${renderIssueAgenda()}
         <div class="actions">
           <button class="next-btn" id="continue-btn" type="button">${escapeHtml(
             map.continueLabel || "ハードル1へ進む"
@@ -1004,7 +1095,10 @@ function onChoose(choiceId) {
   if (question.mode === "compare" && state.revealed) return;
   if (advancing) return;
   state.answers[question.id] = choiceId;
-  if (question.id === "d3" && choiceId === "4") delete state.answers.d4;
+  if (question.id === "d0" && choiceId === "5") {
+    delete state.answers.d2;
+    delete state.answers.d3;
+  }
   const isMatch =
     question.mode === "compare" ? choiceId === question.designerChoice : null;
   saveAnswer({
@@ -1057,16 +1151,18 @@ async function onNext() {
     return;
   }
   state.index += 1;
-  if (currentQuestion().id === "d4" && isNoPrize()) {
-    state.index = indexOfId("q00");
-  }
   state.revealed = Boolean(state.answers[currentQuestion().id]);
   render();
   window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
-function saveAnswer() {
-  // 案A: 公開ページでは回答を送信しない。バッジはログに含めない。
+function saveAnswer(payload) {
+  if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") return;
+  fetch("api/answers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
 }
 
 async function showFinale() {

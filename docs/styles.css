@@ -784,6 +784,96 @@ button.next-btn:hover {
   max-width: 18em;
 }
 
+.issue-agenda {
+  margin: 8px 0 28px;
+  padding-top: 8px;
+}
+
+.issue-agenda h2 {
+  font-family: "Shippori Mincho", serif;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+
+.issue-summary {
+  margin: 0 0 18px;
+  max-width: 42em;
+}
+
+.issue-list {
+  display: grid;
+  gap: 0;
+}
+
+.issue-row {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.issue-row:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.issue-status {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--gold-2);
+}
+
+.issue-row h3,
+.issue-row h4 {
+  margin: 0 0 8px;
+  font-family: "Shippori Mincho", serif;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.issue-reason {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 42em;
+}
+
+.issue-row .provision-chips {
+  margin-top: 10px;
+}
+
+.issue-row.is-na {
+  opacity: 0.55;
+}
+
+.issue-row.is-na .issue-status {
+  color: var(--muted);
+}
+
+.issue-sub {
+  margin: 12px 0 0 1.25em;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-soft);
+  border-bottom: 0;
+}
+
+.lead.condition-lead {
+  margin-top: 10px;
+  max-width: 42em;
+}
+
+.hurdle-map-item.is-na {
+  opacity: 0.46;
+}
+
+.hurdle-map-item.is-na.is-current,
+.hurdle-map-item.is-na.is-cleared {
+  opacity: 0.62;
+}
+
+.hurdle-map-item.is-na h3 {
+  color: var(--muted);
+}
+
 .hurdle-map {
   margin: 8px 0 28px;
   display: grid;
