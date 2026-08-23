@@ -1,4 +1,3 @@
-const COUNTER_API = "https://countapi.mileshilliard.com/api/v1";
 const HURDLES = ["hurdle1", "hurdle2", "hurdle3", "hurdle4"];
 
 const state = {
@@ -8,7 +7,6 @@ const state = {
   answers: {},
   revealed: false,
   sessionId: crypto.randomUUID(),
-  saveJobs: [],
   stats: null,
   statsSource: null,
 };
@@ -18,7 +16,6 @@ function resetSession() {
   state.index = 0;
   state.answers = {};
   state.revealed = false;
-  state.saveJobs = [];
   state.stats = null;
   state.statsSource = null;
   state.sessionId = crypto.randomUUID();
@@ -57,6 +54,7 @@ function progressRatio() {
   if (state.view === "finale") return 1;
   const total = state.data.questions.length + 1;
   if (state.view === "designSheet") return visibleDesignIds().length / total;
+  if (state.view === "typeLaw") return indexOfId("q00") / total;
   return (state.index + 1) / total;
 }
 
@@ -160,9 +158,10 @@ function diagnosisPrizeBlurb() {
 }
 
 function updateChrome() {
-  document.body.classList.remove("is-intro", "is-playing", "is-diagnosis", "is-finale");
+  document.body.classList.remove("is-intro", "is-playing", "is-diagnosis", "is-finale", "is-type-law");
   if (state.view === "intro") document.body.classList.add("is-intro");
   else if (state.view === "designSheet") document.body.classList.add("is-diagnosis");
+  else if (state.view === "typeLaw") document.body.classList.add("is-playing", "is-type-law");
   else if (state.view === "finale") document.body.classList.add("is-finale");
   else document.body.classList.add("is-playing");
 }
@@ -252,9 +251,8 @@ function compareSummary() {
 function renderFooter() {
   const meta = state.data.meta;
   document.getElementById("footer-disclaimer").textContent = meta.legalNote;
-  document.getElementById("footer-data").textContent = meta.distributionPromise;
-  document.getElementById("footer-privacy").textContent =
-    `保存するのはセッションID・設問ID・選択肢・時刻のみ。${meta.privacy.notStored.join("・")}は取得しません。保持期間は${meta.privacy.retention}。`;
+  document.getElementById("footer-data").textContent = meta.dataNotice;
+  document.getElementById("footer-privacy").textContent = meta.privacy.retention;
 }
 
 function render() {
@@ -282,6 +280,18 @@ function render() {
   if (state.view === "designSheet") {
     app.innerHTML = renderDesignReveal();
     document.getElementById("continue-btn").addEventListener("click", () => {
+      state.view = "typeLaw";
+      state.revealed = false;
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    const back = document.getElementById("back-link");
+    if (back) back.addEventListener("click", goBackDesign);
+    return;
+  }
+  if (state.view === "typeLaw") {
+    app.innerHTML = renderTypeLaw();
+    document.getElementById("continue-btn").addEventListener("click", () => {
       state.view = "question";
       state.index = indexOfId("q00");
       state.revealed = Boolean(state.answers.q00);
@@ -290,6 +300,7 @@ function render() {
     });
     const back = document.getElementById("back-link");
     if (back) back.addEventListener("click", goBackDesign);
+    bindProvisionUi();
     return;
   }
   if (state.view === "finale") {
@@ -331,11 +342,289 @@ function renderPlay() {
       <div class="play-main is-entering">${renderQuestion()}</div>
       <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
     </div>
+    ${renderProvisionPanelShell()}
   `;
 }
 
 function formatInline(text) {
   return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+function badgeMeta(tier) {
+  if (!tier) return null;
+  return (state.data.badges || {})[tier] || null;
+}
+
+function renderBadge(tier) {
+  const meta = badgeMeta(tier);
+  if (!meta) return "";
+  return `<span class="feas-badge is-${escapeHtml(tier)}">
+    <span class="feas-shape" aria-hidden="true">${escapeHtml(meta.shape)}</span>
+    <span class="feas-label">${escapeHtml(meta.label)}</span>
+  </span>`;
+}
+
+function renderBadgeLegend() {
+  const badges = state.data.badges || {};
+  const items = ["green", "amber", "red"]
+    .map((tier) => {
+      const item = badges[tier];
+      if (!item) return "";
+      return `<li class="badge-legend-item">
+        ${renderBadge(tier)}
+        <p>${escapeHtml(item.definition)}</p>
+      </li>`;
+    })
+    .join("");
+  return `<section class="badge-legend" aria-label="実現可能性バッジの凡例">
+    <p class="sheet-heading">実現可能性</p>
+    <ul>${items}</ul>
+    <p class="badge-disclaimer">${escapeHtml(state.data.badgeDisclaimer || "")}</p>
+  </section>`;
+}
+
+function provisionById(id) {
+  return (state.data.provisions || {})[id] || null;
+}
+
+function renderProvisionChips(ids) {
+  const list = (ids || []).map((id) => provisionById(id)).filter(Boolean);
+  if (!list.length) return "";
+  return `<div class="provision-chips">${list
+    .map(
+      (item) =>
+        `<button type="button" class="provision-chip" data-provision="${escapeHtml(item.id)}">${escapeHtml(
+          item.name
+        )}</button>`
+    )
+    .join("")}</div>`;
+}
+
+function renderProvisionPanelShell() {
+  return `<div class="provision-panel" id="provision-panel" hidden>
+    <div class="provision-panel-backdrop" data-close-panel="1"></div>
+    <div class="provision-panel-sheet" role="dialog" aria-modal="true" aria-labelledby="provision-panel-title">
+      <button type="button" class="provision-panel-close" data-close-panel="1">閉じる</button>
+      <p class="provision-kicker" id="provision-panel-kicker"></p>
+      <h3 id="provision-panel-title"></h3>
+      <div class="prose" id="provision-panel-body"></div>
+      <p class="provision-source" id="provision-panel-source"></p>
+    </div>
+  </div>`;
+}
+
+function openProvision(id) {
+  const item = provisionById(id);
+  const panel = document.getElementById("provision-panel");
+  if (!item || !panel) return;
+  document.getElementById("provision-panel-kicker").textContent = item.verified
+    ? "逐語（確認済み）"
+    : "条番号参照";
+  document.getElementById("provision-panel-title").textContent = item.name;
+  const body = document.getElementById("provision-panel-body");
+  if (item.verified && item.text) {
+    body.innerHTML = `<blockquote>${escapeHtml(item.text)}</blockquote>${
+      item.note ? `<p class="provision-note">${escapeHtml(item.note)}</p>` : ""
+    }`;
+  } else {
+    body.innerHTML = `<p>条文の逐語は確認中です。</p><p class="provision-note">画面には条番号のみを出しています。リーガルレビューで逐語を補完します。</p>`;
+  }
+  const source = document.getElementById("provision-panel-source");
+  if (item.url) {
+    source.innerHTML = `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">出典を開く</a>`;
+  } else {
+    source.textContent = "";
+  }
+  panel.hidden = false;
+  document.body.classList.add("provision-open");
+}
+
+function closeProvision() {
+  const panel = document.getElementById("provision-panel");
+  if (panel) panel.hidden = true;
+  document.body.classList.remove("provision-open");
+}
+
+function bindProvisionUi() {
+  document.querySelectorAll(".provision-chip").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openProvision(button.dataset.provision);
+    });
+  });
+  const panel = document.getElementById("provision-panel");
+  if (!panel) return;
+  panel.querySelectorAll("[data-close-panel]").forEach((el) => {
+    el.addEventListener("click", closeProvision);
+  });
+}
+
+function onProvisionKey(event) {
+  if (event.key === "Escape") closeProvision();
+}
+
+function renderPathMinimap(question) {
+  const selected = state.answers[question.id];
+  const designer = question.designerChoice;
+  return `<ol class="path-minimap">${question.choices
+    .map((choice) => {
+      const markers = [];
+      if (choice.id === selected) markers.push("あなた");
+      if (choice.id === designer) markers.push("設計者");
+      return `<li>
+        ${renderBadge(choice.tier)}
+        <span class="minimap-letter">${escapeHtml(choiceLetter(choice.id))}</span>
+        <span class="minimap-text">${escapeHtml(choice.text)}</span>
+        ${
+          markers.length
+            ? `<span class="minimap-marks">${markers
+                .map((mark) => `<span>${escapeHtml(mark)}</span>`)
+                .join("")}</span>`
+            : ""
+        }
+      </li>`;
+    })
+    .join("")}</ol>`;
+}
+
+function renderOriginMatrix() {
+  const matrix = state.data.originMatrix;
+  if (!matrix) return "";
+  const head = `<tr><th scope="col">原資 \\ 内容</th>${matrix.cols
+    .map((col) => `<th scope="col">${escapeHtml(col)}</th>`)
+    .join("")}</tr>`;
+  const body = matrix.rows
+    .map((row) => {
+      const tierClass = row.tier || "none";
+      const cell = row.tier ? renderBadge(row.tier) : "—";
+      const cells = matrix.cols
+        .map(() => `<td class="matrix-cell is-${escapeHtml(tierClass)}">${cell}</td>`)
+        .join("");
+      return `<tr class="is-${escapeHtml(tierClass)}"><th scope="row">${escapeHtml(row.name)}</th>${cells}</tr>`;
+    })
+    .join("");
+  return `<section class="origin-matrix">
+    <p class="compare-label">${escapeHtml(matrix.heading || "原資 × 内容")}</p>
+    <div class="matrix-scroll">
+      <table>${head}${body}</table>
+    </div>
+    <p class="matrix-caption">${escapeHtml(matrix.caption)}</p>
+  </section>`;
+}
+
+function renderCompareResult(question) {
+  const selected = state.answers[question.id];
+  const designer = question.designerChoice;
+  const same = selected === designer;
+  const letter = choiceLetter(designer);
+  return `
+      <p class="compare-result ${same ? "same" : "split"}">${
+        same ? "同じ考えでした" : "考えが分かれました"
+      }</p>
+      <p>${
+        same
+          ? `設計者の選択も ${escapeHtml(letter)} でした`
+          : `設計者の選択は ${escapeHtml(letter)} でした`
+      }</p>`;
+}
+
+function renderDesignerWord(question, options) {
+  const includeCompare = !(options && options.compare === false);
+  return `
+    <section class="compare designer-word">
+      <p class="compare-label">設計者の一言</p>
+      ${includeCompare ? renderCompareResult(question) : ""}
+      <p class="disclaimer">${escapeHtml(state.data.meta.disclaimer)}</p>
+      ${renderParagraphs(question.explanation)}
+    </section>`;
+}
+
+function renderPathFollowup(question) {
+  const selected = question.choices.find((choice) => choice.id === state.answers[question.id]);
+  if (!selected) return "";
+  const pathNote = question.pathNote
+    ? `<p class="path-special-note">${formatInline(question.pathNote)}</p>`
+    : "";
+  return `
+    <section class="path-reveal" aria-live="polite">
+      <div class="path-yours">
+        ${renderBadge(selected.tier)}
+        ${renderProvisionChips(selected.provisionIds || question.provisionIds)}
+        <p class="path-note">${escapeHtml(selected.note || "")}</p>
+        ${pathNote}
+      </div>
+      <div class="path-minimap-wrap">
+        <p class="compare-label">4つの道</p>
+        ${renderPathMinimap(question)}
+      </div>
+      ${renderDesignerWord(question)}
+    </section>`;
+}
+
+function renderBeliefFollowup(question) {
+  const cards = (question.provisionIds || [])
+    .map((id) => {
+      const item = provisionById(id);
+      if (!item) return "";
+      return `<button type="button" class="provision-chip provision-card" data-provision="${escapeHtml(
+        item.id
+      )}">
+        <span>${escapeHtml(item.name)}</span>
+        ${item.verified ? "" : `<span class="provision-pending">参照のみ</span>`}
+      </button>`;
+    })
+    .join("");
+  const cardNote = question.cardNote
+    ? `<p class="belief-card-note">${escapeHtml(question.cardNote)}</p>`
+    : "";
+  const matrix = question.id === "q02" ? renderOriginMatrix() : "";
+  return `
+    <section class="compare" aria-live="polite">
+      ${renderCompareResult(question)}
+    </section>
+    <section class="belief-provisions">
+      ${cards}
+      ${cardNote}
+    </section>
+    ${renderDesignerWord(question, { compare: false })}
+    ${matrix}`;
+}
+
+function renderTypeLawCard() {
+  const d3 = state.answers.d3 || "4";
+  const card = (state.data.typeLawCards || {})[d3] || {};
+  const name = typeName() || "（未選択）";
+  const badge = card.tier ? renderBadge(card.tier) : "";
+  return `<section class="type-law-card">
+    <h2>あなたの「${escapeHtml(name)}」は、ここに触れる。</h2>
+    <div class="type-law-meta">${badge}${renderProvisionChips(card.provisionIds)}</div>
+    <p>${escapeHtml(card.note || "")}</p>
+  </section>`;
+}
+
+function renderTypeLaw() {
+  const section = state.data.sections.hurdle1;
+  return `
+    <div class="play-layout">
+      <div class="play-main">
+        <button class="back-link" id="back-link" type="button">← 戻る</button>
+        <div class="part-head">
+          <p class="part-label">Hurdle 1</p>
+          <h2>${escapeHtml(hurdleShortTitle("hurdle1"))}</h2>
+          <p class="lead">${escapeHtml(sectionLeadText(section, "hurdle1"))}</p>
+        </div>
+        <div class="hurdle-map page">${renderHurdleMapList(false)}</div>
+        ${renderBadgeLegend()}
+        ${renderTypeLawCard()}
+        <div class="actions">
+          <button class="next-btn" id="continue-btn" type="button">最初の問いへ →</button>
+        </div>
+      </div>
+      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
+    </div>
+    ${renderProvisionPanelShell()}
+  `;
 }
 
 function renderParagraphs(text) {
@@ -379,23 +668,8 @@ function renderQuestion() {
 
   let followup = "";
   if (state.revealed && question.mode === "compare") {
-    const same = selected === designer;
-    const letter = choiceLetter(designer);
-    followup = `
-      <section class="compare" aria-live="polite">
-        <p class="compare-result ${same ? "same" : "split"}">${
-          same ? "同じ考えでした" : "考えが分かれました"
-        }</p>
-        <p>${
-          same
-            ? `設計者の選択も ${escapeHtml(letter)} でした`
-            : `設計者の選択は ${escapeHtml(letter)} でした`
-        }</p>
-      </section>
-      <section class="explanation">
-        <p class="disclaimer">${escapeHtml(state.data.meta.disclaimer)}</p>
-        ${renderParagraphs(question.explanation)}
-      </section>`;
+    followup =
+      question.format === "path" ? renderPathFollowup(question) : renderBeliefFollowup(question);
   }
 
   if (state.revealed && isLastInHurdle(question) && hurdleComplete(question.section)) {
@@ -414,10 +688,10 @@ function renderQuestion() {
       ? `<button class="back-link" id="back-link" type="button">← 戻る</button>`
       : "";
   const next =
-    isSurvey
+    isSurvey || !state.revealed
       ? ""
-      : `<div class="actions">
-      <button class="text-next" id="next-btn" type="button" ${state.revealed ? "" : "disabled"}>${nextLabel}</button>
+      : `<div class="next-dock">
+      <button class="next-btn" id="next-btn" type="button">${nextLabel}</button>
     </div>`;
 
   if (isSurvey) {
@@ -458,6 +732,7 @@ function renderQuestion() {
     <p class="mobile-hurdle hurdle-place">${escapeHtml(hurdleShortTitle(hurdleId))} — ${step}つ目の問い</p>
     <h2 class="prompt">${escapeHtml(question.prompt)}</h2>
     <div class="choices" role="group" aria-label="選択肢">${choices}</div>
+    ${renderProvisionChips(question.provisionIds)}
     ${followup}
     ${next}
   `;
@@ -499,11 +774,14 @@ function renderPlayerSheet(options) {
       }</p>`
     : "";
   const inPart2 =
-    state.view === "question" &&
-    currentQuestion() &&
-    HURDLES.includes(currentQuestion().section);
+    state.view === "typeLaw" ||
+    (state.view === "question" &&
+      currentQuestion() &&
+      HURDLES.includes(currentQuestion().section));
   const map = inPart2
-    ? `<p class="sheet-heading">4つのハードル</p><div class="hurdle-map compact">${renderHurdleMapList(true)}</div>`
+    ? `<p class="sheet-heading">4つのハードル</p><div class="hurdle-map compact">${renderHurdleMapList(true)}</div>${
+        state.view === "typeLaw" ? "" : renderBadgeLegend()
+      }`
     : "";
   const rows = renderSheetRows(visibleDesignIds());
   if (finale) {
@@ -529,6 +807,7 @@ function renderPlayerSheet(options) {
 function hurdleItemState(hurdleId) {
   if (hurdleComplete(hurdleId) || state.view === "finale") return "cleared";
   if (state.view === "designSheet") return "locked";
+  if (state.view === "typeLaw") return hurdleId === "hurdle1" ? "current" : "locked";
   const current = state.view === "question" ? currentQuestion() : null;
   if (current && current.section === hurdleId) return "current";
   const currentIndex = current ? HURDLES.indexOf(current.section) : -1;
@@ -598,7 +877,7 @@ function renderDesignReveal() {
         <p class="turn-copy">${turn}</p>
         <div class="hurdle-map page">${renderHurdleMapList(false)}</div>
         <div class="actions">
-          <button class="continue" id="continue-btn" type="button">${escapeHtml(
+          <button class="next-btn" id="continue-btn" type="button">${escapeHtml(
             map.continueLabel || "ハードル1へ進む"
           )} →</button>
         </div>
@@ -689,11 +968,18 @@ function bindQuestion() {
   const back = document.getElementById("back-link");
   if (back) back.addEventListener("click", goBackDesign);
   window.addEventListener("keydown", onChoiceKey);
+  bindProvisionUi();
 }
 
 function goBackDesign() {
   advancing = false;
   const seq = visibleDesignIds();
+  if (state.view === "typeLaw") {
+    state.view = "designSheet";
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
   if (state.view === "designSheet") {
     state.view = "question";
     state.index = indexOfId(seq[seq.length - 1]);
@@ -779,40 +1065,16 @@ async function onNext() {
   window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
-function counterKey(questionId, choiceId) {
-  const prefix = state.data.meta.counterPrefix || "kop-regmax";
-  return `${prefix}-${questionId}-${choiceId}`;
-}
-
-function saveAnswer(payload) {
-  const job = Promise.all([
-    fetch("api/answers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch((err) => {
-      console.warn("answer save failed", err);
-    }),
-    fetch(`${COUNTER_API}/hit/${encodeURIComponent(counterKey(payload.question_id, payload.selected))}`).catch(
-      (err) => {
-        console.warn("counter hit failed", err);
-      }
-    ),
-  ]);
-  state.saveJobs.push(job);
+function saveAnswer() {
+  // 案A: 公開ページでは回答を送信しない。バッジはログに含めない。
 }
 
 async function showFinale() {
   state.view = "finale";
-  state.stats = null;
-  state.statsSource = "loading";
+  state.stats = statsFromSession();
+  state.statsSource = "session";
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });
-  await Promise.all(state.saveJobs);
-  const loaded = await loadStats();
-  state.stats = loaded.stats;
-  state.statsSource = loaded.source;
-  render();
 }
 
 function emptyStats() {
@@ -842,71 +1104,6 @@ function statsFromSession() {
   });
   stats.sessions = 1;
   return stats;
-}
-
-function withRates(stats) {
-  Object.values(stats.questions || {}).forEach((item) => {
-    item.rates = item.rates || {};
-    Object.keys(item.counts || {}).forEach((cid) => {
-      item.rates[cid] = item.total ? item.counts[cid] / item.total : 0;
-    });
-  });
-  return stats;
-}
-
-async function fetchLocalStats() {
-  const response = await fetch("api/stats");
-  if (!response.ok) return null;
-  const data = await response.json();
-  if (!data || !data.ok || !data.questions) return null;
-  if (!data.sessions) return null;
-  return withRates({ sessions: data.sessions, questions: data.questions });
-}
-
-async function fetchPublicStats() {
-  const stats = emptyStats();
-  const jobs = [];
-  state.data.questions.forEach((question) => {
-    question.choices.forEach((choice) => {
-      jobs.push(
-        fetch(`${COUNTER_API}/get/${encodeURIComponent(counterKey(question.id, choice.id))}`)
-          .then(async (response) => {
-            if (response.status === 404) return 0;
-            if (!response.ok) return 0;
-            const data = await response.json();
-            return Number(data.value) || 0;
-          })
-          .then((value) => {
-            stats.questions[question.id].counts[choice.id] = value;
-          })
-          .catch(() => {})
-      );
-    });
-  });
-  await Promise.all(jobs);
-  let maxTotal = 0;
-  Object.values(stats.questions).forEach((item) => {
-    item.total = Object.values(item.counts).reduce((sum, value) => sum + value, 0);
-    maxTotal = Math.max(maxTotal, item.total);
-    item.rates = {};
-    Object.keys(item.counts).forEach((cid) => {
-      item.rates[cid] = item.total ? item.counts[cid] / item.total : 0;
-    });
-  });
-  stats.sessions = maxTotal;
-  return maxTotal > 0 ? stats : null;
-}
-
-async function loadStats() {
-  const [localResult, publicResult] = await Promise.allSettled([
-    fetchLocalStats(),
-    fetchPublicStats(),
-  ]);
-  const local = localResult.status === "fulfilled" ? localResult.value : null;
-  const pub = publicResult.status === "fulfilled" ? publicResult.value : null;
-  if (pub) return { stats: pub, source: "public" };
-  if (local) return { stats: local, source: "local" };
-  return { stats: statsFromSession(), source: "session" };
 }
 
 function shareOnX() {
@@ -943,9 +1140,7 @@ function renderStats() {
   }
   const stats = state.stats;
   const note =
-    state.statsSource === "session"
-      ? "全体の集計に届かなかったため、今回の回答のみを表示しています。"
-      : `匿名の回答 ${stats.sessions} 件をもとに、各選択肢が選ばれた割合です。`;
+    "集計版は準備中です。いまは、今回この端末で選んだ内容だけを表示しています。";
   const blocks = state.data.questions
     .map((question, index) => {
       const item = stats.questions[question.id] || { total: 0, counts: {}, rates: {} };
@@ -1060,6 +1255,7 @@ async function boot() {
         state.data.meta.headerDisclaimer || "このゲームは適法性の判断・法的助言ではありません。";
     }
     renderFooter();
+    window.addEventListener("keydown", onProvisionKey);
     render();
   } catch (err) {
     app.innerHTML =

@@ -17,6 +17,12 @@
   --diagram-gold: #8a6a3a;
   --focus: #8a6a3a;
   --header-h: 72px;
+  --badge-green: #2f6b4f;
+  --badge-green-bg: rgba(47, 107, 79, 0.12);
+  --badge-amber: #8a6418;
+  --badge-amber-bg: rgba(138, 100, 24, 0.12);
+  --badge-red: #8a3a3a;
+  --badge-red-bg: rgba(138, 58, 58, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +44,12 @@
     --diagram-stroke: rgba(232, 211, 174, 0.45);
     --diagram-gold: #c4a574;
     --focus: #e8d3ae;
+    --badge-green: #7dba98;
+    --badge-green-bg: rgba(125, 186, 152, 0.16);
+    --badge-amber: #e0b45a;
+    --badge-amber-bg: rgba(224, 180, 90, 0.16);
+    --badge-red: #d98989;
+    --badge-red-bg: rgba(217, 137, 137, 0.16);
   }
 
   html,
@@ -425,7 +437,7 @@ h2 {
 
 button.primary,
 button.ghost,
-button.text-next,
+button.next-btn,
 button.continue {
   font: inherit;
   cursor: pointer;
@@ -470,7 +482,7 @@ button.continue {
 }
 
 button.continue:focus-visible,
-button.text-next:focus-visible,
+button.next-btn:focus-visible,
 button.ghost:focus-visible,
 button.primary:focus-visible,
 .back-link:focus-visible {
@@ -478,21 +490,31 @@ button.primary:focus-visible,
   outline-offset: 3px;
 }
 
-button.text-next {
-  background: none;
+.next-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin-top: 28px;
+  padding: 20px 0 10px;
+  background: linear-gradient(to bottom, transparent, var(--bg) 40%, var(--bg));
+}
+
+button.next-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 22px;
+  background: var(--gold);
+  color: #fffdf8;
   border: 0;
-  color: var(--muted);
-  padding: 8px 0;
-  font-size: 14px;
+  font-family: "Shippori Mincho", serif;
+  font-size: 17px;
+  letter-spacing: 0.06em;
 }
 
-button.text-next:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-button.text-next:hover:not(:disabled) {
-  color: var(--ink);
+button.next-btn:hover {
+  filter: brightness(1.06);
 }
 
 .finale-block {
@@ -981,6 +1003,339 @@ button.text-next:hover:not(:disabled) {
 .split-list {
   margin: 8px 0 0;
   padding-left: 1.1em;
+}
+
+.feas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 6px;
+  border: 1px solid currentColor;
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.feas-badge.is-green {
+  color: var(--badge-green);
+  background: var(--badge-green-bg);
+}
+
+.feas-badge.is-amber {
+  color: var(--badge-amber);
+  background: var(--badge-amber-bg);
+}
+
+.feas-badge.is-red {
+  color: var(--badge-red);
+  background: var(--badge-red-bg);
+}
+
+.feas-shape {
+  font-size: 11px;
+}
+
+.badge-legend {
+  margin: 22px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.badge-legend ul {
+  list-style: none;
+  margin: 8px 0 10px;
+  padding: 0;
+}
+
+.badge-legend-item {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+
+.badge-legend-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.badge-disclaimer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.provision-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.provision-chip {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.provision-chip:hover,
+.provision-chip:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold-2);
+}
+
+.provision-card {
+  border-radius: 2px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.provision-pending {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.provision-panel[hidden] {
+  display: none;
+}
+
+.provision-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.provision-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 24, 20, 0.42);
+}
+
+.provision-panel-sheet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100% - 32px));
+  max-height: min(80vh, 640px);
+  overflow: auto;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 20px 22px 24px;
+  box-shadow: 0 12px 40px rgba(28, 24, 20, 0.18);
+}
+
+.provision-panel-close {
+  font: inherit;
+  float: right;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.provision-kicker {
+  margin: 0 0 4px;
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.provision-panel-sheet h3 {
+  margin: 0 28px 12px 0;
+  font-family: "Shippori Mincho", serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.provision-panel-sheet blockquote {
+  margin: 0 0 12px;
+  padding: 0 0 0 12px;
+  border-left: 2px solid var(--gold);
+}
+
+.provision-note,
+.provision-source {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.provision-source a {
+  color: var(--gold-2);
+}
+
+.path-reveal,
+.belief-provisions,
+.origin-matrix,
+.type-law-card {
+  margin-top: 24px;
+}
+
+.path-yours .feas-badge {
+  margin-bottom: 10px;
+}
+
+.path-note,
+.path-special-note,
+.belief-card-note {
+  margin: 10px 0 0;
+  max-width: 42em;
+}
+
+.path-special-note {
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.path-minimap-wrap,
+.designer-word,
+.belief-provisions {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.path-minimap {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.path-minimap li {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.minimap-letter {
+  color: var(--gold);
+  font-family: "Shippori Mincho", serif;
+}
+
+.minimap-marks {
+  display: flex;
+  gap: 6px;
+  color: var(--gold-2);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.matrix-scroll {
+  overflow-x: auto;
+  margin-top: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.origin-matrix table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.origin-matrix th,
+.origin-matrix td {
+  border: 1px solid var(--line-soft);
+  padding: 8px 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.origin-matrix th[scope="row"] {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.origin-matrix .matrix-cell.is-green,
+.origin-matrix tr.is-green th,
+.origin-matrix tr.is-green td {
+  background: var(--badge-green-bg);
+}
+
+.origin-matrix .matrix-cell.is-amber,
+.origin-matrix tr.is-amber th,
+.origin-matrix tr.is-amber td {
+  background: var(--badge-amber-bg);
+}
+
+.origin-matrix .matrix-cell.is-red,
+.origin-matrix tr.is-red th,
+.origin-matrix tr.is-red td {
+  background: var(--badge-red-bg);
+}
+
+.matrix-caption {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.type-law-card h2 {
+  font-family: "Shippori Mincho", serif;
+  font-size: clamp(22px, 4vw, 32px);
+  line-height: 1.4;
+  margin: 0 0 14px;
+}
+
+.type-law-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.type-law-meta .provision-chips {
+  margin: 0;
+}
+
+.sheet-panel .badge-legend {
+  margin-top: 16px;
+}
+
+.sheet-panel .badge-legend-item p {
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .provision-panel-sheet {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-height: 78vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .path-minimap li {
+    grid-template-columns: auto 1fr;
+  }
+
+  .minimap-letter {
+    display: none;
+  }
+
+  .minimap-marks {
+    grid-column: 1 / -1;
+  }
 }
 
 .mobile-hurdle {

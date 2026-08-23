@@ -33,6 +33,7 @@ def main():
             record = {
                 "id": question["id"],
                 "section": question["section"],
+                "format": question.get("format"),
                 "prompt": question["prompt"],
                 "choices": question["choices"],
                 "designerChoice": question.get("designerChoice"),
@@ -43,6 +44,14 @@ def main():
                 record["axis"] = question["axis"]
             if "axisLabel" in question:
                 record["axisLabel"] = question["axisLabel"]
+            if "provisionIds" in question:
+                record["provisionIds"] = question["provisionIds"]
+            if "reviewStatus" in question:
+                record["reviewStatus"] = question["reviewStatus"]
+            if "pathNote" in question:
+                record["pathNote"] = question["pathNote"]
+            if "cardNote" in question:
+                record["cardNote"] = question["cardNote"]
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
     print("wrote", OUTPUT)
 
