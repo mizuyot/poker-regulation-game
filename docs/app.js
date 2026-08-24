@@ -16,6 +16,37 @@ const state = {
   eventIndex: 0,
   stageEvents: [],
   resolvedStages: 0,
+  tournamentName: "",
+};
+
+const TICK_KEYS = ["tickFunding", "tickSponsor", "tickVenue", "tickExplain"];
+const AUTO_NAMES = {
+  1: "ホーム・クラシック",
+  2: "シティ・オープン",
+  3: "ナショナル・オープン",
+  4: "インターナショナル・オープン",
+};
+const DECISION_ROWS = [
+  ["h1_money", "原資"],
+  ["h1_sponsor_ok", "原資"],
+  ["h1_noprize", "原資"],
+  ["h1_form", "形態への応答"],
+  ["h2_gather", "スポンサーの集め方"],
+  ["h2_return", "スポンサーへの還元"],
+  ["h2_noprize", "スポンサーへの還元"],
+  ["h2_satellite", "予選"],
+  ["h3_venue", "会場"],
+  ["h3_books", "主催の収支"],
+  ["h3_freq", "開催"],
+  ["h4_capital", "資本関係"],
+  ["h4_address", "住所"],
+];
+const DESIGNER_EXTRAS = {
+  h2_satellite: "優先権は価値を小さく。誰でも入れる枠を併存",
+  h2_return: "広告＋小さな優先権",
+  h3_freq: "年2回。理由は体力と全国開催",
+  h3_venue: "許可店とは分けた外部会場",
+  h3_books: "大会自体では儲けない。儲ける場所は外",
 };
 
 let advancing = false;
@@ -34,6 +65,7 @@ function resetSession() {
   state.eventIndex = 0;
   state.stageEvents = [];
   state.resolvedStages = 0;
+  state.tournamentName = "";
 }
 
 function escapeHtml(value) {
@@ -80,9 +112,66 @@ function copy(key) {
   return (state.data.copy && state.data.copy[key]) || "";
 }
 
+function assignAlias(target, canonical, fallback) {
+  if (target[canonical] == null && target[fallback] != null) target[canonical] = target[fallback];
+}
+
+function normalizeData(data) {
+  assignAlias(data, "diagnosis", "diagnosis");
+  assignAlias(data, "provisions", "provisions");
+  assignAlias(data, "hurdleMap", "hurdleMap");
+  assignAlias(data, "requirementMaps", "requirementMaps");
+  assignAlias(data, "designerNotes", "designerNotes");
+  assignAlias(data, "sections", "sections");
+  assignAlias(data, "copy", "copy");
+  assignAlias(data, "playStyles", "playStyles");
+  assignAlias(data, "finale", "finale");
+  assignAlias(data, "intro", "intro");
+  assignAlias(data, "meta", "meta");
+  assignAlias(data, "events", "events");
+  assignAlias(data, "questions", "questions");
+  (data.questions || []).forEach((question) => {
+    assignAlias(question, "provisionIds", "provisionIds");
+    assignAlias(question, "explanation", "explanation");
+  });
+  Object.values(data.requirementMaps || {}).forEach((map) => {
+    assignAlias(map, "provisionIds", "provisionIds");
+    (map.items || []).forEach((item) => assignAlias(item, "focus", "focus"));
+  });
+  (data.designerNotes || []).forEach((note) => {
+    assignAlias(note, "provisionIds", "provisionIds");
+    assignAlias(note, "body", "body");
+  });
+  (data.events || []).forEach((event) => {
+    assignAlias(event, "sourceId", "sourceId");
+    assignAlias(event, "kicker", "kicker");
+    assignAlias(event, "scenario", "scenario");
+    assignAlias(event, "prompt", "prompt");
+    assignAlias(event, "passThrough", "passThrough");
+    assignAlias(event, "injectP2", "injectP2");
+    assignAlias(event, "requirementMap", "requirementMap");
+    assignAlias(event, "call", "call");
+    assignAlias(event, "result", "result");
+    assignAlias(event, "insight", "insight");
+    assignAlias(event, "provisionIds", "provisionIds");
+    assignAlias(event, "stage", "stage");
+  });
+  const meta = data.meta || {};
+  assignAlias(meta, "legalNote", "legalNote");
+  assignAlias(meta, "dataNotice", "dataNotice");
+  assignAlias(meta, "headerDisclaimer", "headerDisclaimer");
+  if (meta.privacy) assignAlias(meta.privacy, "retention", "retention");
+  data.meta = meta;
+  return data;
+}
+
+function p2QuestionId(p1) {
+  return { 1: "p2a", 2: "p2b", 3: "p2c" }[p1] || null;
+}
+
 function isNoPrize(source) {
   const t = source || state.currentTournament || state.answers;
-  return t.d0 === "5";
+  return t.p1 === "4";
 }
 
 function hasPrize(source) {
@@ -96,13 +185,21 @@ function isNational(source) {
 
 function fundingKey(source) {
   const t = source || state.currentTournament || state.answers;
-  if (t.d0 === "5") return "none";
+  if (t.p1 === "4") return "none";
   return FUNDING_KEYS[t.d3] || "none";
 }
 
 function visibleDesignIds() {
-  const ids = ["d0", "d1"];
-  if (state.answers.d0 && state.answers.d0 !== "5") ids.push("d2", "d3");
+  const p1 = state.answers.p1;
+  const ids = ["p1"];
+  if (!p1) return ids;
+  if (p1 === "4") {
+    ids.push("d1");
+    return ids;
+  }
+  const p2 = p2QuestionId(p1);
+  if (p2) ids.push(p2);
+  ids.push("d1", "d2", "d3");
   return ids;
 }
 
@@ -128,9 +225,24 @@ function typeNameFrom(source) {
 }
 
 function prizeNameFrom(source) {
-  if (isNoPrize(source)) return "";
-  const prize = state.data.diagnosis.prize[source.d0];
+  const t = source || state.currentTournament || state.answers;
+  if (isNoPrize(t)) return "";
+  const prize = state.data.diagnosis.prize[t.p1];
   return prize ? prize.name : "";
+}
+
+function formDetail(source) {
+  const t = source || state.currentTournament || state.answers;
+  if (isNoPrize(t) || !t.p2) return "";
+  const qid = p2QuestionId(t.p1);
+  return qid ? choiceText(qid, t.p2) : "";
+}
+
+function handoverLabel(source) {
+  const form = prizeNameFrom(source) || choiceText("p1", (source || state.answers).p1);
+  const detail = formDetail(source);
+  if (!form) return "";
+  return detail ? `${form}（${detail}）` : form;
 }
 
 function typeLockup(source) {
@@ -142,7 +254,8 @@ function typeLockup(source) {
 
 function snapshotTournament() {
   return {
-    d0: state.answers.d0,
+    p1: state.answers.p1,
+    p2: state.answers.p2 || null,
     d1: state.answers.d1,
     d2: state.answers.d2 || null,
     d3: state.answers.d3 || null,
@@ -152,6 +265,7 @@ function snapshotTournament() {
 function progressRatio() {
   if (state.view === "intro") return 0;
   if (state.view === "epilogue") return 1;
+  if (state.view === "name") return 0.88;
   if (state.view === "launch") return 0.92;
   if (state.view === "tournament") return 0.28;
   if (state.view === "question") {
@@ -174,7 +288,7 @@ function updateChrome() {
   document.body.classList.remove("is-intro", "is-playing", "is-diagnosis", "is-finale");
   if (state.view === "intro") document.body.classList.add("is-intro");
   else if (state.view === "tournament") document.body.classList.add("is-diagnosis");
-  else if (state.view === "launch" || state.view === "epilogue") document.body.classList.add("is-finale");
+  else if (state.view === "name" || state.view === "launch" || state.view === "epilogue") document.body.classList.add("is-finale");
   else document.body.classList.add("is-playing");
 }
 
@@ -228,7 +342,7 @@ function openStage(index) {
   if (!state.stageEvents.length) {
     state.resolvedStages = index + 1;
     if (index >= STAGES.length - 1) {
-      state.view = "launch";
+      state.view = "name";
       return;
     }
     openStage(index + 1);
@@ -350,10 +464,11 @@ function renderFooter() {
 
 function renderLaunchTicks() {
   const cells = STAGES.map((id, index) => {
-    const done = index < state.resolvedStages || state.view === "launch" || state.view === "epilogue";
+    const done = index < state.resolvedStages || state.view === "launch" || state.view === "epilogue" || state.view === "name";
     const current = state.view === "survive" && index === state.stageIndex;
     const mark = done ? "■" : "□";
-    return `<span class="tick ${done ? "is-done" : ""} ${current ? "is-current" : ""}" aria-hidden="true">${mark}</span>`;
+    const label = copy(TICK_KEYS[index]) || "";
+    return `<span class="tick-cell ${done ? "is-done" : ""} ${current ? "is-current" : ""}"><span class="tick" aria-hidden="true">${mark}</span><span class="tick-label">${escapeHtml(label)}</span></span>`;
   }).join("");
   return `<div class="launch-meter"><p class="sheet-kicker">${escapeHtml(copy("untilLaunch"))}</p><p class="ticks">${cells}</p></div>`;
 }
@@ -361,13 +476,68 @@ function renderLaunchTicks() {
 function factRows(source) {
   const rows = [
     ["規模", selectedLabel("d1", source)],
-    ["渡すもの", selectedLabel("d0", source)],
+    ["渡すもの", handoverLabel(source)],
   ];
   if (!isNoPrize(source)) {
     rows.push(["賞金の規模感", selectedLabel("d2", source)]);
     rows.push(["原資", selectedLabel("d3", source)]);
   }
   return rows.filter((row) => row[1]);
+}
+
+function latestDecision(...eventIds) {
+  const ids = eventIds.flat();
+  for (const eventId of ids) {
+    const found = [...state.decisions].reverse().find((item) => item.eventId === eventId);
+    if (found) return found.choiceText;
+  }
+  return "";
+}
+
+function autoTournamentName() {
+  return AUTO_NAMES[state.currentTournament && state.currentTournament.d1] || AUTO_NAMES[state.answers.d1] || "オープン";
+}
+
+function resolvedTournamentName() {
+  const name = (state.tournamentName || "").trim();
+  return name || autoTournamentName();
+}
+
+function renderIssuePreview(source) {
+  const noprize = isNoPrize(source);
+  const form = prizeNameFrom(source) || choiceText("p1", source.p1) || "賞品";
+  const funding = (copy("issueFunding") || "").replace("{form}", form);
+  const sponsor = copy("issueSponsor") + (isNational(source) ? copy("issueSponsorNational") : "");
+  const gray = noprize ? " is-dim" : "";
+  const fundingText = noprize ? copy("issueNoprize") : funding;
+  const sponsorText = noprize ? copy("issueNoprize") : sponsor;
+  const explainText = noprize ? copy("issueNoprize") : copy("issueExplain");
+  return `
+    <section class="issue-map">
+      <p class="sheet-kicker">${escapeHtml(copy("issueLead"))}</p>
+      <p class="issue-line${gray}"><strong>${escapeHtml(copy("tickFunding"))}</strong> — ${escapeHtml(fundingText)}</p>
+      <p class="issue-line${gray}"><strong>${escapeHtml(copy("tickSponsor"))}</strong> — ${escapeHtml(sponsorText)}</p>
+      <p class="issue-line"><strong>${escapeHtml(copy("tickVenue"))}</strong> — ${escapeHtml(copy("issueVenue"))}</p>
+      <p class="issue-line${gray}"><strong>${escapeHtml(copy("tickExplain"))}</strong> — ${escapeHtml(explainText)}</p>
+    </section>`;
+}
+
+function renderRequirementMap(mapId) {
+  const map = state.data.requirementMaps && state.data.requirementMaps[mapId];
+  if (!map) return "";
+  const items = (map.items || [])
+    .map(
+      (item) =>
+        `<li class="${item.focus ? "is-focus" : ""}"><span class="req-mark">${escapeHtml(item.mark)}</span><div><p class="req-title">${escapeHtml(item.title)}</p><p>${escapeHtml(item.text)}</p></div></li>`
+    )
+    .join("");
+  return `
+    <div class="requirement-map">
+      <p>${escapeHtml(map.lead || "")}</p>
+      <ul>${items}</ul>
+      ${map.close ? `<p>${escapeHtml(map.close)}</p>` : ""}
+      ${renderProvisionChips(map.provisionIds || [])}
+    </div>`;
 }
 
 function renderTournamentCard(source, options) {
@@ -453,6 +623,7 @@ function renderTournamentScreen() {
     <button class="back-link" id="back-link" type="button">← 戻る</button>
     <p class="part-label">ACT 1</p>
     ${renderTournamentCard(t)}
+    ${renderIssuePreview(t)}
     <p class="turn-copy">${escapeHtml(map.preface || "")}</p>
     ${renderLaunchTicks()}
     <div class="actions">
@@ -493,6 +664,11 @@ function renderSurvive() {
     const source = sourceQuestion(event);
     const detail = source ? source.explanation : "";
     const provisions = (source && source.provisionIds) || event.provisionIds || [];
+    let insight = pack.insight || "";
+    if (event.injectP2) {
+      const detailLabel = formDetail(state.currentTournament) || prizeNameFrom(state.currentTournament);
+      if (detailLabel) insight = (copy("p2Insight") || "").replace("{detail}", detailLabel);
+    }
     followup = `
       <section class="consequence" aria-live="polite">
         <p class="sheet-kicker">${escapeHtml(copy("yourCall"))}</p>
@@ -500,12 +676,14 @@ function renderSurvive() {
         <p class="status-line">${escapeHtml(statusLabel(pack.status))}</p>
         <p>${escapeHtml(pack.result)}</p>
         <p class="sheet-kicker">${escapeHtml(copy("why"))}</p>
-        <p>${escapeHtml(pack.insight)}</p>
+        <p>${escapeHtml(insight)}</p>
         ${
-          detail
+          detail || event.requirementMap
             ? `<details class="more-detail" ${state.detailOpen ? "open" : ""}>
                 <summary>${escapeHtml(copy("more"))}</summary>
-                <div class="prose">${detail
+                <p class="note">${escapeHtml(copy("detailDisclaimer"))}</p>
+                ${event.requirementMap ? renderRequirementMap(event.requirementMap) : ""}
+                <div class="prose">${(detail || "")
                   .split(/\n\n+/)
                   .filter(Boolean)
                   .map((p) => `<p>${formatInline(p)}</p>`)
@@ -564,37 +742,132 @@ function playStyle() {
   return styles.kept;
 }
 
+
+function renderPoster() {
+  const t = state.currentTournament;
+  const name = resolvedTournamentName();
+  const rows = [
+    ["渡すもの", handoverLabel(t)],
+    ["規模", selectedLabel("d1", t)],
+    ["賞金の規模感", isNoPrize(t) ? "—" : selectedLabel("d2", t)],
+    ["原資", isNoPrize(t) ? "—" : selectedLabel("d3", t)],
+    ["スポンサーの集め方", latestDecision("h2_gather") || "—"],
+    ["スポンサーへの還元", latestDecision("h2_return", "h2_noprize") || "—"],
+    ["予選", latestDecision("h2_satellite") || "—"],
+    ["会場", latestDecision("h3_venue") || "—"],
+    ["主催の収支", latestDecision("h3_books") || "—"],
+    ["開催", latestDecision("h3_freq") || "—"],
+    ["説明の備え", [latestDecision("h4_capital"), latestDecision("h4_address")].filter(Boolean).join(" / ") || "—"],
+  ].filter((row) => row[1] && row[1] !== "—");
+  const body = rows
+    .map(([label, value]) => `<div class="poster-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`)
+    .join("");
+  return `
+    <article class="poster-card">
+      <p class="poster-kicker">TOURNAMENT BRIEF</p>
+      <h2 class="poster-title">${escapeHtml(name)}</h2>
+      <p class="poster-type">${escapeHtml(typeLockup(t))}</p>
+      ${body}
+      <p class="poster-foot">${escapeHtml(copy("posterFiction"))}<br />${escapeHtml(copy("posterDisclaimer"))}</p>
+    </article>`;
+}
+
+function renderNameScreen() {
+  return `
+    <p class="part-label">ACT 3</p>
+    <p class="kicker">${escapeHtml(copy("nameLead"))}</p>
+    <h2 class="prompt">${escapeHtml(copy("namePrompt"))}</h2>
+    <form id="name-form" class="name-form">
+      <label class="sr-only" for="tournament-name">${escapeHtml(copy("namePlaceholder"))}</label>
+      <input id="tournament-name" name="tournament-name" type="text" maxlength="20" autocomplete="off" placeholder="${escapeHtml(copy("namePlaceholder"))}" />
+      <div class="actions">
+        <button class="next-btn" type="submit">この名前で開催する →</button>
+        <button class="ghost" id="skip-name-btn" type="button">${escapeHtml(copy("nameSkip"))}</button>
+      </div>
+    </form>`;
+}
+
+function finishNaming(raw) {
+  const text = (raw || "").trim().slice(0, 20);
+  state.tournamentName = text || autoTournamentName();
+  state.view = "launch";
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function compareValue(id, source) {
+  if (id === "handover") return handoverLabel(source) || "—";
+  return selectedLabel(id, source) || "—";
+}
+
+function renderDesignerNotes() {
+  const notes = state.data.designerNotes || [];
+  if (!notes.length) return "";
+  const items = notes
+    .map((note) => {
+      const paras = (note.body || "")
+        .split(/\n\n+/)
+        .map((part) => `<p>${formatInline(part)}</p>`)
+        .join("");
+      return `
+        <details class="designer-note">
+          <summary>${escapeHtml(note.title)}</summary>
+          <div class="prose">${paras}</div>
+          ${renderProvisionChips(note.provisionIds || [])}
+        </details>`;
+    })
+    .join("");
+  return `
+    <section class="designer-notes">
+      <h2>設計者ノート</h2>
+      <p class="note">${escapeHtml(copy("notesIntro") || "これは設計者個人の現時点の考えの一覧です。適法性の判断ではありません。")}</p>
+      ${items}
+    </section>`;
+}
+
 function renderCompareTable() {
   const keys = [
     ["規模", "d1"],
-    ["渡すもの", "d0"],
+    ["渡すもの", "handover"],
     ["賞金の規模感", "d2"],
     ["原資", "d3"],
   ];
-  const rows = keys
+  const designRows = keys
     .map(([label, id]) => {
-      const before = selectedLabel(id, state.initialTournament) || "—";
-      const after = selectedLabel(id, state.currentTournament) || "—";
+      const before = compareValue(id, state.initialTournament);
+      const after = compareValue(id, state.currentTournament);
       if (before === "—" && after === "—") return "";
       return `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(before)}</td><td>${escapeHtml(after)}</td></tr>`;
     })
     .join("");
+  const decisionRows = DECISION_ROWS.map(([eventId, label]) => {
+    const after = latestDecision(eventId) || "—";
+    if (after === "—") return "";
+    return `<tr><th>${escapeHtml(label)}</th><td>—</td><td>${escapeHtml(after)}</td></tr>`;
+  }).join("");
   return `<div class="matrix-scroll"><table class="ba-table">
     <tr><th></th><th>${escapeHtml(copy("before"))}</th><th>${escapeHtml(copy("after"))}</th></tr>
-    ${rows}
+    ${designRows}${decisionRows}
   </table></div>`;
 }
 
 function keptChangedLists() {
-  const labels = { d1: "大会規模", d0: "賞品", d2: "賞金の規模感", d3: "賞金原資" };
+  const labels = { d1: "大会規模", handover: "渡すもの", d2: "賞金の規模感", d3: "賞金原資" };
   const kept = [];
   const changed = [];
   Object.keys(labels).forEach((id) => {
-    const before = selectedLabel(id, state.initialTournament);
-    const after = selectedLabel(id, state.currentTournament);
-    if (!before && !after) return;
+    const before = compareValue(id, state.initialTournament);
+    const after = compareValue(id, state.currentTournament);
+    if (before === "—" && after === "—") return;
     if (before === after) kept.push(labels[id]);
     else changed.push(labels[id]);
+  });
+  DECISION_ROWS.forEach(([eventId, label]) => {
+    const text = latestDecision(eventId);
+    if (!text) return;
+    const status = ([...state.decisions].reverse().find((item) => item.eventId === eventId) || {}).status;
+    if (status === "changed" || status === "issue") changed.push(label);
+    else kept.push(label);
   });
   return { kept, changed };
 }
@@ -609,7 +882,10 @@ function renderLaunch() {
     <p class="part-label">ACT 3</p>
     <p class="kicker">${escapeHtml(copy("launchKicker"))}</p>
     <h1>${escapeHtml(copy("launchTitle"))}</h1>
-    ${renderTournamentCard(state.currentTournament)}
+    ${renderPoster()}
+    <div class="actions poster-share">
+      <button class="ghost" id="share-x-btn" type="button">Xで広める</button>
+    </div>
     ${renderLaunchTicks()}
     <h2>${escapeHtml(copy("before"))} / ${escapeHtml(copy("after"))}</h2>
     ${renderCompareTable()}
@@ -632,9 +908,14 @@ function renderEpilogue() {
   const closing = escapeHtml(finale.closing).replace("。", "。<br />");
   const pairs = [
     ["規模", selectedLabel("d1", state.currentTournament), "全国規模を想定"],
-    ["渡すもの", selectedLabel("d0", state.currentTournament), "現金（現物も可）"],
+    ["渡すもの", handoverLabel(state.currentTournament), "賞金（現金。現物も可）"],
     ["原資", selectedLabel("d3", state.currentTournament) || "賞品なし", "スポンサー提供。参加費は賞品に入れない"],
-    ["会場", (state.decisions.find((d) => d.eventId === "h3_venue") || {}).choiceText || "（未選択）", "許可店とは分けた外部会場"],
+    ["会場", latestDecision("h3_venue") || "（未選択）", DESIGNER_EXTRAS.h3_venue],
+    ["予選", latestDecision("h2_satellite") || "—", DESIGNER_EXTRAS.h2_satellite],
+    ["還元", latestDecision("h2_return", "h2_noprize") || "—", DESIGNER_EXTRAS.h2_return],
+    ["集め方", latestDecision("h2_gather") || "—", "広告対価として説明できる範囲に収める"],
+    ["収支", latestDecision("h3_books") || "—", DESIGNER_EXTRAS.h3_books],
+    ["開催", latestDecision("h3_freq") || "—", DESIGNER_EXTRAS.h3_freq],
   ];
   const rows = pairs
     .map(
@@ -653,9 +934,9 @@ function renderEpilogue() {
     <p class="closing">${escapeHtml(copy("endingTitle"))}</p>
     <p class="lead">${closing}</p>
     <p class="note">${escapeHtml(finale.disclaimer)}</p>
+    ${renderDesignerNotes()}
     <div class="actions">
       <button class="next-btn" id="restart-btn" type="button">${escapeHtml(copy("replay"))}</button>
-      <button class="ghost" id="share-x-btn" type="button">Xで広める</button>
     </div>`;
 }
 
@@ -698,6 +979,18 @@ function render() {
     bindProvisionUi();
     return;
   }
+  if (state.view === "name") {
+    app.innerHTML = renderNameScreen();
+    const form = document.getElementById("name-form");
+    const input = document.getElementById("tournament-name");
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      finishNaming(input.value);
+    });
+    document.getElementById("skip-name-btn").addEventListener("click", () => finishNaming(""));
+    if (input) input.focus();
+    return;
+  }
   if (state.view === "launch") {
     app.innerHTML = renderLaunch();
     document.getElementById("continue-btn").addEventListener("click", () => {
@@ -705,6 +998,8 @@ function render() {
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
+    const share = document.getElementById("share-x-btn");
+    if (share) share.addEventListener("click", shareOnX);
     return;
   }
   if (state.view === "epilogue") {
@@ -713,8 +1008,7 @@ function render() {
       resetSession();
       render();
     });
-    const share = document.getElementById("share-x-btn");
-    if (share) share.addEventListener("click", shareOnX);
+    bindProvisionUi();
     return;
   }
   app.innerHTML = `<div class="play-main">${renderDesignQuestion()}</div>`;
@@ -749,9 +1043,18 @@ function onDesignChoose(choiceId) {
   const question = currentQuestion();
   if (advancing) return;
   state.answers[question.id] = choiceId;
-  if (question.id === "d0" && choiceId === "5") {
-    delete state.answers.d2;
-    delete state.answers.d3;
+  if (question.id === "p1") {
+    delete state.answers.p2;
+    delete state.answers.p2a;
+    delete state.answers.p2b;
+    delete state.answers.p2c;
+    if (choiceId === "4") {
+      delete state.answers.d2;
+      delete state.answers.d3;
+    }
+  }
+  if (question.id.startsWith("p2")) {
+    state.answers.p2 = choiceId;
   }
   saveAnswer({
     session_id: state.sessionId,
@@ -831,7 +1134,7 @@ function onSurviveNext() {
   }
   state.resolvedStages = state.stageIndex + 1;
   if (state.stageIndex >= STAGES.length - 1) {
-    state.view = "launch";
+    state.view = "name";
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
@@ -842,7 +1145,9 @@ function onSurviveNext() {
 }
 
 function shareOnX() {
-  const text = state.data.meta.shareText || state.data.meta.title;
+  const name = resolvedTournamentName();
+  const type = typeLockup(state.currentTournament);
+  const text = `私の大会『${name}』は${type}になった。あなたはどんな大会を作る？\nhttps://mizuyot.github.io/poker-regulation-game/`;
   window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
 }
 
@@ -871,7 +1176,7 @@ async function loadQuestions() {
 async function boot() {
   const app = document.getElementById("app");
   try {
-    state.data = await loadQuestions();
+    state.data = normalizeData(await loadQuestions());
     document.title = `${state.data.meta.title} — ${state.data.meta.subtitle}`;
     const brand = document.querySelector(".brand");
     const brandSub = document.querySelector(".brand-sub");
