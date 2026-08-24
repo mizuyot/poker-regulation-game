@@ -4,7 +4,7 @@
 
 **正本:** `docs/questions.json`（GitHub Pages もローカルサーバも、ここだけを読む）
 
-法令マップ（実現可能性バッジ・条文チップ）と現状整理ページを公開中。バッジ割当・現状整理の導出・未確認条文の逐語は、公開ブラッシュアップ完了後に久保弁護士のレビューへ回す。
+v5.0: まず大会を設計し（ACT 1）、開催までの出来事に判断で応え（ACT 2）、最初の理想と最終設計を見比べる（ACT 3）。法令の逐語は「詳しく見る」の奥。実現可能性バッジは本編に出さない。未確認条文の逐語は、公開ブラッシュアップ完了後に久保弁護士のレビューへ回す。
 
 ## 起動
 
@@ -20,7 +20,7 @@ python3 server.py
 python3 scripts/build_rag.py   # docs/questions.json → data/questions_rag.jsonl と docs/index.html への埋め込み
 ```
 
-手で `questions_rag.jsonl` を編集しないこと。正本は常に `docs/questions.json`。フィールドは `{id, section, format, prompt, choices, designerChoice, explanation, source_urls, provisionIds}`。道の問いの `choices` には `tier`・`provisionIds`・`note` を含む。
+手で `questions_rag.jsonl` を編集しないこと。正本は常に `docs/questions.json`。ACT 2 の出来事は `events`。旧設問（q00 以降）は解説・条文の参照元として残す。
 
 ## データの置き場所
 

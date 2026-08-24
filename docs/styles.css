@@ -1478,6 +1478,114 @@ button.next-btn:hover {
   }
 }
 
+.tourney-card {
+  margin: 0 0 24px;
+}
+
+.tourney-lockup {
+  font-family: "Shippori Mincho", serif;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.25;
+  margin: 6px 0 18px;
+  font-weight: 600;
+}
+
+.tourney-card.is-compact .tourney-lockup {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.hud {
+  position: sticky;
+  top: 10px;
+  min-width: 0;
+}
+
+.hud .sheet-value {
+  font-size: 14px;
+}
+
+.next-dock {
+  margin-top: 18px;
+}
+
+.launch-meter {
+  margin: 18px 0 0;
+}
+
+.ticks {
+  font-family: "Shippori Mincho", serif;
+  letter-spacing: 0.35em;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.tick.is-done,
+.tick.is-current {
+  color: var(--gold);
+}
+
+.scenario p {
+  margin: 0 0 8px;
+  max-width: 40em;
+}
+
+.consequence {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.status-line {
+  margin: 0 0 10px;
+  color: var(--gold-2);
+  letter-spacing: 0.06em;
+  font-size: 13px;
+}
+
+.stage-clear {
+  font-family: "Shippori Mincho", serif;
+  margin: 28px 0 0;
+  color: var(--gold);
+}
+
+.more-detail {
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+
+.survive-layout .play-main {
+  padding-bottom: 108px;
+}
+
+.more-detail summary {
+  cursor: pointer;
+  color: var(--gold-2);
+  font-size: 14px;
+}
+
+.ba-table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ba-table th,
+.ba-table td {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+@media (max-width: 960px) {
+  .survive-layout .hud {
+    position: static;
+    order: -1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

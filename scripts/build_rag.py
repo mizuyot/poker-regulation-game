@@ -53,6 +53,9 @@ def main():
             if "cardNote" in question:
                 record["cardNote"] = question["cardNote"]
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        events = data.get("events")
+        if events:
+            handle.write(json.dumps({"id": "_events", "events": events}, ensure_ascii=False) + "\n")
     print("wrote", OUTPUT)
 
 

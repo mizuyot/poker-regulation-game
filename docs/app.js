@@ -1,4 +1,5 @@
-const HURDLES = ["hurdle1", "hurdle2", "hurdle3", "hurdle4"];
+const STAGES = ["h1", "h2", "h3", "h4"];
+const FUNDING_KEYS = { 1: "entry_fee", 2: "mixed", 3: "sponsor" };
 
 const state = {
   data: null,
@@ -6,19 +7,33 @@ const state = {
   index: 0,
   answers: {},
   revealed: false,
+  detailOpen: false,
   sessionId: crypto.randomUUID(),
-  stats: null,
-  statsSource: null,
+  initialTournament: null,
+  currentTournament: null,
+  decisions: [],
+  stageIndex: 0,
+  eventIndex: 0,
+  stageEvents: [],
+  resolvedStages: 0,
 };
+
+let advancing = false;
 
 function resetSession() {
   state.view = "intro";
   state.index = 0;
   state.answers = {};
   state.revealed = false;
-  state.stats = null;
-  state.statsSource = null;
+  state.detailOpen = false;
   state.sessionId = crypto.randomUUID();
+  state.initialTournament = null;
+  state.currentTournament = null;
+  state.decisions = [];
+  state.stageIndex = 0;
+  state.eventIndex = 0;
+  state.stageEvents = [];
+  state.resolvedStages = 0;
 }
 
 function escapeHtml(value) {
@@ -30,193 +45,69 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function questionById(id) {
-  return state.data.questions.find((question) => question.id === id);
+function formatInline(text) {
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 }
-
-function choiceText(question, choiceId) {
-  if (!question) return "";
-  const found = question.choices.find((choice) => choice.id === choiceId);
-  return found ? found.text : "";
-}
-
-function selectedLabel(id) {
-  const question = questionById(id);
-  return choiceText(question, state.answers[id]);
-}
-
-function currentQuestion() {
-  return state.data.questions[state.index];
-}
-
-function progressRatio() {
-  if (state.view === "intro") return 0;
-  if (state.view === "finale") return 1;
-  const total = state.data.questions.length + 1;
-  if (state.view === "designSheet") return visibleDesignIds().length / total;
-  if (state.view === "typeLaw") return indexOfId("q00") / total;
-  return (state.index + 1) / total;
-}
-
-function updateProgress() {
-  const bar = document.getElementById("progress-bar");
-  bar.style.width = `${Math.round(progressRatio() * 100)}%`;
-}
-
-function interpolate(template) {
-  return String(template || "")
-    .replaceAll("{{typeName}}", typeName() || "（未選択）")
-    .replaceAll("{{d0ラベル}}", selectedLabel("d0") || "（未選択）")
-    .replaceAll("{{d1ラベル}}", selectedLabel("d1") || "（未選択）")
-    .replace(/\{\{(d[0-3])\}\}/g, (_, id) => {
-      const label = selectedLabel(id);
-      if (label) return label;
-      if (id === "d2" && isNoPrize()) return "（仮定）";
-      return "（未選択）";
-    });
-}
-
-function isNoPrize() {
-  return state.answers.d0 === "5";
-}
-
-function hasPrize() {
-  return Boolean(state.answers.d0 && state.answers.d0 !== "5");
-}
-
-function isNational() {
-  return state.answers.d1 === "3" || state.answers.d1 === "4";
-}
-
-function visibleDesignIds() {
-  const ids = ["d0", "d1"];
-  if (hasPrize()) ids.push("d2", "d3");
-  return ids;
-}
-
-function typeName() {
-  const diag = state.data.diagnosis;
-  if (!diag) return "";
-  if (isNoPrize()) {
-    const noprize = diag.funding["4"];
-    return noprize ? noprize.name : "";
-  }
-  const funding = diag.funding[state.answers.d3];
-  return funding ? funding.name : "";
-}
-
-function diagnosisLockup() {
-  const name = typeName();
-  if (!name) return "";
-  if (isNoPrize()) return name;
-  const prize = state.data.diagnosis.prize[state.answers.d0];
-  return prize ? `${name} × ${prize.name}` : name;
-}
-
-function diagnosisReady() {
-  if (!state.answers.d0 || !state.answers.d1) return false;
-  if (isNoPrize()) return true;
-  return Boolean(state.answers.d2 && state.answers.d3);
-}
-
-function diagnosisBlurb() {
-  const diag = state.data.diagnosis;
-  if (!diag || !state.answers.d0) return "";
-  if (isNoPrize()) {
-    const noprize = diag.funding["4"];
-    return noprize ? noprize.blurb : "";
-  }
-  const funding = diag.funding[state.answers.d3];
-  if (!funding) return "";
-  const prize = diag.prize[state.answers.d0];
-  const scale = interpolate(diag.scaleLine);
-  return [funding.blurb, prize ? prize.blurb : "", scale].filter(Boolean).join("");
-}
-
-function diagnosisHook() {
-  const hooks = state.data.diagnosis && state.data.diagnosis.hooks;
-  if (!hooks) return "";
-  return isNoPrize() ? hooks.noprize : hooks.prize;
-}
-
-const LETTERS = ["A", "B", "C", "D"];
-let advancing = false;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function isMobileLayout() {
-  return window.matchMedia("(max-width: 960px)").matches;
+function questionById(id) {
+  return state.data.questions.find((question) => question.id === id);
 }
 
-function choiceLetter(choiceId) {
-  const index = Number(choiceId) - 1;
-  return LETTERS[index] || String(choiceId);
+function choiceText(questionId, choiceId) {
+  const question = questionById(questionId);
+  if (!question) return "";
+  const found = question.choices.find((choice) => choice.id === choiceId);
+  return found ? found.text : "";
 }
 
-function hurdleShortTitle(id) {
-  const title = (state.data.sections[id] && state.data.sections[id].title) || "";
-  return title.replace(/^ハードル\d｜/, "");
-}
-
-function hurdleIndexLabel(id) {
-  return String(HURDLES.indexOf(id) + 1).padStart(2, "0");
-}
-
-function diagnosisTypeLines() {
-  const name = typeName();
-  if (!name) return { type: "", prize: "" };
-  if (isNoPrize()) return { type: name, prize: "" };
-  const prize = state.data.diagnosis.prize[state.answers.d0];
-  return { type: name, prize: prize ? `× ${prize.name}` : "" };
-}
-
-function diagnosisFundingBlurb() {
-  const diag = state.data.diagnosis;
-  if (!diag) return "";
-  if (isNoPrize()) {
-    const noprize = diag.funding["4"];
-    return noprize ? noprize.blurb : "";
+function live(id) {
+  if (state.currentTournament && state.currentTournament[id] != null) {
+    return state.currentTournament[id];
   }
-  const funding = diag.funding[state.answers.d3];
-  return funding ? funding.blurb : "";
+  return state.answers[id];
 }
 
-function diagnosisPrizeBlurb() {
-  if (isNoPrize()) return "";
-  const prize = state.data.diagnosis && state.data.diagnosis.prize[state.answers.d0];
-  return prize ? prize.blurb : "";
+function selectedLabel(id, source) {
+  const value = source ? source[id] : live(id);
+  return choiceText(id, value);
 }
 
-function updateChrome() {
-  document.body.classList.remove("is-intro", "is-playing", "is-diagnosis", "is-finale", "is-type-law");
-  if (state.view === "intro") document.body.classList.add("is-intro");
-  else if (state.view === "designSheet") document.body.classList.add("is-diagnosis");
-  else if (state.view === "typeLaw") document.body.classList.add("is-playing", "is-type-law");
-  else if (state.view === "finale") document.body.classList.add("is-finale");
-  else document.body.classList.add("is-playing");
+function copy(key) {
+  return (state.data.copy && state.data.copy[key]) || "";
 }
 
-function designAnsweredCount() {
-  return visibleDesignIds().filter((id) => Boolean(state.answers[id])).length;
+function isNoPrize(source) {
+  const t = source || state.currentTournament || state.answers;
+  return t.d0 === "5";
 }
 
-function sectionLeadText(section, sectionId) {
-  if (!section) return "";
-  let lead = interpolate(section.lead);
-  if (sectionId === "hurdle1" && section.conditionByFunding) {
-    const d3 = state.answers.d3;
-    let extra = "";
-    if (isNoPrize()) extra = section.conditionByFunding.noprize;
-    else if (d3 === "1" || d3 === "2") extra = section.conditionByFunding.includesEntry;
-    else if (d3 === "3") extra = section.conditionByFunding.separated;
-    lead += extra;
-  }
-  if ((sectionId === "hurdle2" || sectionId === "hurdle4") && isNoPrize() && section.conditionByNoPrize) {
-    lead += section.conditionByNoPrize;
-  }
-  return lead;
+function hasPrize(source) {
+  return !isNoPrize(source);
+}
+
+function isNational(source) {
+  const t = source || state.currentTournament || state.answers;
+  return t.d1 === "3" || t.d1 === "4";
+}
+
+function fundingKey(source) {
+  const t = source || state.currentTournament || state.answers;
+  if (t.d0 === "5") return "none";
+  return FUNDING_KEYS[t.d3] || "none";
+}
+
+function visibleDesignIds() {
+  const ids = ["d0", "d1"];
+  if (state.answers.d0 && state.answers.d0 !== "5") ids.push("d2", "d3");
+  return ids;
+}
+
+function currentQuestion() {
+  return state.data.questions[state.index];
 }
 
 function indexOfId(id) {
@@ -228,187 +119,149 @@ function isLastDesignQuestion(question) {
   return question && question.id === seq[seq.length - 1];
 }
 
-function hurdleQuestions(sectionId) {
-  return state.data.questions.filter((question) => question.section === sectionId);
+function typeNameFrom(source) {
+  const diag = state.data.diagnosis;
+  if (!diag) return "";
+  if (isNoPrize(source)) return (diag.funding["4"] && diag.funding["4"].name) || "";
+  const funding = diag.funding[source.d3];
+  return funding ? funding.name : "";
 }
 
-function hurdleComplete(sectionId) {
-  const qs = hurdleQuestions(sectionId);
-  return qs.length > 0 && qs.every((question) => Boolean(state.answers[question.id]));
+function prizeNameFrom(source) {
+  if (isNoPrize(source)) return "";
+  const prize = state.data.diagnosis.prize[source.d0];
+  return prize ? prize.name : "";
 }
 
-function isLastInHurdle(question) {
-  if (!HURDLES.includes(question.section)) return false;
-  const qs = hurdleQuestions(question.section);
-  return qs[qs.length - 1].id === question.id;
+function typeLockup(source) {
+  const name = typeNameFrom(source);
+  const prize = prizeNameFrom(source);
+  if (!name) return "";
+  return prize ? `${name} × ${prize}` : name;
 }
 
-function hurdleState() {
-  const result = { hurdle1: false, hurdle2: false, hurdle3: false, hurdle4: false };
-  HURDLES.forEach((hurdle) => {
-    result[hurdle] = hurdleComplete(hurdle);
-  });
-  if (state.view === "finale") {
-    HURDLES.forEach((hurdle) => {
-      result[hurdle] = true;
-    });
+function snapshotTournament() {
+  return {
+    d0: state.answers.d0,
+    d1: state.answers.d1,
+    d2: state.answers.d2 || null,
+    d3: state.answers.d3 || null,
+  };
+}
+
+function progressRatio() {
+  if (state.view === "intro") return 0;
+  if (state.view === "epilogue") return 1;
+  if (state.view === "launch") return 0.92;
+  if (state.view === "tournament") return 0.28;
+  if (state.view === "question") {
+    const seq = visibleDesignIds();
+    return (seq.filter((id) => state.answers[id]).length / Math.max(seq.length, 1)) * 0.25;
   }
-  return result;
-}
-
-function scaleValue(id) {
-  const selected = state.answers[id];
-  if (!selected) return null;
-  const value = Number(selected);
-  return Number.isFinite(value) ? value : null;
-}
-
-function qualitativeCompare() {
-  const scale = scaleValue("d1");
-  const prize = scaleValue("d2");
-  if (scale == null || prize == null) return "";
-  if (prize > scale) return "賞金の規模感は、大会の規模を大きく上回りそう";
-  if (prize < scale) return "賞金の規模感は、大会の規模を下回りそう";
-  return "賞金の規模感は、大会の規模と同じくらいになりそう";
-}
-
-function compareSummary() {
-  const compareQs = state.data.questions.filter((q) => q.mode === "compare");
-  const same = [];
-  const split = [];
-  compareQs.forEach((q) => {
-    if (state.answers[q.id] === q.designerChoice) same.push(q);
-    else split.push(q);
-  });
-  return { same, split, total: compareQs.length };
-}
-
-function renderFooter() {
-  const meta = state.data.meta;
-  document.getElementById("footer-disclaimer").textContent = meta.legalNote;
-  document.getElementById("footer-data").textContent = meta.dataNotice;
-  document.getElementById("footer-privacy").textContent = meta.privacy.retention;
-}
-
-function render() {
-  const app = document.getElementById("app");
-  updateChrome();
-  updateProgress();
-  if (state.view === "intro") {
-    app.innerHTML = renderIntro();
-    document.getElementById("start-btn").addEventListener("click", () => {
-      state.view = "question";
-      state.index = 0;
-      state.revealed = false;
-      render();
-    });
-    return;
+  if (state.view === "survive") {
+    const stageLen = Math.max(state.stageEvents.length, 1);
+    const local = (state.eventIndex + (state.revealed ? 0.6 : 0)) / stageLen;
+    return 0.3 + 0.6 * ((state.resolvedStages + local) / STAGES.length);
   }
-  if (state.view === "designSheet") {
-    app.innerHTML = renderDesignReveal();
-    document.getElementById("continue-btn").addEventListener("click", () => {
-      state.view = "typeLaw";
-      state.revealed = false;
-      render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-    const back = document.getElementById("back-link");
-    if (back) back.addEventListener("click", goBackDesign);
-    bindProvisionUi();
-    return;
+  return 0.5;
+}
+
+function updateProgress() {
+  document.getElementById("progress-bar").style.width = `${Math.round(progressRatio() * 100)}%`;
+}
+
+function updateChrome() {
+  document.body.classList.remove("is-intro", "is-playing", "is-diagnosis", "is-finale");
+  if (state.view === "intro") document.body.classList.add("is-intro");
+  else if (state.view === "tournament") document.body.classList.add("is-diagnosis");
+  else if (state.view === "launch" || state.view === "epilogue") document.body.classList.add("is-finale");
+  else document.body.classList.add("is-playing");
+}
+
+function eventMatches(event, source) {
+  const cond = event.conditions || {};
+  const t = source || state.currentTournament || state.answers;
+  if (cond.funding && !cond.funding.includes(fundingKey(t))) return false;
+  if (cond.hasPrize === true && isNoPrize(t)) return false;
+  if (cond.hasPrize === false && hasPrize(t)) return false;
+  if (cond.national === true && !isNational(t)) return false;
+  if (cond.national === false && isNational(t)) return false;
+  return true;
+}
+
+function eventsForStage(stageId) {
+  return (state.data.events || []).filter(
+    (event) => event.stage === stageId && eventMatches(event)
+  );
+}
+
+function currentEvent() {
+  return state.stageEvents[state.eventIndex] || null;
+}
+
+function sourceQuestion(event) {
+  return event && event.sourceId ? questionById(event.sourceId) : null;
+}
+
+function eventChoices(event) {
+  if (event.passThrough) {
+    return [{ id: "go", text: copy("continue") || "このまま進む →", status: event.status || "kept" }];
   }
-  if (state.view === "typeLaw") {
-    app.innerHTML = renderTypeLaw();
-    document.getElementById("continue-btn").addEventListener("click", () => {
-      state.view = "question";
-      state.index = indexOfId("q00");
-      state.revealed = Boolean(state.answers.q00);
-      render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-    const back = document.getElementById("back-link");
-    if (back) back.addEventListener("click", goBackDesign);
-    bindProvisionUi();
-    return;
-  }
-  if (state.view === "finale") {
-    app.innerHTML = renderFinale();
-    const restart = document.getElementById("restart-btn");
-    if (restart) {
-      restart.addEventListener("click", () => {
-        resetSession();
-        render();
-      });
+  if (event.choices && event.choices.length) return event.choices;
+  const source = sourceQuestion(event);
+  return source ? source.choices.map((choice) => ({ id: choice.id, text: choice.text })) : [];
+}
+
+function beginSurvive() {
+  state.initialTournament = snapshotTournament();
+  state.currentTournament = snapshotTournament();
+  state.decisions = [];
+  state.stageIndex = 0;
+  state.resolvedStages = 0;
+  state.view = "survive";
+  openStage(0);
+}
+
+function openStage(index) {
+  state.stageIndex = index;
+  state.stageEvents = eventsForStage(STAGES[index]);
+  if (!state.stageEvents.length) {
+    state.resolvedStages = index + 1;
+    if (index >= STAGES.length - 1) {
+      state.view = "launch";
+      return;
     }
-    const share = document.getElementById("share-x-btn");
-    if (share) share.addEventListener("click", shareOnX);
+    openStage(index + 1);
     return;
   }
-  app.innerHTML = renderPlay();
-  bindQuestion();
+  state.eventIndex = 0;
+  state.revealed = false;
+  state.detailOpen = false;
 }
 
-function renderIntro() {
-  const intro = state.data.intro;
-  const meta = state.data.meta;
-  const body = intro.body.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
-  return `
-    <p class="kicker">${escapeHtml(intro.kicker)}</p>
-    <h1>${escapeHtml(meta.title)}<br /><span style="font-size:0.62em;color:var(--muted)">${escapeHtml(meta.subtitle)}</span></h1>
-    <p class="lead">${escapeHtml(intro.lead)}</p>
-    <div class="prose">${body}</div>
-    <p class="note">${escapeHtml(intro.close)}</p>
-    <div class="actions">
-      <button class="primary" id="start-btn" type="button">始める</button>
-    </div>
-  `;
+function copyChoice(event, choice) {
+  return {
+    call: choice.call || event.call || "",
+    result: choice.result || event.result || "",
+    status: choice.status || event.status || "kept",
+    insight: event.insight || "",
+  };
 }
 
-function renderPlay() {
-  return `
-    <div class="play-layout">
-      <div class="play-main is-entering">${renderQuestion()}</div>
-      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
-    </div>
-    ${renderProvisionPanelShell()}
-  `;
+function applyMutate(mutate) {
+  if (!mutate || !state.currentTournament) return;
+  Object.keys(mutate).forEach((key) => {
+    state.currentTournament[key] = mutate[key];
+  });
 }
 
-function formatInline(text) {
-  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-}
-
-function badgeMeta(tier) {
-  if (!tier) return null;
-  return (state.data.badges || {})[tier] || null;
-}
-
-function renderBadge(tier) {
-  const meta = badgeMeta(tier);
-  if (!meta) return "";
-  return `<span class="feas-badge is-${escapeHtml(tier)}">
-    <span class="feas-shape" aria-hidden="true">${escapeHtml(meta.shape)}</span>
-    <span class="feas-label">${escapeHtml(meta.label)}</span>
-  </span>`;
-}
-
-function renderBadgeLegend() {
-  const badges = state.data.badges || {};
-  const items = ["green", "amber", "red"]
-    .map((tier) => {
-      const item = badges[tier];
-      if (!item) return "";
-      return `<li class="badge-legend-item">
-        ${renderBadge(tier)}
-        <p>${escapeHtml(item.definition)}</p>
-      </li>`;
-    })
-    .join("");
-  return `<section class="badge-legend" aria-label="実現可能性バッジの凡例">
-    <p class="sheet-heading">実現可能性</p>
-    <ul>${items}</ul>
-    <p class="badge-disclaimer">${escapeHtml(state.data.badgeDisclaimer || "")}</p>
-  </section>`;
+function saveAnswer(payload) {
+  if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") return;
+  fetch("api/answers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
 }
 
 function provisionById(id) {
@@ -455,22 +308,18 @@ function openProvision(id) {
       item.note ? `<p class="provision-note">${escapeHtml(item.note)}</p>` : ""
     }`;
   } else {
-    body.innerHTML = `<p>条文の逐語は確認中です。</p><p class="provision-note">画面には条番号のみを出しています。リーガルレビューで逐語を補完します。</p>`;
+    body.innerHTML = `<p>条文の逐語は確認中です。</p>`;
   }
   const source = document.getElementById("provision-panel-source");
-  if (item.url) {
-    source.innerHTML = `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">出典を開く</a>`;
-  } else {
-    source.textContent = "";
-  }
+  source.innerHTML = item.url
+    ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">出典を開く</a>`
+    : "";
   panel.hidden = false;
-  document.body.classList.add("provision-open");
 }
 
 function closeProvision() {
   const panel = document.getElementById("provision-panel");
   if (panel) panel.hidden = true;
-  document.body.classList.remove("provision-open");
 }
 
 function bindProvisionUi() {
@@ -492,589 +341,396 @@ function onProvisionKey(event) {
   if (event.key === "Escape") closeProvision();
 }
 
-function renderPathMinimap(question) {
-  const selected = state.answers[question.id];
-  const designer = question.designerChoice;
-  return `<ol class="path-minimap">${question.choices
-    .map((choice) => {
-      const markers = [];
-      if (choice.id === selected) markers.push("あなた");
-      if (choice.id === designer) markers.push("設計者");
-      return `<li>
-        ${renderBadge(choice.tier)}
-        <span class="minimap-letter">${escapeHtml(choiceLetter(choice.id))}</span>
-        <span class="minimap-text">${escapeHtml(choice.text)}</span>
-        ${
-          markers.length
-            ? `<span class="minimap-marks">${markers
-                .map((mark) => `<span>${escapeHtml(mark)}</span>`)
-                .join("")}</span>`
-            : ""
-        }
-      </li>`;
-    })
-    .join("")}</ol>`;
+function renderFooter() {
+  const meta = state.data.meta;
+  document.getElementById("footer-disclaimer").textContent = meta.legalNote;
+  document.getElementById("footer-data").textContent = meta.dataNotice;
+  document.getElementById("footer-privacy").textContent = meta.privacy.retention;
 }
 
-function renderOriginMatrix() {
-  const matrix = state.data.originMatrix;
-  if (!matrix) return "";
-  const head = `<tr><th scope="col">原資 \\ 内容</th>${matrix.cols
-    .map((col) => `<th scope="col">${escapeHtml(col)}</th>`)
-    .join("")}</tr>`;
-  const body = matrix.rows
-    .map((row) => {
-      const tierClass = row.tier || "none";
-      const cell = row.tier ? renderBadge(row.tier) : "—";
-      const cells = matrix.cols
-        .map(() => `<td class="matrix-cell is-${escapeHtml(tierClass)}">${cell}</td>`)
-        .join("");
-      return `<tr class="is-${escapeHtml(tierClass)}"><th scope="row">${escapeHtml(row.name)}</th>${cells}</tr>`;
-    })
-    .join("");
-  return `<section class="origin-matrix">
-    <p class="compare-label">${escapeHtml(matrix.heading || "原資 × 内容")}</p>
-    <div class="matrix-scroll">
-      <table>${head}${body}</table>
-    </div>
-    <p class="matrix-caption">${escapeHtml(matrix.caption)}</p>
-  </section>`;
-}
-
-function renderCompareResult(question) {
-  const selected = state.answers[question.id];
-  const designer = question.designerChoice;
-  const same = selected === designer;
-  const letter = choiceLetter(designer);
-  return `
-      <p class="compare-result ${same ? "same" : "split"}">${
-        same ? "同じ考えでした" : "考えが分かれました"
-      }</p>
-      <p>${
-        same
-          ? `設計者の選択も ${escapeHtml(letter)} でした`
-          : `設計者の選択は ${escapeHtml(letter)} でした`
-      }</p>`;
-}
-
-function renderDesignerWord(question, options) {
-  const includeCompare = !(options && options.compare === false);
-  return `
-    <section class="compare designer-word">
-      <p class="compare-label">設計者の一言</p>
-      ${includeCompare ? renderCompareResult(question) : ""}
-      <p class="disclaimer">${escapeHtml(state.data.meta.disclaimer)}</p>
-      ${renderParagraphs(question.explanation)}
-    </section>`;
-}
-
-function renderPathFollowup(question) {
-  const selected = question.choices.find((choice) => choice.id === state.answers[question.id]);
-  if (!selected) return "";
-  const pathNote = question.pathNote
-    ? `<p class="path-special-note">${formatInline(question.pathNote)}</p>`
-    : "";
-  return `
-    <section class="path-reveal" aria-live="polite">
-      <div class="path-yours">
-        ${renderBadge(selected.tier)}
-        ${renderProvisionChips(selected.provisionIds || question.provisionIds)}
-        <p class="path-note">${escapeHtml(selected.note || "")}</p>
-        ${pathNote}
-      </div>
-      <div class="path-minimap-wrap">
-        <p class="compare-label">4つの道</p>
-        ${renderPathMinimap(question)}
-      </div>
-      ${renderDesignerWord(question)}
-    </section>`;
-}
-
-function renderBeliefFollowup(question) {
-  const cards = (question.provisionIds || [])
-    .map((id) => {
-      const item = provisionById(id);
-      if (!item) return "";
-      return `<button type="button" class="provision-chip provision-card" data-provision="${escapeHtml(
-        item.id
-      )}">
-        <span>${escapeHtml(item.name)}</span>
-        ${item.verified ? "" : `<span class="provision-pending">参照のみ</span>`}
-      </button>`;
-    })
-    .join("");
-  const cardNote = question.cardNote
-    ? `<p class="belief-card-note">${escapeHtml(question.cardNote)}</p>`
-    : "";
-  const matrix = question.id === "q02" ? renderOriginMatrix() : "";
-  return `
-    <section class="compare" aria-live="polite">
-      ${renderCompareResult(question)}
-    </section>
-    <section class="belief-provisions">
-      ${cards}
-      ${cardNote}
-    </section>
-    ${renderDesignerWord(question, { compare: false })}
-    ${matrix}`;
-}
-
-function typeLawKey() {
-  return isNoPrize() ? "4" : state.answers.d3 || "3";
-}
-
-function renderTypeLawCard() {
-  const card = (state.data.typeLawCards || {})[typeLawKey()] || {};
-  const name = typeName() || "（未選択）";
-  const badge = card.tier ? renderBadge(card.tier) : "";
-  return `<section class="type-law-card">
-    <h2>あなたの「${escapeHtml(name)}」は、ここに触れる。</h2>
-    <div class="type-law-meta">${badge}${renderProvisionChips(card.provisionIds)}</div>
-    <p>${escapeHtml(card.note || "")}</p>
-  </section>`;
-}
-
-function renderTypeLaw() {
-  const section = state.data.sections.hurdle1;
-  return `
-    <div class="play-layout">
-      <div class="play-main">
-        <button class="back-link" id="back-link" type="button">← 戻る</button>
-        <div class="part-head">
-          <p class="part-label">Hurdle 1</p>
-          <h2>${escapeHtml(hurdleShortTitle("hurdle1"))}</h2>
-          <p class="lead">${escapeHtml(sectionLeadText(section, "hurdle1"))}</p>
-        </div>
-        <div class="hurdle-map page">${renderHurdleMapList(false)}</div>
-        ${renderBadgeLegend()}
-        ${renderTypeLawCard()}
-        <div class="actions">
-          <button class="next-btn" id="continue-btn" type="button">最初の問いへ →</button>
-        </div>
-      </div>
-      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
-    </div>
-    ${renderProvisionPanelShell()}
-  `;
-}
-
-function renderParagraphs(text) {
-  return String(text || "")
-    .split(/\n\n+/)
-    .filter(Boolean)
-    .map((p) => `<p>${formatInline(p)}</p>`)
-    .join("");
-}
-
-function renderQuestion() {
-  const question = currentQuestion();
-  const total = state.data.questions.length;
-  const section = state.data.sections[question.section];
-  const showSectionLead =
-    state.index === 0 ||
-    question.section !== state.data.questions[state.index - 1].section;
-  const selected = state.answers[question.id];
-  const designer = question.designerChoice;
-  const isSurvey = question.mode !== "compare";
-  const choices = question.choices
-    .map((choice) => {
-      let dataState = "";
-      if (selected === choice.id && (state.revealed || isSurvey)) dataState = "selected";
-      if (state.revealed && !isSurvey && choice.id === designer) {
-        dataState = selected === choice.id ? "selected" : "designer";
-      }
-      const letter = isSurvey
-        ? ""
-        : `<span class="choice-letter">${escapeHtml(choiceLetter(choice.id))}</span>`;
-      return `
-        <button
-          class="choice ${isSurvey ? "is-survey" : ""}"
-          type="button"
-          data-choice="${escapeHtml(choice.id)}"
-          data-state="${dataState}"
-          ${state.revealed && !isSurvey ? "disabled" : ""}
-        >${letter}<span class="choice-text">${escapeHtml(choice.text)}</span><span class="choice-arrow" aria-hidden="true">→</span></button>`;
-    })
-    .join("");
-
-  let followup = "";
-  if (state.revealed && question.mode === "compare") {
-    followup =
-      question.format === "path" ? renderPathFollowup(question) : renderBeliefFollowup(question);
-  }
-
-  if (state.revealed && isLastInHurdle(question) && hurdleComplete(question.section)) {
-    const hurdle = state.data.sections[question.section];
-    followup += `
-      <section class="fun-payoff" aria-live="polite">
-        <p class="compare-label">この制約が生む面白さ</p>
-        <p>${escapeHtml(hurdle.funPayoff)}</p>
-      </section>
-      <div class="inline-blueprint">${renderBlueprint()}</div>`;
-  }
-
-  const nextLabel = state.index === total - 1 ? "まとめを見る →" : "次の問いへ →";
-  const back =
-    question.section === "design"
-      ? `<button class="back-link" id="back-link" type="button">← 戻る</button>`
-      : "";
-  const next =
-    isSurvey || !state.revealed
-      ? ""
-      : `<div class="next-dock">
-      <button class="next-btn" id="next-btn" type="button">${nextLabel}</button>
-    </div>`;
-
-  if (isSurvey) {
-    const seq = visibleDesignIds();
-    const ratio = Math.round((designAnsweredCount() / Math.max(seq.length, 1)) * 100);
-    const lead = showSectionLead
-      ? `<div class="part-head">
-          <p class="part-label">Part 1</p>
-          <h2>${escapeHtml(section.title.replace(/^Part 1｜/, ""))}</h2>
-          <p class="lead">${escapeHtml(section.lead)}</p>
-        </div>`
-      : `<p class="part-label">Part 1</p>`;
-    return `
-      ${back}
-      ${lead}
-      <div class="design-progress" aria-hidden="true">
-        <p>大会を設計中</p>
-        <div class="design-progress-track"><div class="design-progress-fill" style="width:${ratio}%"></div></div>
-      </div>
-      <h2 class="prompt">${escapeHtml(question.prompt)}</h2>
-      <div class="choices" role="group" aria-label="選択肢">${choices}</div>
-    `;
-  }
-
-  const hurdleId = question.section;
-  const qs = hurdleQuestions(hurdleId);
-  const step = qs.findIndex((item) => item.id === question.id) + 1;
-  const nationalLead =
-    question.id === "q09" && isNational()
-      ? `<p class="lead condition-lead">${escapeHtml(
-          (state.data.sections.hurdle2 &&
-            state.data.sections.hurdle2.conditionByScale &&
-            state.data.sections.hurdle2.conditionByScale.national) ||
-            ""
-        )}</p>`
-      : "";
-  const lead = showSectionLead
-    ? `<div class="part-head">
-        <p class="part-label">Hurdle ${HURDLES.indexOf(hurdleId) + 1}</p>
-        <h2>${escapeHtml(hurdleShortTitle(hurdleId))}</h2>
-        <p class="lead">${escapeHtml(sectionLeadText(section, hurdleId))}</p>
-      </div>`
-    : `<p class="part-label">Hurdle ${HURDLES.indexOf(hurdleId) + 1}</p>
-       <p class="hurdle-place">Hurdle ${HURDLES.indexOf(hurdleId) + 1} — ${step}つ目の問い</p>
-       ${nationalLead}`;
-  return `
-    ${lead}
-    <p class="mobile-hurdle hurdle-place">${escapeHtml(hurdleShortTitle(hurdleId))} — ${step}つ目の問い</p>
-    <h2 class="prompt">${escapeHtml(question.prompt)}</h2>
-    <div class="choices" role="group" aria-label="選択肢">${choices}</div>
-    ${renderProvisionChips(question.provisionIds)}
-    ${followup}
-    ${next}
-  `;
-}
-
-function renderSheetRows(ids) {
-  return ids
-    .map((id) => {
-      const question = questionById(id);
-      const label = selectedLabel(id);
-      if (!question || !label) return "";
-      const title = question.sheetLabel || question.axisLabel;
-      return `
-        <div class="sheet-row">
-          <p class="sheet-kicker">${escapeHtml(title)}</p>
-          <p class="sheet-value">${escapeHtml(label)}</p>
-        </div>`;
-    })
-    .join("");
-}
-
-function issueIsOpen(item) {
-  if (!item || item.when === "always") return true;
-  if (item.when === "hasPrize") return hasPrize();
-  if (item.when === "national") return hasPrize() && isNational();
-  return true;
-}
-
-function hurdleRelevance(hurdleId) {
-  if (hurdleId === "hurdle3") return "open";
-  return hasPrize() ? "open" : "na";
-}
-
-function renderIssueAgenda() {
-  const agenda = state.data.issueAgenda;
-  if (!agenda) return "";
-  const openCount = (agenda.items || []).filter((item) => issueIsOpen(item)).length;
-  const summary = isNoPrize()
-    ? `<p class="issue-summary">${formatInline(agenda.noprizeSummary)}</p>`
-    : `<p class="issue-summary">${escapeHtml(agenda.summary.replace("{{n}}", String(openCount)))}</p>`;
-  const rows = (agenda.items || [])
-    .map((item) => {
-      const open = issueIsOpen(item);
-      const status = open ? agenda.statusOpen : agenda.statusNa;
-      const reason = open ? interpolate(item.reason) : agenda.naReason;
-      const sub =
-        item.sub && issueIsOpen(item.sub)
-          ? `<article class="issue-row issue-sub is-open">
-              <p class="issue-status">${escapeHtml(agenda.statusOpen)}</p>
-              <h4>${escapeHtml(item.sub.title)}</h4>
-              <p class="issue-reason">${escapeHtml(interpolate(item.sub.reason))}</p>
-              ${renderProvisionChips(item.sub.provisionIds)}
-            </article>`
-          : "";
-      return `<article class="issue-row is-${open ? "open" : "na"}">
-        <p class="issue-status">${escapeHtml(status)}</p>
-        <h3>${escapeHtml(item.title)}</h3>
-        <p class="issue-reason">${escapeHtml(reason)}</p>
-        ${renderProvisionChips(item.provisionIds)}
-        ${sub}
-      </article>`;
-    })
-    .join("");
-  return `<section class="issue-agenda" aria-label="現状整理">
-    <h2>${escapeHtml(agenda.heading)}</h2>
-    ${summary}
-    <div class="issue-list">${rows}</div>
-    <p class="issue-disclaimer">${escapeHtml(agenda.disclaimer)}</p>
-  </section>`;
-}
-
-function latestHurdlePick(hurdleId) {
-  const answered = hurdleQuestions(hurdleId).filter(
-    (question) => state.answers[question.id] && question.sheetLabel
-  );
-  if (!answered.length) return "";
-  const last = answered[answered.length - 1];
-  const text = selectedLabel(last.id);
-  return text.length > 22 ? `${text.slice(0, 22)}…` : text;
-}
-
-function renderPlayerSheet(options) {
-  const finale = Boolean(options && options.finale);
-  const compare = isNoPrize() ? "" : qualitativeCompare();
-  const lines = diagnosisTypeLines();
-  const lockup = diagnosisReady()
-    ? `<p class="sheet-type">${escapeHtml(lines.type)}${
-        lines.prize ? `<span class="times">${escapeHtml(lines.prize)}</span>` : ""
-      }</p>`
-    : "";
-  const inPart2 =
-    state.view === "typeLaw" ||
-    (state.view === "question" &&
-      currentQuestion() &&
-      HURDLES.includes(currentQuestion().section));
-  const map = inPart2
-    ? `<p class="sheet-heading">4つのハードル</p><div class="hurdle-map compact">${renderHurdleMapList(true)}</div>${
-        state.view === "typeLaw" ? "" : renderBadgeLegend()
-      }`
-    : "";
-  const rows = renderSheetRows(visibleDesignIds());
-  if (finale) {
-    return `
-      ${lockup}
-      <div class="sheet-rows">${rows}</div>
-      ${compare ? `<p class="sheet-compare">${escapeHtml(compare)}</p>` : ""}
-    `;
-  }
-  const open = isMobileLayout() ? "" : "open";
-  const summary = isMobileLayout() ? "あなたの大会を見る" : "あなたの大会";
-  return `
-    <details class="sheet-panel" ${open}>
-      <summary>${summary}</summary>
-      ${lockup}
-      <div class="sheet-rows">${rows}</div>
-      ${compare ? `<p class="sheet-compare">${escapeHtml(compare)}</p>` : ""}
-      ${map}
-    </details>
-  `;
-}
-
-function hurdleItemState(hurdleId) {
-  if (hurdleComplete(hurdleId) || state.view === "finale") return "cleared";
-  if (state.view === "designSheet") return "locked";
-  if (state.view === "typeLaw") return hurdleId === "hurdle1" ? "current" : "locked";
-  const current = state.view === "question" ? currentQuestion() : null;
-  if (current && current.section === hurdleId) return "current";
-  const currentIndex = current ? HURDLES.indexOf(current.section) : -1;
-  const thisIndex = HURDLES.indexOf(hurdleId);
-  if (currentIndex >= 0 && thisIndex < currentIndex) return "cleared";
-  return "locked";
-}
-
-function renderHurdleMapList(compact) {
-  const agenda = state.data.issueAgenda || {};
-  return HURDLES.map((id) => {
-    const status = hurdleItemState(id);
-    const relevance = hurdleRelevance(id);
-    const relevanceLabel =
-      relevance === "na" ? agenda.statusNa || "対象外（仮定の問いとして読めます）" : agenda.statusOpen || "要検討";
-    const progressMark =
-      status === "cleared" ? "見た" : status === "current" ? "← 現在" : "";
-    const mark = [relevanceLabel, progressMark].filter(Boolean).join(" · ");
-    const pick = compact ? latestHurdlePick(id) : "";
-    return `
-      <article class="hurdle-map-item is-${status} is-${relevance}">
-        <span class="hurdle-map-num">${hurdleIndexLabel(id)}</span>
-        <div>
-          <h3>${escapeHtml(hurdleShortTitle(id))}</h3>
-          ${mark ? `<p class="hurdle-map-status">${escapeHtml(mark)}</p>` : ""}
-          ${pick ? `<p class="hurdle-picked">${escapeHtml(pick)}</p>` : ""}
-        </div>
-      </article>`;
+function renderLaunchTicks() {
+  const cells = STAGES.map((id, index) => {
+    const done = index < state.resolvedStages || state.view === "launch" || state.view === "epilogue";
+    const current = state.view === "survive" && index === state.stageIndex;
+    const mark = done ? "■" : "□";
+    return `<span class="tick ${done ? "is-done" : ""} ${current ? "is-current" : ""}" aria-hidden="true">${mark}</span>`;
   }).join("");
+  return `<div class="launch-meter"><p class="sheet-kicker">${escapeHtml(copy("untilLaunch"))}</p><p class="ticks">${cells}</p></div>`;
 }
 
-function renderDesignReveal() {
-  const map = state.data.hurdleMap || {};
-  const lines = diagnosisTypeLines();
-  const funding = diagnosisFundingBlurb();
-  const prize = diagnosisPrizeBlurb();
-  const scale = selectedLabel("d2");
-  const fundingParas = funding
-    .split(/(?<=。)/)
-    .filter(Boolean)
-    .map((p) => `<p>${escapeHtml(p)}</p>`)
-    .join("");
-  const prizeParas = prize
-    .split(/(?<=。)/)
-    .filter(Boolean)
-    .map((p) => `<p>${escapeHtml(p)}</p>`)
-    .join("");
-  const turn = escapeHtml(map.preface || "").replace("。そして、", "。<br />そして、");
-  return `
-    <div class="play-layout">
-      <div class="play-main diagnosis-screen">
-        <button class="back-link" id="back-link" type="button">← 戻る</button>
-        <p class="diagnosis-kicker">${escapeHtml(state.data.diagnosis.heading)}</p>
-        <h1 class="diagnosis-lockup">${escapeHtml(lines.type)}${
-          lines.prize ? `<span class="times">${escapeHtml(lines.prize)}</span>` : ""
-        }</h1>
-        <div class="diagnosis-copy prose">${fundingParas}${prizeParas}</div>
-        ${
-          scale && !isNoPrize()
-            ? `<div class="diagnosis-scale">
-                <p class="sheet-kicker">賞金・賞品の規模感</p>
-                <p class="sheet-value">${escapeHtml(scale)}</p>
-              </div>`
-            : ""
-        }
-        <p class="diagnosis-hook">${escapeHtml(diagnosisHook())}</p>
-        <p class="turn-copy">${turn}</p>
-        ${renderIssueAgenda()}
-        <div class="actions">
-          <button class="next-btn" id="continue-btn" type="button">${escapeHtml(
-            map.continueLabel || "ハードル1へ進む"
-          )} →</button>
-        </div>
-      </div>
-      <aside class="sheet-panel-wrap">${renderPlayerSheet()}</aside>
-    </div>
-  `;
-}
-
-function partClass(hurdle, revealed) {
-  return revealed[hurdle] ? "part revealed" : "part locked";
-}
-
-function renderBlueprint(options) {
-  const complete = Boolean(options && options.complete);
-  const revealed = complete
-    ? { hurdle1: true, hurdle2: true, hurdle3: true, hurdle4: true }
-    : hurdleState();
-  const heading = complete ? "設計者の大会" : "設計者の設計図";
-  const note = complete
-    ? state.data.finale.diagramNote
-    : "図は設計者の設計です。ハードルを考え終えると、構造が組み上がります。";
-  return `
-    <p class="blueprint-kicker">${escapeHtml(heading)}</p>
-    <p class="blueprint-note">${escapeHtml(note)}</p>
-    <svg class="blueprint" viewBox="0 0 360 560" role="img" aria-label="設計者の大会設計図。参加費は運営費のみに充当し、賞金プールへは通さない。">
-      <g class="${partClass("hurdle1", revealed)} part-hurdle1">
-        <rect class="node" x="18" y="18" width="108" height="40" rx="0"></rect>
-        <text x="72" y="43" text-anchor="middle">参加者</text>
-        <path class="flow quiet" d="M72 58 v24"></path>
-        <text class="label" x="124" y="74">参加費は運営費のみ</text>
-        <rect class="node" x="18" y="86" width="108" height="40" rx="0"></rect>
-        <text x="72" y="111" text-anchor="middle">運営費</text>
-        <path class="blocked" d="M126 38 H158"></path>
-        <text class="block-x" x="176" y="43" text-anchor="middle">×</text>
-        <path class="blocked" d="M194 38 H210"></path>
-        <rect class="node" x="210" y="18" width="132" height="40" rx="0"></rect>
-        <text x="276" y="43" text-anchor="middle">賞金プール</text>
-        <path class="flow" d="M276 58 v96"></path>
-        <rect class="node" x="210" y="158" width="132" height="40" rx="0"></rect>
-        <text x="276" y="183" text-anchor="middle">入賞者</text>
-      </g>
-      <g class="${partClass("hurdle2", revealed)} part-hurdle2">
-        <rect class="node" x="18" y="230" width="324" height="48" rx="0"></rect>
-        <text x="180" y="250" text-anchor="middle">全国のアミューズ店舗（分散スポンサー）</text>
-        <text class="label" x="180" y="268" text-anchor="middle">スポンサー料 → 賞金プール</text>
-        <path class="flow" d="M276 230 V58"></path>
-        <path class="flow quiet" d="M48 278 v36 H276 v-36"></path>
-        <text class="label" x="162" y="308" text-anchor="middle">広告掲出・優先権（価値は小さく保つ）</text>
-      </g>
-      <g class="${partClass("hurdle3", revealed)} part-hurdle3">
-        <rect class="node" x="18" y="360" width="196" height="48" rx="0"></rect>
-        <text x="116" y="380" text-anchor="middle">会場：許可店の外</text>
-        <text class="label" x="116" y="396" text-anchor="middle">独立会場</text>
-        <rect class="node" x="230" y="360" width="112" height="48" rx="0"></rect>
-        <text x="286" y="380" text-anchor="middle">年2回</text>
-        <text class="label" x="286" y="396" text-anchor="middle">カレンダー</text>
-      </g>
-      <g class="${partClass("hurdle4", revealed)} part-hurdle4">
-        <rect class="node" x="18" y="438" width="324" height="48" rx="0"></rect>
-        <text x="180" y="458" text-anchor="middle">記録・証憑</text>
-        <text class="label" x="180" y="474" text-anchor="middle">契約書 / 資金フロー</text>
-      </g>
-    </svg>
-  `;
-}
-
-function onChoiceKey(event) {
-  if (event.metaKey || event.ctrlKey || event.altKey) return;
-  if (state.view !== "question" || state.revealed) return;
-  const question = currentQuestion();
-  if (!question || question.mode !== "compare") return;
-  const id = { a: "1", b: "2", c: "3", d: "4", "1": "1", "2": "2", "3": "3", "4": "4" }[
-    event.key.toLowerCase()
+function factRows(source) {
+  const rows = [
+    ["規模", selectedLabel("d1", source)],
+    ["渡すもの", selectedLabel("d0", source)],
   ];
-  if (!id || !question.choices.some((choice) => choice.id === id)) return;
-  event.preventDefault();
-  onChoose(id);
+  if (!isNoPrize(source)) {
+    rows.push(["賞金の規模感", selectedLabel("d2", source)]);
+    rows.push(["原資", selectedLabel("d3", source)]);
+  }
+  return rows.filter((row) => row[1]);
 }
 
-function bindQuestion() {
-  window.removeEventListener("keydown", onChoiceKey);
-  document.querySelectorAll(".choice").forEach((button) => {
-    button.addEventListener("click", () => onChoose(button.dataset.choice));
+function renderTournamentCard(source, options) {
+  const compact = Boolean(options && options.compact);
+  const rows = factRows(source)
+    .map(
+      ([label, value]) =>
+        `<div class="sheet-row"><p class="sheet-kicker">${escapeHtml(label)}</p><p class="sheet-value">${escapeHtml(
+          value
+        )}</p></div>`
+    )
+    .join("");
+  const lockup = typeLockup(source);
+  return `
+    <section class="tourney-card ${compact ? "is-compact" : ""}">
+      <p class="sheet-kicker">YOUR TOURNAMENT</p>
+      <h2 class="tourney-lockup">${escapeHtml(lockup)}</h2>
+      <div class="sheet-rows">${rows}</div>
+    </section>`;
+}
+
+function renderHud() {
+  if (!state.currentTournament) return "";
+  return `
+    <aside class="hud">
+      ${renderTournamentCard(state.currentTournament, { compact: true })}
+      ${renderLaunchTicks()}
+    </aside>`;
+}
+
+function renderIntro() {
+  const intro = state.data.intro;
+  const meta = state.data.meta;
+  const body = intro.body.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+  return `
+    <p class="kicker">${escapeHtml(intro.kicker)}</p>
+    <h1>${escapeHtml(meta.title)}<br /><span style="font-size:0.62em;color:var(--muted)">${escapeHtml(
+      meta.subtitle
+    )}</span></h1>
+    <p class="lead">${escapeHtml(intro.lead)}</p>
+    <div class="prose">${body}</div>
+    <p class="note">${escapeHtml(intro.close)}</p>
+    <div class="actions">
+      <button class="primary" id="start-btn" type="button">始める</button>
+    </div>`;
+}
+
+function renderDesignQuestion() {
+  const question = currentQuestion();
+  const section = state.data.sections.design;
+  const seq = visibleDesignIds();
+  const showLead = question.id === seq[0];
+  const ratio = Math.round((seq.filter((id) => state.answers[id]).length / Math.max(seq.length, 1)) * 100);
+  const choices = question.choices
+    .map(
+      (choice) => `
+        <button class="choice is-survey" type="button" data-choice="${escapeHtml(choice.id)}">
+          <span class="choice-text">${escapeHtml(choice.text)}</span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>`
+    )
+    .join("");
+  const lead = showLead
+    ? `<div class="part-head"><p class="part-label">ACT 1</p><h2>${escapeHtml(
+        section.title.replace(/^ACT 1｜/, "")
+      )}</h2><p class="lead">${escapeHtml(section.lead)}</p></div>`
+    : `<p class="part-label">ACT 1</p>`;
+  return `
+    <button class="back-link" id="back-link" type="button">← 戻る</button>
+    ${lead}
+    <div class="design-progress" aria-hidden="true">
+      <p>大会を設計中</p>
+      <div class="design-progress-track"><div class="design-progress-fill" style="width:${ratio}%"></div></div>
+    </div>
+    <h2 class="prompt">${escapeHtml(question.prompt)}</h2>
+    <div class="choices" role="group">${choices}</div>`;
+}
+
+function renderTournamentScreen() {
+  const map = state.data.hurdleMap || {};
+  const t = snapshotTournament();
+  return `
+    <button class="back-link" id="back-link" type="button">← 戻る</button>
+    <p class="part-label">ACT 1</p>
+    ${renderTournamentCard(t)}
+    <p class="turn-copy">${escapeHtml(map.preface || "")}</p>
+    ${renderLaunchTicks()}
+    <div class="actions">
+      <button class="next-btn" id="continue-btn" type="button">${escapeHtml(
+        map.continueLabel || "この大会を開催する"
+      )} →</button>
+    </div>`;
+}
+
+function statusLabel(status) {
+  if (status === "changed") return copy("statusChanged");
+  if (status === "issue") return copy("statusIssue");
+  return copy("statusKept");
+}
+
+function renderSurvive() {
+  const event = currentEvent();
+  if (!event) return `<p>イベントを読み込めませんでした。</p>`;
+  const choices = eventChoices(event);
+  const selected = state.answers[event.id];
+  const choiceButtons = choices
+    .map((choice) => {
+      const dataState = selected === choice.id && state.revealed ? "selected" : "";
+      return `
+        <button class="choice" type="button" data-choice="${escapeHtml(choice.id)}" data-state="${dataState}" ${
+        state.revealed ? "disabled" : ""
+      }>
+          <span class="choice-text">${escapeHtml(choice.text)}</span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>`;
+    })
+    .join("");
+  const scenario = (event.scenario || []).map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+  let followup = "";
+  if (state.revealed) {
+    const picked = choices.find((choice) => choice.id === selected) || {};
+    const pack = copyChoice(event, picked);
+    const source = sourceQuestion(event);
+    const detail = source ? source.explanation : "";
+    const provisions = (source && source.provisionIds) || event.provisionIds || [];
+    followup = `
+      <section class="consequence" aria-live="polite">
+        <p class="sheet-kicker">${escapeHtml(copy("yourCall"))}</p>
+        <p class="compare-result">${escapeHtml(pack.call)}</p>
+        <p class="status-line">${escapeHtml(statusLabel(pack.status))}</p>
+        <p>${escapeHtml(pack.result)}</p>
+        <p class="sheet-kicker">${escapeHtml(copy("why"))}</p>
+        <p>${escapeHtml(pack.insight)}</p>
+        ${
+          detail
+            ? `<details class="more-detail" ${state.detailOpen ? "open" : ""}>
+                <summary>${escapeHtml(copy("more"))}</summary>
+                <div class="prose">${detail
+                  .split(/\n\n+/)
+                  .filter(Boolean)
+                  .map((p) => `<p>${formatInline(p)}</p>`)
+                  .join("")}</div>
+                ${renderProvisionChips(provisions)}
+              </details>`
+            : renderProvisionChips(provisions)
+        }
+      </section>`;
+  }
+  const lastInStage = !state.stageEvents.slice(state.eventIndex + 1).some(eventMatches);
+  const clearText =
+    state.revealed && lastInStage && state.data.copy && state.data.copy.stageClear
+      ? state.data.copy.stageClear[event.stage]
+      : "";
+  const clear = clearText ? `<p class="stage-clear">${escapeHtml(clearText)}</p>` : "";
+  const next =
+    state.revealed
+      ? `<div class="next-dock">
+        <button class="next-btn" id="next-btn" type="button">${escapeHtml(copy("next"))}</button>
+      </div>`
+      : "";
+  return `
+    <div class="play-layout survive-layout">
+      <div class="play-main">
+        <p class="part-label">ACT 2</p>
+        <p class="kicker">${escapeHtml(event.kicker || "")}</p>
+        <div class="prose scenario">${scenario}</div>
+        <h2 class="prompt">${escapeHtml(event.prompt)}</h2>
+        <div class="choices" role="group">${choiceButtons}</div>
+        ${followup}
+        ${clear}
+        ${next}
+      </div>
+      ${renderHud()}
+    </div>
+    ${renderProvisionPanelShell()}`;
+}
+
+function fieldChanged(id) {
+  if (!state.initialTournament || !state.currentTournament) return false;
+  return state.initialTournament[id] !== state.currentTournament[id];
+}
+
+function playStyle() {
+  const styles = state.data.playStyles || {};
+  if (isNoPrize(state.currentTournament)) return styles.noprize;
+  const initFund = fundingKey(state.initialTournament);
+  const nowFund = fundingKey(state.currentTournament);
+  if (initFund === "sponsor" && nowFund === "sponsor") return styles.sponsor;
+  if (initFund !== nowFund && nowFund === "sponsor") return styles.kept;
+  if (fieldChanged("d2") && Number(state.currentTournament.d2) < Number(state.initialTournament.d2)) {
+    return styles.simple;
+  }
+  if (nowFund === "entry_fee") return styles.bold;
+  return styles.kept;
+}
+
+function renderCompareTable() {
+  const keys = [
+    ["規模", "d1"],
+    ["渡すもの", "d0"],
+    ["賞金の規模感", "d2"],
+    ["原資", "d3"],
+  ];
+  const rows = keys
+    .map(([label, id]) => {
+      const before = selectedLabel(id, state.initialTournament) || "—";
+      const after = selectedLabel(id, state.currentTournament) || "—";
+      if (before === "—" && after === "—") return "";
+      return `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(before)}</td><td>${escapeHtml(after)}</td></tr>`;
+    })
+    .join("");
+  return `<div class="matrix-scroll"><table class="ba-table">
+    <tr><th></th><th>${escapeHtml(copy("before"))}</th><th>${escapeHtml(copy("after"))}</th></tr>
+    ${rows}
+  </table></div>`;
+}
+
+function keptChangedLists() {
+  const labels = { d1: "大会規模", d0: "賞品", d2: "賞金の規模感", d3: "賞金原資" };
+  const kept = [];
+  const changed = [];
+  Object.keys(labels).forEach((id) => {
+    const before = selectedLabel(id, state.initialTournament);
+    const after = selectedLabel(id, state.currentTournament);
+    if (!before && !after) return;
+    if (before === after) kept.push(labels[id]);
+    else changed.push(labels[id]);
   });
-  const next = document.getElementById("next-btn");
-  if (next) next.addEventListener("click", onNext);
+  return { kept, changed };
+}
+
+function renderLaunch() {
+  const style = playStyle() || {};
+  const lists = keptChangedLists();
+  const kept = lists.kept.map((item) => `<li>${escapeHtml(item)}</li>`).join("") || `<li>${escapeHtml(copy("unchanged"))}</li>`;
+  const changed =
+    lists.changed.map((item) => `<li>${escapeHtml(item)}</li>`).join("") || `<li>${escapeHtml(copy("unchanged"))}</li>`;
+  return `
+    <p class="part-label">ACT 3</p>
+    <p class="kicker">${escapeHtml(copy("launchKicker"))}</p>
+    <h1>${escapeHtml(copy("launchTitle"))}</h1>
+    ${renderTournamentCard(state.currentTournament)}
+    ${renderLaunchTicks()}
+    <h2>${escapeHtml(copy("before"))} / ${escapeHtml(copy("after"))}</h2>
+    ${renderCompareTable()}
+    <div class="finale-compare-grid">
+      <section class="finale-side"><p class="finale-side-label">${escapeHtml(copy("kept"))}</p><ul>${kept}</ul></section>
+      <section class="finale-side"><p class="finale-side-label">${escapeHtml(copy("changed"))}</p><ul>${changed}</ul></section>
+    </div>
+    <section class="finale-block">
+      <p class="sheet-kicker">${escapeHtml(copy("style"))}</p>
+      <h2>${escapeHtml(style.name || "")}</h2>
+      <p>${escapeHtml(style.blurb || "")}</p>
+    </section>
+    <div class="actions">
+      <button class="next-btn" id="continue-btn" type="button">主催者の設計を見る →</button>
+    </div>`;
+}
+
+function renderEpilogue() {
+  const finale = state.data.finale;
+  const closing = escapeHtml(finale.closing).replace("。", "。<br />");
+  const pairs = [
+    ["規模", selectedLabel("d1", state.currentTournament), "全国規模を想定"],
+    ["渡すもの", selectedLabel("d0", state.currentTournament), "現金（現物も可）"],
+    ["原資", selectedLabel("d3", state.currentTournament) || "賞品なし", "スポンサー提供。参加費は賞品に入れない"],
+    ["会場", (state.decisions.find((d) => d.eventId === "h3_venue") || {}).choiceText || "（未選択）", "許可店とは分けた外部会場"],
+  ];
+  const rows = pairs
+    .map(
+      ([label, yours, designer]) =>
+        `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(yours || "—")}</td><td>${escapeHtml(designer)}</td></tr>`
+    )
+    .join("");
+  return `
+    <p class="part-label">EPILOGUE</p>
+    <p class="lead">${escapeHtml(copy("epilogueLead"))}</p>
+    <div class="matrix-scroll"><table class="ba-table">
+      <tr><th></th><th>${escapeHtml(copy("yourDesign"))}</th><th>${escapeHtml(copy("designerDesign"))}</th></tr>
+      ${rows}
+    </table></div>
+    <p class="note">${escapeHtml(copy("epilogueNote"))}</p>
+    <p class="closing">${escapeHtml(copy("endingTitle"))}</p>
+    <p class="lead">${closing}</p>
+    <p class="note">${escapeHtml(finale.disclaimer)}</p>
+    <div class="actions">
+      <button class="next-btn" id="restart-btn" type="button">${escapeHtml(copy("replay"))}</button>
+      <button class="ghost" id="share-x-btn" type="button">Xで広める</button>
+    </div>`;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  updateChrome();
+  updateProgress();
+  if (state.view === "intro") {
+    app.innerHTML = renderIntro();
+    document.getElementById("start-btn").addEventListener("click", () => {
+      state.view = "question";
+      state.index = 0;
+      render();
+    });
+    return;
+  }
+  if (state.view === "tournament") {
+    app.innerHTML = renderTournamentScreen();
+    document.getElementById("continue-btn").addEventListener("click", () => {
+      beginSurvive();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    document.getElementById("back-link").addEventListener("click", goBackDesign);
+    return;
+  }
+  if (state.view === "survive") {
+    app.innerHTML = renderSurvive();
+    document.querySelectorAll(".choice").forEach((button) => {
+      button.addEventListener("click", () => onSurviveChoose(button.dataset.choice));
+    });
+    const next = document.getElementById("next-btn");
+    if (next) next.addEventListener("click", onSurviveNext);
+    const more = document.querySelector(".more-detail");
+    if (more) {
+      more.addEventListener("toggle", () => {
+        state.detailOpen = more.open;
+      });
+    }
+    bindProvisionUi();
+    return;
+  }
+  if (state.view === "launch") {
+    app.innerHTML = renderLaunch();
+    document.getElementById("continue-btn").addEventListener("click", () => {
+      state.view = "epilogue";
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    return;
+  }
+  if (state.view === "epilogue") {
+    app.innerHTML = renderEpilogue();
+    document.getElementById("restart-btn").addEventListener("click", () => {
+      resetSession();
+      render();
+    });
+    const share = document.getElementById("share-x-btn");
+    if (share) share.addEventListener("click", shareOnX);
+    return;
+  }
+  app.innerHTML = `<div class="play-main">${renderDesignQuestion()}</div>`;
+  document.querySelectorAll(".choice").forEach((button) => {
+    button.addEventListener("click", () => onDesignChoose(button.dataset.choice));
+  });
   const back = document.getElementById("back-link");
   if (back) back.addEventListener("click", goBackDesign);
-  window.addEventListener("keydown", onChoiceKey);
-  bindProvisionUi();
 }
 
 function goBackDesign() {
   advancing = false;
   const seq = visibleDesignIds();
-  if (state.view === "typeLaw") {
-    state.view = "designSheet";
-    render();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    return;
-  }
-  if (state.view === "designSheet") {
+  if (state.view === "tournament") {
     state.view = "question";
     state.index = indexOfId(seq[seq.length - 1]);
-    state.revealed = false;
     render();
     return;
   }
@@ -1086,232 +742,108 @@ function goBackDesign() {
     return;
   }
   state.index = indexOfId(seq[i - 1]);
-  state.revealed = false;
   render();
 }
 
-function onChoose(choiceId) {
+function onDesignChoose(choiceId) {
   const question = currentQuestion();
-  if (question.mode === "compare" && state.revealed) return;
   if (advancing) return;
   state.answers[question.id] = choiceId;
   if (question.id === "d0" && choiceId === "5") {
     delete state.answers.d2;
     delete state.answers.d3;
   }
-  const isMatch =
-    question.mode === "compare" ? choiceId === question.designerChoice : null;
   saveAnswer({
     session_id: state.sessionId,
     question_id: question.id,
     selected: choiceId,
-    is_match: isMatch,
+    is_match: null,
     timestamp: new Date().toISOString(),
   });
-  if (question.mode !== "compare") {
-    advancing = true;
+  advancing = true;
+  render();
+  window.setTimeout(() => {
+    advancing = false;
+    if (isLastDesignQuestion(currentQuestion())) {
+      state.view = "tournament";
+      state.resolvedStages = 0;
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const seq = visibleDesignIds();
+    const i = seq.indexOf(currentQuestion().id);
+    state.index = indexOfId(seq[i + 1]);
     render();
-    const wait = prefersReducedMotion() ? 0 : 130;
-    window.setTimeout(() => {
-      advancing = false;
-      advanceDesign();
-    }, wait);
-    return;
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  }, prefersReducedMotion() ? 0 : 130);
+}
+
+function onSurviveChoose(choiceId) {
+  const event = currentEvent();
+  if (!event || state.revealed) return;
+  const choice = eventChoices(event).find((item) => item.id === choiceId);
+  if (!choice) return;
+  applyMutate(choice.mutate);
+  state.answers[event.id] = choiceId;
+  state.decisions.push({
+    eventId: event.id,
+    stage: event.stage,
+    choiceId,
+    choiceText: choice.text,
+    status: choice.status || event.status,
+  });
+  if (!event.passThrough) {
+    const source = sourceQuestion(event);
+    const allowed = source && source.choices.some((item) => item.id === choiceId);
+    if (allowed) {
+      saveAnswer({
+        session_id: state.sessionId,
+        question_id: event.sourceId,
+        selected: choiceId,
+        is_match: null,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
   state.revealed = true;
   render();
-  const payoff = document.querySelector(".fun-payoff");
-  if (payoff) {
-    payoff.scrollIntoView({
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-      block: "nearest",
-    });
-  }
 }
 
-function advanceDesign() {
-  if (isLastDesignQuestion(currentQuestion())) {
-    state.view = "designSheet";
+function onSurviveNext() {
+  if (!state.revealed) return;
+  const last = state.eventIndex >= state.stageEvents.length - 1;
+  if (!last) {
+    state.eventIndex += 1;
+    while (
+      state.eventIndex < state.stageEvents.length &&
+      !eventMatches(state.stageEvents[state.eventIndex])
+    ) {
+      state.eventIndex += 1;
+    }
+    if (state.eventIndex < state.stageEvents.length) {
+      state.revealed = false;
+      state.detailOpen = false;
+      render();
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+      return;
+    }
+  }
+  state.resolvedStages = state.stageIndex + 1;
+  if (state.stageIndex >= STAGES.length - 1) {
+    state.view = "launch";
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
-  const seq = visibleDesignIds();
-  const i = seq.indexOf(currentQuestion().id);
-  state.index = indexOfId(seq[i + 1]);
-  state.revealed = false;
-  render();
-  window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
-}
-
-async function onNext() {
-  if (!state.revealed) return;
-  if (state.index >= state.data.questions.length - 1) {
-    await showFinale();
-    return;
-  }
-  state.index += 1;
-  state.revealed = Boolean(state.answers[currentQuestion().id]);
-  render();
-  window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
-}
-
-function saveAnswer(payload) {
-  if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") return;
-  fetch("api/answers", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }).catch(() => {});
-}
-
-async function showFinale() {
-  state.view = "finale";
-  state.stats = statsFromSession();
-  state.statsSource = "session";
+  openStage(state.stageIndex + 1);
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function emptyStats() {
-  const questions = {};
-  state.data.questions.forEach((question) => {
-    const counts = {};
-    question.choices.forEach((choice) => {
-      counts[choice.id] = 0;
-    });
-    questions[question.id] = { total: 0, counts, rates: {} };
-  });
-  return { sessions: 0, questions };
-}
-
-function statsFromSession() {
-  const stats = emptyStats();
-  Object.entries(state.answers).forEach(([qid, selected]) => {
-    if (!stats.questions[qid] || !(selected in stats.questions[qid].counts)) return;
-    stats.questions[qid].counts[selected] += 1;
-    stats.questions[qid].total += 1;
-  });
-  Object.values(stats.questions).forEach((item) => {
-    item.rates = {};
-    Object.keys(item.counts).forEach((cid) => {
-      item.rates[cid] = item.total ? item.counts[cid] / item.total : 0;
-    });
-  });
-  stats.sessions = 1;
-  return stats;
-}
-
 function shareOnX() {
   const text = state.data.meta.shareText || state.data.meta.title;
-  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-function percentLabel(rate) {
-  return `${Math.round((rate || 0) * 100)}%`;
-}
-
-function renderCompareSummary() {
-  const summary = compareSummary();
-  const splits =
-    summary.split.length === 0
-      ? "<p>今回、考えが分かれた設問はありませんでした。</p>"
-      : `<p>特に考えが分かれたのは——</p><ul class="split-list">${summary.split
-          .map((q) => `<li>${escapeHtml(q.prompt)}</li>`)
-          .join("")}</ul>`;
-  return `
-    <div class="finale-block">
-      <h2>比較サマリ</h2>
-      <p>設計者と同じ考えだった問い：${summary.same.length}</p>
-      <p>考えが分かれた問い：${summary.split.length}</p>
-      ${splits}
-    </div>
-  `;
-}
-
-function renderStats() {
-  if (state.statsSource === "loading" || !state.stats) {
-    return `<p class="lead">集計しています…</p>`;
-  }
-  const stats = state.stats;
-  const note =
-    "集計版は準備中です。いまは、今回この端末で選んだ内容だけを表示しています。";
-  const blocks = state.data.questions
-    .map((question, index) => {
-      const item = stats.questions[question.id] || { total: 0, counts: {}, rates: {} };
-      const rows = question.choices
-        .map((choice) => {
-          const rate = (item.rates && item.rates[choice.id]) || 0;
-          const count = (item.counts && item.counts[choice.id]) || 0;
-          const badges = [];
-          if (state.answers[question.id] === choice.id) badges.push("あなた");
-          if (question.mode === "compare" && question.designerChoice === choice.id) {
-            badges.push("設計者");
-          }
-          return `
-            <div class="stat-row">
-              <div class="stat-head">
-                <span>${escapeHtml(choice.text)}</span>
-                <span class="stat-pct">${percentLabel(rate)}　${count}件</span>
-              </div>
-              <div class="stat-track" aria-hidden="true">
-                <div class="stat-fill" style="width:${Math.round(rate * 100)}%"></div>
-              </div>
-              ${
-                badges.length
-                  ? `<p class="stat-badges">${badges.map((b) => `<span>${escapeHtml(b)}</span>`).join("")}</p>`
-                  : ""
-              }
-            </div>`;
-        })
-        .join("");
-      return `
-        <article class="stat-card">
-          <h3><span>${String(index + 1).padStart(2, "0")}</span> ${escapeHtml(question.prompt)}</h3>
-          ${rows}
-        </article>`;
-    })
-    .join("");
-  return `
-    <p class="lead">${escapeHtml(note)}</p>
-    <div class="stats">${blocks}</div>
-  `;
-}
-
-function renderFinale() {
-  const finale = state.data.finale;
-  const labels = (finale.designerLabels || [])
-    .map((label) => `<li>${escapeHtml(label)}</li>`)
-    .join("");
-  const closing = escapeHtml(finale.closing).replace("。", "。<br />");
-  return `
-    <p class="part-label">Part 3</p>
-    <h1>${escapeHtml(finale.title)}</h1>
-    <div class="finale-compare-grid">
-      <section class="finale-side">
-        <p class="finale-side-label">あなたの大会</p>
-        ${renderPlayerSheet({ finale: true })}
-      </section>
-      <section class="finale-side">
-        <p class="finale-side-label">設計者の大会</p>
-        <ul class="designer-labels">${labels}</ul>
-        ${renderBlueprint({ complete: true })}
-      </section>
-    </div>
-    ${renderCompareSummary()}
-    <div class="finale-block">
-      <h2>分布の公開</h2>
-      <p class="note">${escapeHtml(finale.distributionPromise)}</p>
-      ${renderStats()}
-    </div>
-    <p class="closing">${closing}</p>
-    <p class="note">${escapeHtml(finale.disclaimer)}</p>
-    <div class="actions">
-      <button class="ghost" id="restart-btn" type="button">もう一度最初から</button>
-      <button class="ghost" id="share-x-btn" type="button">Xで広める</button>
-    </div>
-  `;
+  window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
 }
 
 function questionsUrl() {
