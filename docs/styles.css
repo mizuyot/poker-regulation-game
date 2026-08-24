@@ -1650,6 +1650,18 @@ button.next-btn:hover {
   color: var(--muted);
 }
 
+.verdict-line {
+  margin: 0 0 10px;
+}
+
+.verdict-matrix {
+  margin: 28px 0;
+}
+
+.verdict-matrix .feas-badge {
+  vertical-align: middle;
+}
+
 .requirement-map {
   margin: 16px 0;
   padding: 16px 18px;

@@ -1,4 +1,4 @@
-const STAGES = ["h1", "h2", "h3", "h4"];
+const STAGES = ["h1", "h2", "h3"];
 const FUNDING_KEYS = { 1: "entry_fee", 2: "mixed", 3: "sponsor" };
 
 const state = {
@@ -19,7 +19,7 @@ const state = {
   tournamentName: "",
 };
 
-const TICK_KEYS = ["tickFunding", "tickSponsor", "tickVenue", "tickExplain"];
+const TICK_KEYS = ["tickGambling", "tickProfit", "tickContinue"];
 const AUTO_NAMES = {
   1: "ホーム・クラシック",
   2: "シティ・オープン",
@@ -27,26 +27,36 @@ const AUTO_NAMES = {
   4: "インターナショナル・オープン",
 };
 const DECISION_ROWS = [
-  ["h1_money", "原資"],
-  ["h1_sponsor_ok", "原資"],
-  ["h1_noprize", "原資"],
-  ["h1_form", "形態への応答"],
-  ["h2_gather", "スポンサーの集め方"],
-  ["h2_return", "スポンサーへの還元"],
-  ["h2_noprize", "スポンサーへの還元"],
-  ["h2_satellite", "予選"],
+  ["h1_money", "賭博"],
+  ["h1_sponsor_ok", "賭博"],
+  ["h1_contract", "賭博"],
+  ["h1_noprize", "賭博"],
+  ["h1_return", "還元"],
+  ["h1_satellite", "予選"],
+  ["h2_profit", "営利性"],
+  ["h3_freq", "継続性"],
   ["h3_venue", "会場"],
-  ["h3_books", "主催の収支"],
-  ["h3_freq", "開催"],
-  ["h4_capital", "資本関係"],
-  ["h4_address", "住所"],
 ];
 const DESIGNER_EXTRAS = {
-  h2_satellite: "優先権は価値を小さく。誰でも入れる枠を併存",
-  h2_return: "広告＋小さな優先権",
-  h3_freq: "年2回。理由は体力と全国開催",
+  h1_satellite: "優先権は価値を小さく。誰でも入れる枠を併存",
+  h1_return: "広告＋小さな優先権",
+  h3_freq: "年1〜2回。間隔で営業を切ろうとしない",
   h3_venue: "許可店とは分けた外部会場",
-  h3_books: "大会自体では儲けない。儲ける場所は外",
+  h2_profit: "大会自体では儲けない。儲ける場所は外",
+};
+const AXIS_LABELS = {
+  gambling: "賭博",
+  profit: "営利性",
+  continuity: "継続性",
+  venue: "会場",
+};
+const VERDICT_KEYS = {
+  current: "verdictCurrent",
+  lawful: "verdictLawful",
+  interpret: "verdictInterpret",
+  short: "verdictShort",
+  permit: "verdictPermit",
+  reform: "verdictReform",
 };
 
 let advancing = false;
@@ -300,6 +310,7 @@ function eventMatches(event, source) {
   if (cond.hasPrize === false && hasPrize(t)) return false;
   if (cond.national === true && !isNational(t)) return false;
   if (cond.national === false && isNational(t)) return false;
+  if (cond.p1 && !cond.p1.includes(t.p1)) return false;
   return true;
 }
 
@@ -319,7 +330,12 @@ function sourceQuestion(event) {
 
 function eventChoices(event) {
   if (event.passThrough) {
-    return [{ id: "go", text: copy("continue") || "このまま進む →", status: event.status || "kept" }];
+    return [{
+      id: "go",
+      text: copy("continue") || "このまま進む →",
+      status: event.status || "kept",
+      verdict: event.verdict || "",
+    }];
   }
   if (event.choices && event.choices.length) return event.choices;
   const source = sourceQuestion(event);
@@ -359,7 +375,48 @@ function copyChoice(event, choice) {
     result: choice.result || event.result || "",
     status: choice.status || event.status || "kept",
     insight: event.insight || "",
+    verdict: choice.verdict || event.verdict || "",
   };
+}
+
+function verdictMeta(verdict) {
+  const label = copy(VERDICT_KEYS[verdict] || "") || "";
+  if (!label) return null;
+  const tone =
+    verdict === "current" || verdict === "lawful"
+      ? "is-green"
+      : verdict === "interpret"
+        ? "is-amber"
+        : "is-red";
+  return { label, tone };
+}
+
+function renderVerdictBadge(verdict) {
+  const meta = verdictMeta(verdict);
+  if (!meta) return "";
+  return `<p class="verdict-line"><span class="feas-badge ${meta.tone}">${escapeHtml(meta.label)}</span></p>`;
+}
+
+function renderVerdictMatrix() {
+  if (!state.decisions.length) return "";
+  const rows = state.decisions
+    .map((item) => {
+      const meta = verdictMeta(item.verdict);
+      const axis = AXIS_LABELS[item.axis] || "";
+      const badge = meta
+        ? `<span class="feas-badge ${meta.tone}">${escapeHtml(meta.label)}</span>`
+        : "—";
+      return `<tr><th>${escapeHtml(axis)}</th><td>${escapeHtml(item.choiceText)}</td><td>${badge}</td></tr>`;
+    })
+    .join("");
+  return `
+    <section class="verdict-matrix">
+      <p class="sheet-kicker">${escapeHtml(copy("verdictLead"))}</p>
+      <div class="matrix-scroll"><table class="ba-table">
+        <tr><th>${escapeHtml(copy("verdictAxis"))}</th><th>${escapeHtml(copy("verdictMeasure"))}</th><th>${escapeHtml(copy("verdictLabel"))}</th></tr>
+        ${rows}
+      </table></div>
+    </section>`;
 }
 
 function applyMutate(mutate) {
@@ -505,20 +562,13 @@ function resolvedTournamentName() {
 
 function renderIssuePreview(source) {
   const noprize = isNoPrize(source);
-  const form = prizeNameFrom(source) || choiceText("p1", source.p1) || "賞品";
-  const funding = (copy("issueFunding") || "").replace("{form}", form);
-  const sponsor = copy("issueSponsor") + (isNational(source) ? copy("issueSponsorNational") : "");
   const gray = noprize ? " is-dim" : "";
-  const fundingText = noprize ? copy("issueNoprize") : funding;
-  const sponsorText = noprize ? copy("issueNoprize") : sponsor;
-  const explainText = noprize ? copy("issueNoprize") : copy("issueExplain");
+  const gambling = noprize ? copy("issueGamblingClosed") : copy("issueGambling");
   return `
     <section class="issue-map">
       <p class="sheet-kicker">${escapeHtml(copy("issueLead"))}</p>
-      <p class="issue-line${gray}"><strong>${escapeHtml(copy("tickFunding"))}</strong> — ${escapeHtml(fundingText)}</p>
-      <p class="issue-line${gray}"><strong>${escapeHtml(copy("tickSponsor"))}</strong> — ${escapeHtml(sponsorText)}</p>
-      <p class="issue-line"><strong>${escapeHtml(copy("tickVenue"))}</strong> — ${escapeHtml(copy("issueVenue"))}</p>
-      <p class="issue-line${gray}"><strong>${escapeHtml(copy("tickExplain"))}</strong> — ${escapeHtml(explainText)}</p>
+      <p class="issue-line${gray}"><strong>${escapeHtml(copy("tickGambling"))}</strong> — ${escapeHtml(gambling)}</p>
+      <p class="issue-line"><strong>${escapeHtml(copy("tickProfit"))} / ${escapeHtml(copy("tickContinue"))}</strong> — ${escapeHtml(copy("issueFuei"))}</p>
     </section>`;
 }
 
@@ -674,6 +724,7 @@ function renderSurvive() {
         <p class="sheet-kicker">${escapeHtml(copy("yourCall"))}</p>
         <p class="compare-result">${escapeHtml(pack.call)}</p>
         <p class="status-line">${escapeHtml(statusLabel(pack.status))}</p>
+        ${renderVerdictBadge(pack.verdict)}
         <p>${escapeHtml(pack.result)}</p>
         <p class="sheet-kicker">${escapeHtml(copy("why"))}</p>
         <p>${escapeHtml(insight)}</p>
@@ -694,7 +745,7 @@ function renderSurvive() {
         }
       </section>`;
   }
-  const lastInStage = !state.stageEvents.slice(state.eventIndex + 1).some(eventMatches);
+  const lastInStage = !state.stageEvents.slice(state.eventIndex + 1).some((event) => eventMatches(event));
   const clearText =
     state.revealed && lastInStage && state.data.copy && state.data.copy.stageClear
       ? state.data.copy.stageClear[event.stage]
@@ -751,13 +802,12 @@ function renderPoster() {
     ["規模", selectedLabel("d1", t)],
     ["賞金の規模感", isNoPrize(t) ? "—" : selectedLabel("d2", t)],
     ["原資", isNoPrize(t) ? "—" : selectedLabel("d3", t)],
-    ["スポンサーの集め方", latestDecision("h2_gather") || "—"],
-    ["スポンサーへの還元", latestDecision("h2_return", "h2_noprize") || "—"],
-    ["予選", latestDecision("h2_satellite") || "—"],
+    ["賭博", latestDecision("h1_money", "h1_sponsor_ok", "h1_contract", "h1_noprize") || "—"],
+    ["還元", latestDecision("h1_return") || "—"],
+    ["予選", latestDecision("h1_satellite") || "—"],
+    ["営利性", latestDecision("h2_profit") || "—"],
+    ["継続性", latestDecision("h3_freq") || "—"],
     ["会場", latestDecision("h3_venue") || "—"],
-    ["主催の収支", latestDecision("h3_books") || "—"],
-    ["開催", latestDecision("h3_freq") || "—"],
-    ["説明の備え", [latestDecision("h4_capital"), latestDecision("h4_address")].filter(Boolean).join(" / ") || "—"],
   ].filter((row) => row[1] && row[1] !== "—");
   const body = rows
     .map(([label, value]) => `<div class="poster-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`)
@@ -883,6 +933,7 @@ function renderLaunch() {
     <p class="kicker">${escapeHtml(copy("launchKicker"))}</p>
     <h1>${escapeHtml(copy("launchTitle"))}</h1>
     ${renderPoster()}
+    ${renderVerdictMatrix()}
     <div class="actions poster-share">
       <button class="ghost" id="share-x-btn" type="button">Xで広める</button>
     </div>
@@ -911,11 +962,10 @@ function renderEpilogue() {
     ["渡すもの", handoverLabel(state.currentTournament), "賞金（現金。現物も可）"],
     ["原資", selectedLabel("d3", state.currentTournament) || "賞品なし", "スポンサー提供。参加費は賞品に入れない"],
     ["会場", latestDecision("h3_venue") || "（未選択）", DESIGNER_EXTRAS.h3_venue],
-    ["予選", latestDecision("h2_satellite") || "—", DESIGNER_EXTRAS.h2_satellite],
-    ["還元", latestDecision("h2_return", "h2_noprize") || "—", DESIGNER_EXTRAS.h2_return],
-    ["集め方", latestDecision("h2_gather") || "—", "広告対価として説明できる範囲に収める"],
-    ["収支", latestDecision("h3_books") || "—", DESIGNER_EXTRAS.h3_books],
-    ["開催", latestDecision("h3_freq") || "—", DESIGNER_EXTRAS.h3_freq],
+    ["予選", latestDecision("h1_satellite") || "—", DESIGNER_EXTRAS.h1_satellite],
+    ["還元", latestDecision("h1_return") || "—", DESIGNER_EXTRAS.h1_return],
+    ["営利性", latestDecision("h2_profit") || "—", DESIGNER_EXTRAS.h2_profit],
+    ["継続性", latestDecision("h3_freq") || "—", DESIGNER_EXTRAS.h3_freq],
   ];
   const rows = pairs
     .map(
@@ -1092,9 +1142,11 @@ function onSurviveChoose(choiceId) {
   state.decisions.push({
     eventId: event.id,
     stage: event.stage,
+    axis: event.axis || "",
     choiceId,
     choiceText: choice.text,
     status: choice.status || event.status,
+    verdict: choice.verdict || event.verdict || "",
   });
   if (!event.passThrough) {
     const source = sourceQuestion(event);
