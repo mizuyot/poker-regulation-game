@@ -1,0 +1,208 @@
+{
+  "meta": {
+    "title": "ポーカー店経営 5年",
+    "version": "0.1.0",
+    "unit": "万円",
+    "disclaimer": "このゲームは適法性の判断・法的助言ではありません。摘発確率・処分の段階・金額はすべてゲーム用の架空の値です。",
+    "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在市場の統計ではない。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
+    "months": 60,
+    "secondsPerMonth": 6,
+    "startCash": 500,
+    "bankruptAt": -200
+  },
+  "locations": [
+    {
+      "id": "downtown",
+      "name": "繁華街",
+      "note": "人通りは最多。目にも付きやすい。",
+      "rent": 80,
+      "traffic": 1.6,
+      "visibility": 1.5
+    },
+    {
+      "id": "station",
+      "name": "駅前",
+      "note": "通勤客が流れる。家賃と人通りの釣り合い型。",
+      "rent": 50,
+      "traffic": 1.2,
+      "visibility": 1.1
+    },
+    {
+      "id": "upper",
+      "name": "雑居ビル上階",
+      "note": "家賃は安く、目立たない。そのぶん来ない。",
+      "rent": 25,
+      "traffic": 0.75,
+      "visibility": 0.6
+    },
+    {
+      "id": "suburb",
+      "name": "郊外ロードサイド",
+      "note": "車で来る常連向け。地元の目はある。",
+      "rent": 20,
+      "traffic": 0.55,
+      "visibility": 0.85
+    }
+  ],
+  "rules": [
+    {
+      "id": "noprize",
+      "name": "換金なし・景品なし",
+      "short": "参加費のみ",
+      "note": "参加費（席料・ドリンク）だけで回す。勝っても何も持ち帰れない。",
+      "demand": 1.0,
+      "spend": 0.5,
+      "prizeCost": 0,
+      "violation": null,
+      "provisionIds": [
+        "keiho185"
+      ]
+    },
+    {
+      "id": "prize",
+      "name": "成績に応じて景品",
+      "short": "景品あり",
+      "note": "上位者に景品を渡す。集客は伸びるが、風営法の許可営業では賞品提供が禁じられている。",
+      "demand": 1.5,
+      "spend": 0.65,
+      "prizeCost": 0.12,
+      "violation": "admin",
+      "provisionIds": [
+        "fueiho23-2",
+        "fueiho2-1"
+      ]
+    },
+    {
+      "id": "cashout",
+      "name": "チップを現金に換える",
+      "short": "換金あり",
+      "note": "勝ったチップを現金に戻す。客は一番集まる。ゲーム上は摘発＝逮捕で、5年分がゼロになる。",
+      "demand": 2.6,
+      "spend": 1.0,
+      "prizeCost": 0,
+      "violation": "criminal",
+      "provisionIds": [
+        "keiho185",
+        "keiho186"
+      ]
+    }
+  ],
+  "licenses": [
+    {
+      "id": "licensed",
+      "name": "風営許可を取ってから開く",
+      "note": "申請費がかかり、開店まで3か月待つ。",
+      "fee": 40,
+      "waitMonths": 3,
+      "violation": null,
+      "provisionIds": [
+        "fueiho2-1"
+      ]
+    },
+    {
+      "id": "unlicensed",
+      "name": "許可を取らずにすぐ開く",
+      "note": "初月から営業できる。ゲーム上は行政処分の対象として監視度に効く。",
+      "fee": 0,
+      "waitMonths": 0,
+      "violation": "admin",
+      "provisionIds": [
+        "fueiho2-1"
+      ],
+      "missingSource": "無許可営業の罰則条文は provisions に未収録。一次ソース確認待ち。"
+    }
+  ],
+  "economy": {
+    "baseVisitors": 400,
+    "tableCapacity": 110,
+    "tablePrice": 12,
+    "tableResale": 4,
+    "dealerPerTable": 28,
+    "maxTables": 12,
+    "ads": [
+      {
+        "level": 0,
+        "cost": 0,
+        "mult": 1.0,
+        "reach": 0.55
+      },
+      {
+        "level": 1,
+        "cost": 10,
+        "mult": 1.35,
+        "reach": 0.7
+      },
+      {
+        "level": 2,
+        "cost": 25,
+        "mult": 1.7,
+        "reach": 0.85
+      },
+      {
+        "level": 3,
+        "cost": 45,
+        "mult": 2.05,
+        "reach": 1.0
+      }
+    ],
+    "reputation": {
+      "start": 0.8,
+      "min": 0.5,
+      "max": 1.6,
+      "gainWhenFull": 0.025,
+      "lossWhenIdle": 0.01
+    }
+  },
+  "risk": {
+    "base": {
+      "admin": 0.015,
+      "criminal": 0.012
+    },
+    "adFactor": 0.25,
+    "tablesDivisor": 8,
+    "heat": {
+      "cashoutPerMonth": 0.03,
+      "afterWarning": 0.5,
+      "decay": 0.02,
+      "max": 3
+    },
+    "ladder": [
+      {
+        "step": 1,
+        "id": "shiji",
+        "name": "指示",
+        "text": "立入りで違反を指摘された。是正するか、続けるか。",
+        "suspendMonths": 0,
+        "fine": 0
+      },
+      {
+        "step": 2,
+        "id": "teishi",
+        "name": "営業停止",
+        "text": "営業停止。家賃と人件費だけが出ていく。",
+        "suspendMonths": 3,
+        "fine": 0
+      },
+      {
+        "step": 3,
+        "id": "haigyo",
+        "name": "廃業",
+        "text": "これ以上は続けられない。ここまでの利益で終わる。",
+        "suspendMonths": 0,
+        "fine": 100,
+        "end": true
+      }
+    ],
+    "arrest": {
+      "name": "摘発・逮捕",
+      "text": "換金の実態が押さえられた。ゲーム上、5年分の利益は没収扱いでスコアは0。",
+      "end": true,
+      "scoreZero": true
+    },
+    "cashoutTail": {
+      "months": 12,
+      "factor": 0.5,
+      "text": "換金をやめても、過去の実態はしばらく問われうる（ゲーム上の抽象化）。"
+    }
+  }
+}

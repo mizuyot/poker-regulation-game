@@ -146,6 +146,12 @@ class Handler(SimpleHTTPRequestHandler):
                 "application/json; charset=utf-8",
             )
             return
+        if path in ("/shop", "/shop/", "/shop/index.html"):
+            if path == "/shop":
+                self._send(301, "", "text/plain; charset=utf-8", {"Location": "/shop/"})
+                return
+            self._send(200, (DOCS / "shop" / "index.html").read_bytes(), "text/html; charset=utf-8")
+            return
         if path in ("/styles.css", "/app.js"):
             file_path = DOCS / path.lstrip("/")
             content_type = (
