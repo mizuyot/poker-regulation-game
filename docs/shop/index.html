@@ -428,7 +428,9 @@ summary{cursor:pointer;color:var(--muted)}
       "arrest": "摘発エンド",
       "tail": "ゲーム上の残存リスク"
     },
-    "note": "是正指摘・摘発エンド・確率はゲーム上の不利益イベントで、現実の法的手続きの順序や確率ではない。"
+    "note": "是正指摘・摘発エンド・確率はゲーム上の不利益イベントで、現実の法的手続きの順序や確率ではない。",
+    "ddArrestIfLate": 0.5,
+    "ddArrestText": "買収前調査の期間中に違法営業が見つかり、買い手が手を引いただけでは済まなかった（ゲーム上の処理）。"
   },
   "valuation": {
     "discountBase": 0.25,
@@ -1306,6 +1308,8 @@ function proposal(){
   const early = S.illegalMonths.filter((t) => t < R.ddStart).length, late = S.illegalMonths.filter((t) => t >= R.ddStart).length;
   const pFound = 1 - Math.pow(1 - R.ddEarlyQ, early) * Math.pow(1 - R.ddLateQ, late);
   const found = S.illegalMonths.length > 0 && rand() < pFound;
+  // 調査期間中の違法が見つかったら、半分の確率で摘発エンド（終盤だけ違法にする攻略を塞ぐ）
+  if (found && late > 0 && rand() < R.ddArrestIfLate){ logEv("arrest", { dd: true }); story(R.ddArrestText); spawnPolice(); return finish("arrest"); }
   const d = dcfParts();
   const sale = found ? shellValue() : storeValue();
   logEv("proposal", { found, sale: Math.round(sale), pFound: +pFound.toFixed(3) });
