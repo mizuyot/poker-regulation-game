@@ -1299,8 +1299,9 @@ function newState(cfg){
     ind, share: Math.max(0.3, 1 + gauss() * loc.demandSd), competitors: 0,
     tempDemand: [], pending: [], eventsSeen: new Set(),
     ops: [], last: { guests: 0, occ: 0, rev: 0, net: 0 }, peakMonth: -Infinity,
-    year: { rev: 0, op: 0 }, q: [], log: [], timeline: [], over: null, paused: false, speed: 1, ddNotified: false,
+    year: { rev: 0, op: 0 }, recs: [], q: [], log: [], timeline: [], over: null, paused: false, speed: 1, ddNotified: false,
   };
+  st.startCash = st.cash; st.prevCash = st.cash; st.invest = M.fund - st.cash;
   return st;
 }
 function logEv(type, data){ S.log.push({ t: S.month, type, ...data }); }
@@ -1383,7 +1384,7 @@ function monthTick(){
   if (wasOpen){
     const rk = risks();
     for (const a of rk.active){ S.used[a.id] = (S.used[a.id] || 0) + 1; S.lastUsed[a.id] = S.month; S.riskMonths.push({ t: S.month, id: a.id, tier: a.tier }); }
-    if (rand() < rk.arrest){ logEv("arrest", {}); story("摘発された。"); spawnPolice(); S.month++; return finish("arrest"); }
+    if (rand() < rk.arrest){ logEv("arrest", {}); story("摘発された。"); spawnPolice(); S.month++; rec(p, wasOpen); return finish("arrest"); }
     if (rk.active.length && rand() < rk.order) orderActs = rk.active;
   }
   const i = S.ind;
@@ -1409,6 +1410,7 @@ function monthTick(){
   S.pending = S.pending.filter((x) => x.at > S.month);
 
   S.month++;
+  rec(p, wasOpen);
   if (S.cash < M.bankruptAt){ story("資金が尽きた。"); return finish("bankrupt"); }
   if (orderActs) enqueue(() => order(orderActs));
   if (S.month >= M.months) enqueue(proposal);
@@ -1418,6 +1420,13 @@ function monthTick(){
     if (wasOpen && !orderActs) maybeEvent();
   }
   if (S.q.length && !ov.classList.contains("show")) S.q.shift()();
+}
+/* 月ごとの記録（結果画面のシミュレーション表示に使う）。extra＝営業損益以外の出入り（トラブル・事件・増卓・教育・借入・是正対応費など） */
+function rec(p, wasOpen){
+  const other = wasOpen ? O.otherFixed + O.ads[S.ad].cost : 0;
+  S.recs.push({ t: S.month - 1, open: wasOpen, guests: p.guests || 0, occ: p.occ || 0, rev: p.rev || 0, rent: S.rent, staff: wasOpen ? p.staff : 0, other,
+    interest: p.interest || 0, net: p.net, extra: S.cash - S.prevCash - p.net, cash: S.cash, share: S.share, tables: S.tables });
+  S.prevCash = S.cash;
 }
 function enqueue(fn){ S.q.push(fn); S.paused = true; }
 function applyEffects(e){
@@ -1590,11 +1599,113 @@ function finish(kind){
     ${kind === "complete" ? `<table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額${ddWord}</td><td>${yen(sale)}</td></tr>
       <tr><td>借入残高</td><td>${yen(-S.debt)}</td></tr><tr class="total"><td>最終手取り額</td><td>${yen(amount)}</td></tr></table>` : ""}
     <p class="muted" style="font-size:12.5px">一番稼いだ月の利益：<span class="num">${isFinite(S.peakMonth) ? yen(S.peakMonth) : "—"}</span>${kind === "arrest" ? "（失格）" : ""}</p>
+    <h2>改善すべき点</h2>${diagnoseHTML(kind)}
+    <h2>初月からの推移</h2>${simChart()}${simTable()}
     <h2>5年の物語</h2><div class="timeline">${S.timeline.map((x) => `<span class="num">${monthLabel(x.t)}</span>：${esc(x.text)}`).join("<br>") || "—"}</div>
     <h2>ランキング（この端末）</h2>${rankHTML(rank)}
     <div class="row"><button class="btn" id="dlBtn">プレイログを保存（JSONL）</button><button class="btn primary" id="againBtn">もう一度</button></div>
     <div class="foot">ログとランキングはこの端末に保存されるだけで、送信されない。${esc(M.disclaimer)}</div>`);
   $("dlBtn").onclick = exportLog; $("againBtn").onclick = () => { S = null; resetScene(); openTitle(); };
+}
+
+/* ---------- 結果：初月からの推移と改善点 ---------- */
+function simChart(){
+  const R0 = S.recs; if (!R0.length) return "";
+  const n = Math.max(R0.length, 6), w = 680, h = 250, left = 64, right = w - 12, y0 = 26, y1 = 150, b0 = 172, b1 = 228;
+  const X = (t) => left + (t + 0.5) / n * (right - left);
+  const cashes = [S.startCash, ...R0.map((r) => r.cash)];
+  const cmax = Math.max(...cashes, M.fund * 0.2), cmin = Math.min(0, ...cashes);
+  const Yc = (v) => y1 - (v - cmin) / (cmax - cmin) * (y1 - y0);
+  const flows = R0.map((r) => r.net + r.extra), fabs = Math.max(50, ...flows.map(Math.abs));
+  const bz = (b0 + b1) / 2, Yb = (v) => bz - v / fabs * (b1 - b0) / 2;
+  const path = cashes.map((v, i) => `${i ? "L" : "M"}${(i === 0 ? left : X(i - 1)).toFixed(1)} ${Yc(v).toFixed(1)}`).join("");
+  const bw = Math.max(2, (right - left) / n * 0.6);
+  const rampEnd = S.openedAt != null ? S.openedAt + O.rampMonths : null;
+  const yrs = []; for (let m = 12; m < n; m += 12) yrs.push(m);
+  const last = R0.at(-1);
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="手元資金と毎月の出入り" style="width:100%;height:auto;font-family:var(--font)">
+    <text x="${left}" y="14" font-size="12" font-weight="700" fill="var(--ink)">手元資金</text>
+    ${yrs.map((m) => `<line x1="${X(m - 0.5)}" x2="${X(m - 0.5)}" y1="${y0}" y2="${b1}" stroke="var(--soft)"/><text x="${X(m - 0.5) + 3}" y="${b1 + 14}" font-size="10" fill="var(--muted)">${m / 12 + 1}年目</text>`).join("")}
+    ${rampEnd != null && rampEnd < n ? `<line x1="${X(rampEnd - 0.5)}" x2="${X(rampEnd - 0.5)}" y1="${y0}" y2="${y1}" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${X(rampEnd - 0.5) + 3}" y="${y0 + 10}" font-size="10" fill="var(--muted)">客数が成熟</text>` : ""}
+    <line x1="${left}" x2="${right}" y1="${Yc(0)}" y2="${Yc(0)}" stroke="var(--danger)" stroke-dasharray="4 3"/><text x="${left - 6}" y="${Yc(0) + 4}" font-size="10" text-anchor="end" fill="var(--danger)">0</text>
+    <text x="${left - 6}" y="${Yc(S.startCash) + 4}" font-size="10" text-anchor="end" fill="var(--muted)">${Math.round(S.startCash).toLocaleString("ja-JP")}</text>
+    <path d="${path}" fill="none" stroke="var(--ink)" stroke-width="2"/>
+    ${R0.map((r) => `<circle cx="${X(r.t)}" cy="${Yc(r.cash)}" r="${n > 30 ? 1.6 : 2.6}" fill="var(--ink)"><title>${monthLabel(r.t)}：手元資金 ${yen(r.cash)}</title></circle>`).join("")}
+    <text x="${Math.min(X(last.t) + 6, right - 4)}" y="${Yc(last.cash) - 6}" font-size="11" text-anchor="${X(last.t) > right - 120 ? "end" : "start"}" fill="${last.cash < 0 ? "var(--danger)" : "var(--ink)"}" font-weight="700">${yen(last.cash)}</text>
+    <text x="${left}" y="${b0 - 4}" font-size="12" font-weight="700" fill="var(--ink)">毎月の出入り</text>
+    <line x1="${left}" x2="${right}" y1="${bz}" y2="${bz}" stroke="var(--muted)"/>
+    ${R0.map((r) => { const v = r.net + r.extra; return `<rect x="${X(r.t) - bw / 2}" y="${Math.min(bz, Yb(v))}" width="${bw}" height="${Math.abs(Yb(v) - bz)}" fill="${v >= 0 ? "var(--ink)" : "var(--danger)"}" opacity="${r.open ? 0.85 : 0.4}"><title>${monthLabel(r.t)}：営業 ${yen(r.net)}${Math.abs(r.extra) >= 1 ? ` ・ その他 ${yen(r.extra)}` : ""}${r.open ? ` ・ ${Math.round(r.guests)}人/日 ・ 満席率 ${Math.round(r.occ * 100)}%` : " ・ 開業前"}</title></rect>`; }).join("")}
+    <text x="${left - 6}" y="${Yb(fabs) + 4}" font-size="10" text-anchor="end" fill="var(--muted)">+${Math.round(fabs)}</text><text x="${left - 6}" y="${Yb(-fabs) + 4}" font-size="10" text-anchor="end" fill="var(--muted)">−${Math.round(fabs)}</text>
+  </svg><p class="muted" style="font-size:12px">点や棒に触れると、その月の内訳が出る。赤い棒は出ていった月（営業の赤字のほか、トラブル・増卓・是正対応費などを含む）。単位は万円。</p>`;
+}
+function simTable(){
+  const rows = S.recs.map((r) => `<tr><td>${monthLabel(r.t)}</td><td>${r.open ? Math.round(r.guests) + "人" : "開業前"}</td><td>${r.open ? Math.round(r.occ * 100) + "%" : "—"}</td>
+    <td>${Math.round(r.rev).toLocaleString("ja-JP")}</td><td>−${Math.round(r.rent).toLocaleString("ja-JP")}</td><td>−${Math.round(r.staff).toLocaleString("ja-JP")}</td><td>−${Math.round(r.other + r.interest).toLocaleString("ja-JP")}</td>
+    <td class="${r.net < 0 ? "negc" : ""}">${Math.round(r.net).toLocaleString("ja-JP")}</td><td>${Math.abs(r.extra) >= 1 ? Math.round(r.extra).toLocaleString("ja-JP") : ""}</td><td class="${r.cash < 0 ? "negc" : ""}">${Math.round(r.cash).toLocaleString("ja-JP")}</td></tr>`).join("");
+  return `<details><summary>月ごとの表（万円）</summary><div style="overflow-x:auto"><table class="t" style="font-size:11.5px;white-space:nowrap">
+    <tr><th>月</th><th>客/日</th><th>満席率</th><th>売上</th><th>家賃</th><th>人件費</th><th>その他費用</th><th>営業損益</th><th>その他の出入り</th><th>手元資金</th></tr>
+    <tr><td>開業時</td><td colspan="8" style="text-align:left">初期投資 ${yen(S.invest)}</td><td>${Math.round(S.startCash).toLocaleString("ja-JP")}</td></tr>${rows}</table></div></details>`;
+}
+/* この物件（実際の客数）で、卓数ごとに60か月を素直に回した試算。トラブル・事件は入れない */
+function planFor(tables){
+  const loc = S.loc, b = build(loc, tables), fee = S.cfg.unlicensed ? 0 : D.license.fee;
+  let cash = M.fund - b.invest - fee, minCash = cash, ops = [];
+  const seats = tables * 9, turns = turnsFor(S.open, S.close, S.policy), hoursF = bandWeight(S.open, S.close) / BASE_W;
+  const share = S.recs.length ? S.recs.at(-1).share : S.share;
+  const dm = (0.82 + 0.6 * IND.start.fame / 100) * (0.8 + 0.4 * 50 / 100) * Math.pow(S.price, -O.price.elasticity) * S.contact.demand;
+  const staff = loc.staffPerTable * S.hiring.staffMult * tables * hoursLen() / O.baseHours;
+  const wait = S.cfg.unlicensed ? 0 : D.license.waitMonths;
+  for (let t = 0; t < M.months; t++){
+    if (t < wait){ cash -= b.rent; continue; }
+    const rampF = Math.min(1, O.rampStart + (1 - O.rampStart) * (t - wait) / O.rampMonths);
+    const occ = Math.min(loc.occCap, loc.demand * share * rampF * dm * hoursF / (seats * turns));
+    const op = seats * occ * turns * O.days * loc.spend * S.price * (1 - O.variableRate) - b.rent - staff - O.otherFixed;
+    cash += op; ops.push(op); minCash = Math.min(minCash, cash);
+  }
+  const fcf = ops.slice(-12).reduce((a, x) => a + x, 0) / 12 - O.maintenancePerTable * tables;
+  let f = fcf * 12, pv = 0; for (let y = 1; y <= V.years; y++){ f *= 1 + V.growthBase; pv += f / Math.pow(1 + V.discountBase, y); }
+  const ev = Math.max(0, pv + f * (1 + V.terminalGrowth) / (V.discountBase - V.terminalGrowth) / Math.pow(1 + V.discountBase, V.years));
+  return { tables, invest: b.invest + fee, minCash, final: minCash < 0 ? 0 : cash + Math.max(ev + b.deposit, b.deposit + b.fitout * L.fitoutResidual) };
+}
+function diagnoseHTML(kind){
+  const open = S.recs.filter((r) => r.open), items = [];
+  const lastN = open.slice(-6), avg = (f) => lastN.length ? lastN.reduce((a, r) => a + f(r), 0) / lastN.length : 0;
+  const occ = avg((r) => r.occ), rev = avg((r) => r.rev), rent = avg((r) => r.rent), staff = avg((r) => r.staff), other = avg((r) => r.other);
+  const seats = S.tables * 9, turns = turnsFor(S.open, S.close, S.policy);
+  const perOcc = seats * turns * O.days * S.loc.spend * S.price * styleNow().effect.spend * (1 - O.variableRate);
+  const be = perOcc ? (rent + staff + other) / perOcc : 1;
+  const plans = []; for (let t = L.minTables; t <= L.maxTables; t++) plans.push(planFor(t));
+  const best = plans.reduce((a, x) => x.final > a.final ? x : a, plans[0]), mine = plans.find((x) => x.tables === S.cfg.tables);
+  const share = S.recs.length ? S.recs.at(-1).share : S.share;
+  const lossRamp = open.filter((r) => r.t < (S.openedAt || 0) + O.rampMonths).reduce((a, r) => a + Math.min(0, r.net), 0);
+  const trouble = S.log.filter((x) => x.type === "trouble").reduce((a, x) => a + x.cost, 0);
+  if (kind === "bankrupt" && S.openedAt != null && S.month <= S.openedAt + O.rampMonths)
+    items.push([5, "立ち上がりの赤字に耐えられなかった", `開業直後の客は見込みの${Math.round(O.rampStart * 100)}%から始まり、${O.rampMonths}か月かけて増える。その途中の${S.month - S.openedAt}か月で営業赤字が${yen(-lossRamp)}積み上がり、開業時の手元資金 ${yen(S.startCash)} を使い切った。`]);
+  if (open.length && occ < be)
+    items.push([5, "卓が多すぎて、満席率が損益分岐に届いていない", `直近の満席率は${Math.round(occ * 100)}%、この卓数・営業時間・料金での損益分岐は${be > 1 ? "100%超" : Math.round(be * 100) + "%"}。空いた卓のぶんも家賃と人件費がかかっている。営業中なら「減卓」（3）で固定費を下げられた。`]);
+  if (S.invest > 2500 || S.startCash < 2000)
+    items.push([4, "初期投資が大きく、手元資金が薄かった", `初期投資 ${yen(S.invest)}、開業時の手元資金 ${yen(S.startCash)}。立ち上がりの赤字とトラブルに備えて、手元に2,000万円以上残すのが目安（初期投資は1,500〜2,000万円が目安）。`]);
+  if (best && mine && best.tables !== mine.tables && best.final > mine.final * 1.05)
+    items.push([4, `この物件なら${best.tables}卓が良かった（試算）`, `実際の客数で60か月を回し直すと、${mine.tables}卓は${mine.final > 0 ? "手取り " + yen(mine.final) : "途中で資金が尽きる"}、${best.tables}卓（初期投資 ${yen(best.invest)}）は手取り ${yen(best.final)}。トラブルと事件を除いた試算。`]);
+  if (share < 0.85)
+    items.push([3, "物件が外れた（客数が見込みより少ない）", `実際の客数は見込みの${Math.round(share * 100)}%（物件の当たり外れ${S.competitors ? `と競合${S.competitors}店の出店` : ""}）。${S.loc.name}は読みにくさ ±${Math.round(S.loc.demandSd * 100)}%。最初の数か月で客足が鈍いと分かった時点で、減卓や営業時間の短縮で守りに入れた。`]);
+  if (rev > 0 && rent / rev > 0.3) items.push([3, "家賃が重い", `家賃が売上の${Math.round(rent / rev * 100)}%。${S.loc.name}は坪${S.loc.tsuboRent}万円。卓を絞って面積を小さくするか、家賃の安い立地を選ぶ。`]);
+  if (rev > 0 && staff / rev > 0.5) items.push([3, "人件費が重い", `人件費が売上の${Math.round(staff / rev * 100)}%（${S.hiring.name}、${hoursLen()}時間営業）。客入りの薄い昼の時間を削る、採用方針を見直す。`]);
+  if (hoursLen() > 12) items.push([2, "営業時間が長い", `${hhLong(S.open)}〜${hhLong(S.close)}の${hoursLen()}時間。昼（12〜17時）の客入りは夜の約3分の1で、人件費は時間に比例する。`]);
+  if (trouble > 0) items.push([2, "トラブルの出費", `トラブルで合計 ${yen(trouble)}。スタッフの余力が30を切るとトラブルは1.5倍起きやすい。教育（5）で余力を保つ。`]);
+  if (S.orders) items.push([4, `${R.labels.order}を${S.orders}回受けた`, `是正対応費・風評（売上−25%）・店の値段の割引率+10%が重なった。営業スタイルを「預入のみ」に戻すと止まる。`]);
+  if (S.dd && S.dd.kind === "cut") items.push([4, "グレーの営業で売却額が減った", `買収前調査で「${S.dd.name}」が見つかり、売却額が${Math.round(S.dd.cut * 100)}%になった。`]);
+  if (S.dd && S.dd.kind === "shell") items.push([5, "黒の営業で売却額がハコの価値だけになった", "継続的なキャッシュフローと認められなかった。"]);
+  if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業や違法営業は、続けるほど摘発の確率が上がる。瞬間収益は大きいが、最終手取り額のランキングには残らない。"]);
+  if (S.ind.slack < 35) items.push([2, "スタッフが疲れていた", `余力 ${Math.round(S.ind.slack)}。満席が続くと余力は落ち、居心地とトラブルに響く。`]);
+  if (S.ind.comfort < 40) items.push([2, "初心者が定着しなかった", `初心者の居心地 ${Math.round(S.ind.comfort)}。成長率（店の値段）と客数に効く。教育方針「おもてなし」や事件での判断で上げられる。`]);
+  if (kind === "complete" && items.length < 2){
+    if (!S.debt && canBorrow().ok) items.push([1, "借入を使っていない", "健全営業で黒字なら借りられる。満席が続くなら、借りて増卓すれば店の値段も上がる。"]);
+    if (S.ad === 0 && S.ind.fame < 45) items.push([1, "知名度が低いまま", `知名度 ${Math.round(S.ind.fame)}。広告（1）で上がり、店の値段の成長率にも効く。`]);
+  }
+  items.sort((a, b) => b[0] - a[0]);
+  if (!items.length) return `<p>大きな問題はなかった。</p>`;
+  return `<ol style="padding-left:1.3em;margin:4px 0">${items.slice(0, 5).map(([, t, d]) => `<li style="margin:6px 0"><b>${esc(t)}</b><br><span style="font-size:13px">${esc(d)}</span></li>`).join("")}</ol>`;
 }
 const RANK_KEY = "poker-shop-v07-rank";
 function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
