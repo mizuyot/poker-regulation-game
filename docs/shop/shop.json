@@ -247,7 +247,8 @@
     },
     "note": "是正指摘・摘発エンド・確率はゲーム上の不利益イベントで、現実の法的手続きの順序や確率ではない。",
     "ddArrestIfLate": 0.5,
-    "ddArrestText": "買収前調査の期間中に違法営業が見つかり、買い手が手を引いただけでは済まなかった（ゲーム上の処理）。"
+    "ddArrestText": "買収前調査の期間中に違法営業が見つかり、買い手が手を引いただけでは済まなかった（ゲーム上の処理）。",
+    "orderJumpGray": 1.5
   },
   "valuation": {
     "discountBase": 0.25,
@@ -825,9 +826,9 @@
           "demand": 1.3,
           "spend": 1.1
         },
-        "arrest": 0.004,
-        "arrestGrowth": 0.0005,
-        "order": 0.08,
+        "arrest": 0.002,
+        "arrestGrowth": 0,
+        "order": 0.05,
         "dd": {
           "q": 0.3,
           "lateQ": 0.6,
@@ -848,9 +849,9 @@
           "demand": 1.35,
           "spend": 0.95
         },
-        "arrest": 0.003,
+        "arrest": 0.001,
         "arrestGrowth": 0,
-        "order": 0.07,
+        "order": 0.035,
         "dd": {
           "q": 0.3,
           "lateQ": 0.6,
@@ -871,9 +872,9 @@
           "demand": 1.15,
           "spend": 0.97
         },
-        "arrest": 0.001,
+        "arrest": 0.0005,
         "arrestGrowth": 0,
-        "order": 0.04,
+        "order": 0.02,
         "dd": {
           "q": 0.2,
           "lateQ": 0.4,
@@ -908,7 +909,7 @@
         "id": "exp",
         "name": "経験者を中心に採る",
         "desc": "人件費は高いが、最初から回る。",
-        "staffMult": 1.2,
+        "staffMult": 1.08,
         "start": {
           "slack": 15,
           "comfort": 5
@@ -920,7 +921,7 @@
         "id": "rookie",
         "name": "未経験から育てる",
         "desc": "人件費は安い。最初は手が回らないが、教育がよく効く。",
-        "staffMult": 0.85,
+        "staffMult": 0.92,
         "start": {
           "slack": -10
         },
@@ -931,7 +932,7 @@
         "id": "lean",
         "name": "少人数で回す",
         "desc": "人件費は一番安い。いつも余裕がない。",
-        "staffMult": 0.75,
+        "staffMult": 0.82,
         "start": {
           "slack": -20
         },
@@ -954,7 +955,7 @@
         "desc": "初めての客が残りやすい。",
         "trustTarget": 0,
         "comfortTarget": 10,
-        "turns": 0.97
+        "turns": 1.0
       },
       {
         "id": "efficiency",
@@ -970,7 +971,7 @@
         "id": "ban",
         "name": "禁止する",
         "desc": "スタッフと常連の個人的なやり取りを禁じる。常連化は少し遅い。",
-        "demand": 0.97,
+        "demand": 1.0,
         "start": {
           "trust": 5
         }
@@ -979,7 +980,7 @@
         "id": "allow",
         "name": "禁止しない",
         "desc": "常連が定着しやすい。私的なやり取りから問題が起きることがある。",
-        "demand": 1.06,
+        "demand": 1.08,
         "start": {}
       }
     ]
