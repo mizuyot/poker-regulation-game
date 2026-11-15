@@ -29,8 +29,9 @@ def embed(html: str, element_id: str, data: dict) -> str:
 
 def cited_ids(shop: dict) -> list[str]:
     ids: list[str] = []
-    for group in ("rules", "licenses"):
-        for item in shop[group]:
+    groups = [shop["illegal"], [shop["license"]], [{"provisionIds": shop["operations"].get("legalCloseProvisionIds", [])}]]
+    for group in groups:
+        for item in group:
             for pid in item.get("provisionIds", []):
                 if pid not in ids:
                     ids.append(pid)
@@ -52,7 +53,11 @@ def main() -> None:
     INDEX.write_text(html, encoding="utf-8")
     print("wrote", INDEX)
 
-    sources = sorted({p["url"] for p in cited.values() if p.get("url")})
+    def prov_refs(pids):
+        return [{"id": pid, "name": cited[pid]["name"], "verified": cited[pid].get("verified", False),
+                 "url": cited[pid].get("url")} for pid in pids]
+
+    fictional = "ゲーム用の架空パラメータ。実在の市場・物件・運用の統計ではない。"
     OUTPUT.parent.mkdir(exist_ok=True)
     with OUTPUT.open("w", encoding="utf-8") as handle:
         def write(record: dict) -> None:
@@ -60,23 +65,20 @@ def main() -> None:
 
         write({"id": "shop_meta", "kind": "meta", **shop["meta"]})
         for loc in shop["locations"]:
-            write({"id": f"shop_loc_{loc['id']}", "kind": "location", **loc,
-                   "note_fictional": "ゲーム用の架空パラメータ"})
-        for group, kind in (("rules", "rule"), ("licenses", "license")):
-            for item in shop[group]:
-                write({
-                    "id": f"shop_{kind}_{item['id']}",
-                    "kind": kind,
-                    **item,
-                    "provisions": [
-                        {"id": pid, "name": cited[pid]["name"], "verified": cited[pid].get("verified", False),
-                         "url": cited[pid].get("url")}
-                        for pid in item.get("provisionIds", [])
-                    ],
-                    "source_urls": sources,
-                })
-        write({"id": "shop_risk", "kind": "risk", **shop["risk"],
-               "note_fictional": "摘発確率・処分段階はゲーム上の抽象化。実際の運用ではない。"})
+            write({"id": f"shop_loc_{loc['id']}", "kind": "location", **loc, "note_fictional": fictional})
+        write({"id": "shop_layout", "kind": "layout", **shop["layout"], "note_fictional": fictional})
+        ops = dict(shop["operations"])
+        write({"id": "shop_operations", "kind": "operations", **ops,
+               "provisions": prov_refs(ops.get("legalCloseProvisionIds", [])), "note_fictional": fictional})
+        write({"id": "shop_license", "kind": "license", **shop["license"], "provisions": prov_refs(shop["license"]["provisionIds"])})
+        for item in shop["illegal"]:
+            write({"id": f"shop_illegal_{item['id']}", "kind": "illegal_action", **item,
+                   "provisions": prov_refs(item.get("provisionIds", [])), "note_fictional": shop["risk"]["note"]})
+        write({"id": "shop_risk", "kind": "risk", **shop["risk"]})
+        write({"id": "shop_valuation", "kind": "valuation", **shop["valuation"], "note_fictional": fictional})
+        write({"id": "shop_finance", "kind": "finance", **shop["finance"], "note_fictional": fictional})
+        for ev in shop["events"]:
+            write({"id": f"shop_event_{ev['id']}", "kind": "event", **ev, "note_fictional": "実在の事件の構造だけを取り出した架空の事件。"})
     print("wrote", OUTPUT)
 
 

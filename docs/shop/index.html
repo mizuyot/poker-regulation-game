@@ -8,102 +8,131 @@
 :root{
   --bg:#ffffff; --ink:#111111; --muted:#6b6b6b; --line:#1a1a1a; --soft:#d9d9d9;
   --wall:#e6e6e6; --wall-dark:#c4c4c4; --shadow:rgba(0,0,0,.14); --panel:#ffffff;
-  --warn:#111; --danger:#b3261e;
+  --danger:#b3261e; --good:#2e6b45;
   --font: "Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#121212; --ink:#f2f2f2; --muted:#9a9a9a; --line:#e8e8e8; --soft:#3a3a3a;
-    --wall:#2c2c2c; --wall-dark:#3d3d3d; --shadow:rgba(0,0,0,.5); --panel:#1b1b1b; --danger:#ff8a80;
+    --wall:#2c2c2c; --wall-dark:#3d3d3d; --shadow:rgba(0,0,0,.5); --panel:#1b1b1b; --danger:#ff8a80; --good:#8fd1a6;
   }
 }
 :root[data-theme="dark"]{
   --bg:#121212; --ink:#f2f2f2; --muted:#9a9a9a; --line:#e8e8e8; --soft:#3a3a3a;
-  --wall:#2c2c2c; --wall-dark:#3d3d3d; --shadow:rgba(0,0,0,.5); --panel:#1b1b1b; --danger:#ff8a80;
+  --wall:#2c2c2c; --wall-dark:#3d3d3d; --shadow:rgba(0,0,0,.5); --panel:#1b1b1b; --danger:#ff8a80; --good:#8fd1a6;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent}
 canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block}
 button{font-family:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
 
 /* HUD */
-.pause{position:fixed;top:20px;left:20px;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);display:grid;place-items:center;cursor:pointer;font-size:14px;letter-spacing:1px}
-.speed{position:fixed;top:72px;left:20px;font-size:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:2px 8px;cursor:pointer}
-.hud{position:fixed;top:18px;right:20px;text-align:right;line-height:1.35;pointer-events:none}
-.money{font-size:40px;font-weight:300;display:flex;align-items:center;gap:10px;justify-content:flex-end;font-variant-numeric:tabular-nums}
+.tl{position:fixed;top:18px;left:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.tlrow{display:flex;gap:8px;align-items:center}
+.pause{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);display:grid;place-items:center;cursor:pointer;font-size:14px}
+.speed{font-size:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:2px 8px;cursor:pointer}
+.ind{display:grid;grid-template-columns:auto 84px;gap:3px 8px;font-size:11.5px;align-items:center;background:color-mix(in srgb,var(--bg) 80%,transparent);padding:6px 8px;border-radius:10px}
+.ind .bar{height:6px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.ind .bar i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s}
+.hud{position:fixed;top:16px;right:18px;text-align:right;line-height:1.35;pointer-events:none;background:color-mix(in srgb,var(--bg) 80%,transparent);padding:4px 6px;border-radius:10px}
+.money{font-size:36px;font-weight:300;display:flex;align-items:center;gap:10px;justify-content:flex-end}
 .money.neg{color:var(--danger)}
+.money small{font-size:15px}
 .chip{display:inline-block;width:.62em;height:.62em;border-radius:50%;border:.17em solid currentColor;flex:none}
 .money .chip{background:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 .12em var(--bg)}
-.hud .sub{font-size:15px;color:var(--ink)}
+.hud .sub{font-size:14px}
 .hud .tiny{font-size:12px;color:var(--muted)}
-.heat{display:inline-flex;gap:6px;align-items:center;font-size:12px;margin-top:4px}
-.heat .bar{width:90px;height:6px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.heat .bar i{display:block;height:100%;background:var(--ink);width:0}
+.hud .risk{font-size:12px;color:var(--danger);margin-top:2px}
+.pos{color:var(--good)} .negc{color:var(--danger)}
 
-.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:min(560px,calc(100vw - 180px))}
-.toast div{border:1.5px solid var(--line);border-radius:10px;background:var(--bg);padding:3px 10px;font-size:13px;animation:fade 4s forwards}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:min(520px,calc(100vw - 420px))}
+.toast div{border:1.5px solid var(--line);border-radius:10px;background:var(--bg);padding:3px 10px;font-size:13px;animation:fade 4.5s forwards;text-align:center}
 @keyframes fade{0%{opacity:0;transform:translateY(-4px)}8%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 
-.dockwrap{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;max-width:calc(100vw - 32px)}
+.dockwrap{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;max-width:calc(100vw - 32px)}
 .tag{border:1.5px solid var(--line);border-radius:9px;padding:1px 9px;font-size:12px;background:var(--bg);min-height:20px}
 .tag:empty{visibility:hidden}
-.dock{display:flex;gap:14px;border:2px solid var(--line);border-radius:18px;padding:12px 16px 8px;background:var(--bg);overflow-x:auto;max-width:100%}
-.act{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;padding:0;position:relative;min-width:62px}
-.act .ic{width:58px;height:58px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;background:var(--bg);box-shadow:3px 4px 0 var(--shadow);font-size:22px;transition:transform .08s}
+.dock{display:flex;gap:12px;border:2px solid var(--line);border-radius:18px;padding:12px 14px 8px;background:var(--bg);overflow-x:auto;max-width:100%}
+.act{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;padding:0;position:relative;min-width:58px}
+.act .ic{width:54px;height:54px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;background:var(--bg);box-shadow:3px 4px 0 var(--shadow);font-size:20px;transition:transform .08s}
 .act.on .ic{background:var(--ink);color:var(--bg)}
 .act:active .ic{transform:translateY(2px)}
-.act .k{position:absolute;left:2px;top:40px;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:10px;display:grid;place-items:center}
-.act .c{font-size:12px;display:flex;gap:4px;align-items:center;white-space:nowrap}
-.act .c .chip{width:9px;height:9px;border-width:2.5px}
+.act .k{position:absolute;left:0;top:38px;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:10px;display:grid;place-items:center}
+.act .c{font-size:11.5px;white-space:nowrap}
 .act[disabled]{opacity:.35;cursor:default}
-.act svg{width:26px;height:26px}
+.act svg{width:24px;height:24px}
 
 /* overlay */
 .ov{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 86%,transparent);display:none;place-items:center;padding:16px;overflow:auto;z-index:10}
 .ov.show{display:grid}
-.card{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px 22px 18px;width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:6px 8px 0 var(--shadow)}
-.card h1{font-size:22px;font-weight:600;margin:0 0 4px}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px 22px 18px;width:min(720px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:6px 8px 0 var(--shadow)}
+.card h1{font-size:22px;font-weight:600;margin:0 0 6px}
 .card h2{font-size:13px;font-weight:600;margin:18px 0 8px;letter-spacing:.06em}
 .card p{margin:6px 0;font-size:14px;line-height:1.7}
+.kicker{font-size:12px;color:var(--muted);letter-spacing:.08em}
 .muted{color:var(--muted)}
-.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
-.opt{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg);text-align:left;cursor:pointer;font-size:13px;line-height:1.5}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.opt{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg);text-align:left;cursor:pointer;font-size:13px;line-height:1.55}
 .opt b{display:block;font-size:14px;margin-bottom:2px}
 .opt small{color:var(--muted);display:block}
 .opt[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .opt[aria-pressed="true"] small{color:color-mix(in srgb,var(--bg) 70%,transparent)}
-.stepper{display:flex;align-items:center;gap:14px}
+.choice{display:block;width:100%;margin:6px 0}
+.stepper{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .stepper button{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;font-size:18px}
 .stepper output{font-size:28px;font-weight:300;min-width:2ch;text-align:center}
-.row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap;align-items:center}
 .btn{border:2px solid var(--line);border-radius:999px;padding:9px 20px;background:var(--bg);cursor:pointer;font-size:14px}
 .btn.primary{background:var(--ink);color:var(--bg)}
+.btn[disabled]{opacity:.4;cursor:default}
+table.t{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0}
+table.t td,table.t th{border-bottom:1px solid var(--soft);padding:5px 6px;text-align:right}
+table.t td:first-child,table.t th:first-child{text-align:left}
+table.t tr.total td{font-weight:600;border-top:1.5px solid var(--line)}
 details{border-top:1px solid var(--soft);margin-top:10px;padding-top:8px;font-size:13px}
 summary{cursor:pointer;color:var(--muted)}
 .prov{margin:8px 0;padding:8px 10px;border-left:2px solid var(--line);font-size:12.5px;line-height:1.7}
 .prov a{color:inherit}
-.big{font-size:44px;font-weight:300;display:flex;gap:12px;align-items:center;font-variant-numeric:tabular-nums}
-.timeline{font-size:12.5px;line-height:1.8;max-height:180px;overflow:auto;border:1px solid var(--soft);border-radius:10px;padding:8px 12px;margin-top:8px}
+.big{font-size:44px;font-weight:300;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.big small{font-size:16px}
+.timeline{font-size:12.5px;line-height:1.8;max-height:200px;overflow:auto;border:1px solid var(--soft);border-radius:10px;padding:8px 12px;margin-top:8px}
 .foot{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6}
-@media (max-width:640px){
-  .money{font-size:28px}.hud{top:14px;right:14px}.pause{top:14px;left:14px}.speed{top:64px;left:14px}
-  .act .ic{width:48px;height:48px;font-size:18px}.act{min-width:52px}.act .k{top:32px}.dock{gap:8px;padding:10px 10px 6px}
-  .toast{top:110px;max-width:calc(100vw - 32px)}
+.slider{display:grid;grid-template-columns:4.5em 1fr 4.5em;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.slider input{width:100%}
+.hours{position:relative;height:30px;border:1px solid var(--soft);border-radius:8px;margin:6px 0 2px;overflow:hidden}
+.hours .band{position:absolute;top:0;bottom:0;background:var(--soft)}
+.hours .open{position:absolute;top:6px;bottom:6px;background:var(--ink);border-radius:4px}
+.hours .legal{position:absolute;top:0;bottom:0;border-left:2px dashed var(--danger)}
+.hours .lbl{position:absolute;bottom:-1px;font-size:10px;color:var(--muted);transform:translateX(-50%)}
+.warn{color:var(--danger);font-size:12.5px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:6px 0;line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:13px}
+.grid2 span:nth-child(even){text-align:right}
+.rank{font-size:12.5px;line-height:1.7;margin:0;padding-left:1.4em}
+@media (max-width:720px){
+  .money{font-size:26px}.hud{top:10px;right:10px}.tl{top:10px;left:10px}.ind{display:none}
+  .act .ic{width:44px;height:44px;font-size:17px}.act{min-width:48px}.act .k{top:30px}.dock{gap:6px;padding:10px 8px 6px}
+  .toast{top:120px;max-width:calc(100vw - 32px)}
 }
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
 
-<button class="pause" id="pauseBtn" aria-label="一時停止">II</button>
-<button class="speed" id="speedBtn">×1</button>
+<div class="tl">
+  <div class="tlrow"><button class="pause" id="pauseBtn" aria-label="一時停止">II</button><button class="speed" id="speedBtn">×1</button></div>
+  <div class="ind" id="ind"></div>
+</div>
 
 <div class="hud" aria-live="polite">
-  <div class="money" id="money"><span class="chip"></span><span id="moneyV">0</span></div>
-  <div class="sub"><span id="visV">0</span> 人 / 月 <span class="tiny">（需要 <span id="demV">0</span>）</span></div>
-  <div class="tiny" id="timeV">1年目 1か月</div>
-  <div class="tiny">5年累計利益 <span id="profitV">0</span> 万円</div>
-  <div class="heat"><span>監視</span><span class="bar"><i id="heatBar"></i></span></div>
+  <div class="money num" id="money"><span class="chip"></span><span id="moneyV">0</span><small>万円</small></div>
+  <div class="sub num">今月 <span id="netV">0</span> 万円</div>
+  <div class="tiny num"><span id="guestV">0</span> 人/日 ・ 満席率 <span id="occV">0</span>%</div>
+  <div class="tiny" id="timeV">開業前</div>
+  <div class="tiny num">いまの店の値段 <span id="valueV">—</span></div>
+  <div class="tiny num" id="debtV"></div>
+  <div class="risk num" id="riskV"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -111,224 +140,794 @@ summary{cursor:pointer;color:var(--muted)}
 <div class="dockwrap">
   <div class="tag" id="tag"></div>
   <div class="dock" id="dock">
-    <button class="act" data-a="ad"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h3l5 4V6L6 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></span><span class="k">1</span><span class="c"><span class="chip"></span><span id="adC">10</span>/月</span></button>
-    <button class="act" data-a="tableAdd"><span class="ic">＋</span><span class="k">2</span><span class="c"><span class="chip"></span><span id="tblC">12</span></span></button>
-    <button class="act" data-a="tableSub"><span class="ic">－</span><span class="k">3</span><span class="c">卓 <span id="tblN">0</span></span></button>
-    <button class="act on" data-a="rules"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.5 7.5 0 0 0-1.7-1L14.9 3h-4l-.4 2.7a7.5 7.5 0 0 0-1.7 1l-2.5-1-2 3.5L6.4 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.9h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12.9 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></span><span class="k">4</span><span class="c" id="ruleC">ルール</span></button>
+    <button class="act" data-a="ad"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h3l5 4V6L6 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></span><span class="k">1</span><span class="c" id="adC">広告</span></button>
+    <button class="act" data-a="tableAdd"><span class="ic">＋</span><span class="k">2</span><span class="c" id="addC">増卓</span></button>
+    <button class="act" data-a="tableSub"><span class="ic">－</span><span class="k">3</span><span class="c" id="subC">減卓</span></button>
+    <button class="act" data-a="settings"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.5 7.5 0 0 0-1.7-1L14.9 3h-4l-.4 2.7a7.5 7.5 0 0 0-1.7 1l-2.5-1-2 3.5L6.4 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.9h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12.9 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></span><span class="k">4</span><span class="c">営業設定</span></button>
+    <button class="act" data-a="edu"><span class="ic">育</span><span class="k">5</span><span class="c" id="eduC">教育</span></button>
+    <button class="act" data-a="finance"><span class="ic">¥</span><span class="k">6</span><span class="c">借入</span></button>
   </div>
 </div>
 
-<!-- setup / panels -->
 <div class="ov" id="ov"><div class="card" id="card"></div></div>
 
 <script type="application/json" id="shop-data">
 {
   "meta": {
     "title": "ポーカー店経営 5年",
-    "version": "0.1.0",
+    "version": "0.6.0",
     "unit": "万円",
-    "disclaimer": "このゲームは適法性の判断・法的助言ではありません。摘発確率・処分の段階・金額はすべてゲーム用の架空の値です。",
-    "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在市場の統計ではない。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
+    "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
+    "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。scripts/sim_v05.py・sim_buyout.py で検証した値に合わせている。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
     "months": 60,
     "secondsPerMonth": 6,
-    "startCash": 500,
-    "bankruptAt": -200
+    "fund": 5000,
+    "bankruptAt": 0
+  },
+  "layout": {
+    "tsuboPerTable": 4,
+    "commonTsubo": 10,
+    "depositMonths": 6,
+    "tablePrice": 50,
+    "openingCost": 200,
+    "lateTableMarkup": 1.3,
+    "minTables": 1,
+    "maxTables": 12,
+    "tableResidual": 0.3,
+    "fitoutResidual": 0.5
   },
   "locations": [
     {
-      "id": "downtown",
-      "name": "繁華街",
-      "note": "人通りは最多。目にも付きやすい。",
-      "rent": 80,
-      "traffic": 1.6,
-      "visibility": 1.5
+      "id": "tokyo",
+      "name": "東京都心",
+      "tsuboRent": 4.0,
+      "spend": 0.55,
+      "demand": 64,
+      "fitoutPerTsubo": 35,
+      "occCap": 0.9,
+      "demandSd": 0.35,
+      "competition": {
+        "p": 0.05,
+        "hit": 0.12
+      },
+      "troubleP": 0.1,
+      "staffPerTable": 50,
+      "note": "当たれば一番大きい。家賃が高く、競合の出店も多い。"
     },
     {
-      "id": "station",
-      "name": "駅前",
-      "note": "通勤客が流れる。家賃と人通りの釣り合い型。",
-      "rent": 50,
-      "traffic": 1.2,
-      "visibility": 1.1
+      "id": "metro",
+      "name": "大都市都心",
+      "tsuboRent": 2.0,
+      "spend": 0.42,
+      "demand": 70,
+      "fitoutPerTsubo": 30,
+      "occCap": 0.85,
+      "demandSd": 0.28,
+      "competition": {
+        "p": 0.035,
+        "hit": 0.1
+      },
+      "troubleP": 0.09,
+      "staffPerTable": 45,
+      "note": "大阪・名古屋・福岡のような都心。東京ほどではないが競合は激しい。"
     },
     {
-      "id": "upper",
-      "name": "雑居ビル上階",
-      "note": "家賃は安く、目立たない。そのぶん来ない。",
-      "rent": 25,
-      "traffic": 0.75,
-      "visibility": 0.6
+      "id": "regional",
+      "name": "地方都市中心",
+      "tsuboRent": 1.2,
+      "spend": 0.36,
+      "demand": 60,
+      "fitoutPerTsubo": 25,
+      "occCap": 0.8,
+      "demandSd": 0.18,
+      "competition": {
+        "p": 0.015,
+        "hit": 0.08
+      },
+      "troubleP": 0.07,
+      "staffPerTable": 36,
+      "note": "読みやすく、そこそこ稼げる。（坪単価は案）"
     },
     {
       "id": "suburb",
-      "name": "郊外ロードサイド",
-      "note": "車で来る常連向け。地元の目はある。",
-      "rent": 20,
-      "traffic": 0.55,
-      "visibility": 0.85
+      "name": "郊外",
+      "tsuboRent": 0.7,
+      "spend": 0.35,
+      "demand": 42,
+      "fitoutPerTsubo": 22,
+      "occCap": 0.75,
+      "demandSd": 0.1,
+      "competition": {
+        "p": 0.005,
+        "hit": 0.08
+      },
+      "troubleP": 0.05,
+      "staffPerTable": 32,
+      "note": "小さく確実。大きくは伸びない。（坪単価は案）"
     }
   ],
-  "rules": [
-    {
-      "id": "noprize",
-      "name": "換金なし・景品なし",
-      "short": "参加費のみ",
-      "note": "参加費（席料・ドリンク）だけで回す。勝っても何も持ち帰れない。",
-      "demand": 1.0,
-      "spend": 0.5,
-      "prizeCost": 0,
-      "violation": null,
-      "provisionIds": [
-        "keiho185"
-      ]
+  "operations": {
+    "days": 26,
+    "avgStayHours": 4,
+    "turnsScale": 0.594,
+    "baseHours": 10,
+    "otherFixed": 60,
+    "variableRate": 0.15,
+    "rampStart": 0.3,
+    "rampMonths": 18,
+    "maintenancePerTable": 2,
+    "bands": [
+      {
+        "from": 12,
+        "to": 17,
+        "w": 0.5,
+        "name": "昼"
+      },
+      {
+        "from": 17,
+        "to": 20,
+        "w": 1.0,
+        "name": "夕"
+      },
+      {
+        "from": 20,
+        "to": 24,
+        "w": 1.4,
+        "name": "夜"
+      },
+      {
+        "from": 24,
+        "to": 30,
+        "w": 1.6,
+        "name": "深夜"
+      }
+    ],
+    "openMin": 10,
+    "closeMax": 29,
+    "legalClose": 24,
+    "legalCloseProvisional": true,
+    "legalCloseProvisionIds": [
+      "fueiho13"
+    ],
+    "price": {
+      "min": 0.8,
+      "max": 1.3,
+      "elasticity": 1.5
     },
-    {
-      "id": "prize",
-      "name": "成績に応じて景品",
-      "short": "景品あり",
-      "note": "上位者に景品を渡す。集客は伸びるが、風営法の許可営業では賞品提供が禁じられている。",
-      "demand": 1.5,
-      "spend": 0.65,
-      "prizeCost": 0.12,
-      "violation": "admin",
-      "provisionIds": [
-        "fueiho23-2",
-        "fueiho2-1"
-      ]
-    },
-    {
-      "id": "cashout",
-      "name": "チップを現金に換える",
-      "short": "換金あり",
-      "note": "勝ったチップを現金に戻す。客は一番集まる。ゲーム上は摘発＝逮捕で、5年分がゼロになる。",
-      "demand": 2.6,
-      "spend": 1.0,
-      "prizeCost": 0,
-      "violation": "criminal",
-      "provisionIds": [
-        "keiho185",
-        "keiho186"
-      ]
-    }
-  ],
-  "licenses": [
-    {
-      "id": "licensed",
-      "name": "風営許可を取ってから開く",
-      "note": "申請費がかかり、開店まで3か月待つ。",
-      "fee": 40,
-      "waitMonths": 3,
-      "violation": null,
-      "provisionIds": [
-        "fueiho2-1"
-      ]
-    },
-    {
-      "id": "unlicensed",
-      "name": "許可を取らずにすぐ開く",
-      "note": "初月から営業できる。ゲーム上は行政処分の対象として監視度に効く。",
-      "fee": 0,
-      "waitMonths": 0,
-      "violation": "admin",
-      "provisionIds": [
-        "fueiho2-1"
-      ],
-      "missingSource": "無許可営業の罰則条文は provisions に未収録。一次ソース確認待ち。"
-    }
-  ],
-  "economy": {
-    "baseVisitors": 400,
-    "tableCapacity": 110,
-    "tablePrice": 12,
-    "tableResale": 4,
-    "dealerPerTable": 28,
-    "maxTables": 12,
     "ads": [
       {
         "level": 0,
         "cost": 0,
-        "mult": 1.0,
-        "reach": 0.55
+        "fame": -0.5
       },
       {
         "level": 1,
         "cost": 10,
-        "mult": 1.35,
-        "reach": 0.7
+        "fame": 1
       },
       {
         "level": 2,
         "cost": 25,
-        "mult": 1.7,
-        "reach": 0.85
+        "fame": 2
       },
       {
         "level": 3,
         "cost": 45,
-        "mult": 2.05,
-        "reach": 1.0
+        "fame": 3
       }
     ],
-    "reputation": {
-      "start": 0.8,
-      "min": 0.5,
-      "max": 1.6,
-      "gainWhenFull": 0.025,
-      "lossWhenIdle": 0.01
+    "education": {
+      "cost": 20,
+      "slack": 4,
+      "comfort": 2
+    },
+    "trouble": {
+      "costMin": 200,
+      "costMax": 1000,
+      "shockMonths": 3,
+      "shock": 0.3
     }
   },
-  "risk": {
-    "base": {
-      "admin": 0.015,
-      "criminal": 0.012
+  "indicators": {
+    "start": {
+      "fame": 30,
+      "trust": 50,
+      "comfort": 50,
+      "slack": 60
     },
-    "adFactor": 0.25,
-    "tablesDivisor": 8,
-    "heat": {
-      "cashoutPerMonth": 0.03,
-      "afterWarning": 0.5,
-      "decay": 0.02,
-      "max": 3
-    },
-    "ladder": [
-      {
-        "step": 1,
-        "id": "shiji",
-        "name": "指示",
-        "text": "立入りで違反を指摘された。是正するか、続けるか。",
-        "suspendMonths": 0,
-        "fine": 0
-      },
-      {
-        "step": 2,
-        "id": "teishi",
-        "name": "営業停止",
-        "text": "営業停止。家賃と人件費だけが出ていく。",
-        "suspendMonths": 3,
-        "fine": 0
-      },
-      {
-        "step": 3,
-        "id": "haigyo",
-        "name": "廃業",
-        "text": "これ以上は続けられない。ここまでの利益で終わる。",
-        "suspendMonths": 0,
-        "fine": 100,
-        "end": true
-      }
-    ],
-    "arrest": {
-      "name": "摘発・逮捕",
-      "text": "換金の実態が押さえられた。ゲーム上、5年分の利益は没収扱いでスコアは0。",
-      "end": true,
-      "scoreZero": true
-    },
-    "cashoutTail": {
-      "months": 12,
-      "factor": 0.5,
-      "text": "換金をやめても、過去の実態はしばらく問われうる（ゲーム上の抽象化）。"
+    "names": {
+      "fame": "知名度",
+      "trust": "信頼",
+      "comfort": "初心者の居心地",
+      "slack": "スタッフの余力"
     }
-  }
+  },
+  "license": {
+    "fee": 40,
+    "waitMonths": 2,
+    "provisionIds": [
+      "fueiho2-1"
+    ]
+  },
+  "illegal": [
+    {
+      "id": "cashout",
+      "name": "換金（チップを現金に戻す）",
+      "short": "換金",
+      "effect": {
+        "spend": 5
+      },
+      "arrest": 0.02,
+      "arrestGrowth": 0.002,
+      "order": 0.15,
+      "provisionIds": [
+        "keiho185",
+        "keiho186"
+      ]
+    },
+    {
+      "id": "prize",
+      "name": "成績に応じた景品",
+      "short": "景品",
+      "effect": {
+        "demand": 1.5
+      },
+      "arrest": 0.003,
+      "arrestGrowth": 0,
+      "order": 0.08,
+      "provisionIds": [
+        "fueiho23-2"
+      ]
+    },
+    {
+      "id": "unlicensed",
+      "name": "許可を待たずに開く",
+      "short": "無許可",
+      "effect": {
+        "skipWait": true
+      },
+      "arrest": 0.005,
+      "arrestGrowth": 0,
+      "order": 0.06,
+      "provisionIds": [
+        "fueiho2-1"
+      ],
+      "missingSource": "無許可営業の罰則条文は正本に未収録。"
+    },
+    {
+      "id": "latenight",
+      "name": "法定の営業時間を越えて開ける",
+      "short": "深夜営業",
+      "effect": {
+        "hours": true
+      },
+      "arrest": 0.003,
+      "arrestGrowth": 0,
+      "order": 0.06,
+      "provisionIds": [
+        "fueiho13"
+      ]
+    }
+  ],
+  "risk": {
+    "orderJump": 4,
+    "orderStopMonths": 2,
+    "orderRumorMonths": 6,
+    "orderRumor": 0.25,
+    "orderTrust": -20,
+    "orderCostMonths": 3,
+    "orderCostMin": 100,
+    "tailMonths": 12,
+    "tailFactor": 0.5,
+    "ddStart": 54,
+    "ddLateQ": 0.9,
+    "ddEarlyQ": 0.5,
+    "labels": {
+      "order": "是正指摘",
+      "orderCost": "是正対応費",
+      "arrest": "摘発エンド",
+      "tail": "ゲーム上の残存リスク"
+    },
+    "note": "是正指摘・摘発エンド・確率はゲーム上の不利益イベントで、現実の法的手続きの順序や確率ではない。"
+  },
+  "valuation": {
+    "discountBase": 0.25,
+    "discountTrust": 0.1,
+    "discountPerOrder": 0.1,
+    "discountLowSlack": 0.03,
+    "growthBase": 0.02,
+    "growthComfort": 0.06,
+    "growthFame": 0.04,
+    "growthMin": -0.03,
+    "growthMax": 0.06,
+    "terminalGrowth": 0.01,
+    "years": 5,
+    "shellMessage": "継続的なキャッシュフローと認められませんでした。評価額は、敷金や内装・設備など「ハコとしての価値」のみです。"
+  },
+  "finance": {
+    "unlockMonths": 6,
+    "limitMultiple": 3,
+    "rate": 0.03,
+    "step": 500
+  },
+  "events": [
+    {
+      "id": "whale",
+      "title": "一番お金を使う常連が、一番嫌われている",
+      "when": {
+        "minMonth": 6,
+        "minOcc": 0.45
+      },
+      "omen": "高額を使う常連が、初心者に強い言葉を投げる場面が増えた。スタッフから「注意してほしい」と相談が来た。彼は店の売上を支えている。",
+      "choices": [
+        {
+          "label": "個別に注意する",
+          "outcomes": [
+            {
+              "p": 0.6,
+              "text": "彼は態度を改めた。初心者の顔が明るくなった。",
+              "effects": {
+                "comfort": 6,
+                "trust": 3
+              }
+            },
+            {
+              "p": 0.4,
+              "text": "彼は怒って来なくなった。売上は落ちたが、初心者は残った。",
+              "effects": {
+                "demand": {
+                  "mult": 0.92,
+                  "months": 6
+                },
+                "comfort": 8
+              },
+              "later": {
+                "months": 6,
+                "text": "初心者が常連になり始めた。",
+                "effects": {
+                  "comfort": 4,
+                  "fame": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "label": "全員に同じルールを掲示する",
+          "effects": {
+            "cash": -10,
+            "comfort": 5,
+            "trust": 5
+          },
+          "text": "マナーの掲示を出し、スタッフ全員で同じ基準で注意することにした。",
+          "later": {
+            "months": 4,
+            "text": "ルールが店の文化になった。",
+            "effects": {
+              "comfort": 3
+            }
+          }
+        },
+        {
+          "label": "出禁にする",
+          "effects": {
+            "demand": {
+              "mult": 0.85,
+              "months": 4
+            },
+            "comfort": 10
+          },
+          "text": "彼に出入りを断った。取り巻きも来なくなり、売上が落ちた。",
+          "later": {
+            "months": 6,
+            "text": "初心者が戻ってきた。口コミが変わった。",
+            "effects": {
+              "fame": 3,
+              "comfort": 4
+            }
+          }
+        },
+        {
+          "label": "いまは何もしない",
+          "effects": {
+            "fame": 1
+          },
+          "text": "売上を優先し、様子を見ることにした。",
+          "later": {
+            "months": 3,
+            "text": "初心者への暴言を撮った動画がSNSで拡散した。",
+            "effects": {
+              "comfort": -12,
+              "trust": -8,
+              "fame": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cheat",
+      "title": "「あのコール、おかしくない？」配信卓で不正疑惑",
+      "when": {
+        "minMonth": 8,
+        "minFame": 40
+      },
+      "omen": "配信卓で、特定の客の勝ち方を疑う声がSNSに出始めた。不正かどうかは、まだ分からない。",
+      "choices": [
+        {
+          "label": "配信を続ける",
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "不正ではなかった。疑いは自然に消えた。",
+              "effects": {
+                "fame": 3,
+                "trust": -2
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "外部の人物がリアルタイムで助言していた（共謀）。",
+              "effects": {
+                "fame": 6,
+                "trust": -15
+              },
+              "later": {
+                "months": 2,
+                "text": "「店は気づいていたのでは」という切り抜きが拡散した。",
+                "effects": {
+                  "trust": -8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "label": "一時止めて調べる",
+          "effects": {
+            "cash": -60,
+            "fame": -2
+          },
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "不正ではなかった。調査結果を公表し、疑われた客にも経緯を説明した。",
+              "effects": {
+                "trust": 7
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "外部の人物がリアルタイムで助言していた。出禁にし、経緯を公表した。",
+              "effects": {
+                "trust": 10
+              }
+            }
+          ]
+        },
+        {
+          "label": "当事者を一時的に卓から外す",
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "疑われた客は潔白だった。「説明もなく外された」と常連が離れた。",
+              "effects": {
+                "trust": -8,
+                "comfort": -6
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "不正だった。早い対応が評価された。",
+              "effects": {
+                "trust": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "leak",
+      "title": "配信設備から情報が漏れている？",
+      "when": {
+        "minMonth": 12,
+        "minFame": 45
+      },
+      "omen": "配信のカード表示が、遅延なしで外から見られる状態だったかもしれない、という指摘が届いた。",
+      "choices": [
+        {
+          "label": "配信を止める",
+          "effects": {
+            "fame": -4,
+            "demand": {
+              "mult": 0.95,
+              "months": 3
+            }
+          },
+          "text": "配信をいったん止めた。配信目当ての客が少し減った。"
+        },
+        {
+          "label": "設備と権限を点検する",
+          "effects": {
+            "cash": -80,
+            "trust": 6,
+            "slack": -4
+          },
+          "text": "遅延設定と閲覧権限を点検し、穴を塞いだ。スタッフは手間取った。"
+        },
+        {
+          "label": "外部に調査を頼む",
+          "effects": {
+            "cash": -150,
+            "trust": 10
+          },
+          "text": "外部の専門家に調べてもらい、報告を公表した。"
+        }
+      ]
+    },
+    {
+      "id": "ace",
+      "title": "エースディーラーの退職",
+      "when": {
+        "minMonth": 10,
+        "maxSlack": 55
+      },
+      "omen": "店の顔だったディーラーが「疲れた」と退職を申し出た。指名で来る客も多い。",
+      "choices": [
+        {
+          "label": "待遇を上げて引き留める",
+          "effects": {
+            "cash": -120,
+            "slack": 10
+          },
+          "text": "給与と休みを見直し、残ってもらった。"
+        },
+        {
+          "label": "後任を育てる",
+          "effects": {
+            "slack": -8,
+            "comfort": -4
+          },
+          "text": "引き留めず、後任の育成に切り替えた。しばらく卓の回りが悪い。",
+          "later": {
+            "months": 4,
+            "text": "後任が育ち、一人に頼らない体制になった。",
+            "effects": {
+              "slack": 12,
+              "trust": 2
+            }
+          }
+        },
+        {
+          "label": "店長が現場に入る",
+          "effects": {
+            "slack": 4
+          },
+          "text": "店長がディーラーとして卓に立つことにした。",
+          "later": {
+            "months": 3,
+            "text": "店長が体調を崩した。",
+            "effects": {
+              "slack": -10,
+              "trust": -2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "tournament",
+      "title": "大会は満員。でも普段の常連が来なくなった",
+      "when": {
+        "minMonth": 14,
+        "minFame": 50
+      },
+      "omen": "週末の大会は毎回満員。ところが、平日の常連から「最近は居場所がない」という声が出ている。",
+      "choices": [
+        {
+          "label": "大会を広げる",
+          "effects": {
+            "fame": 8,
+            "comfort": -8
+          },
+          "text": "大会の回数を増やした。知名度は上がったが、普段の常連は減った。"
+        },
+        {
+          "label": "開催を減らす",
+          "effects": {
+            "fame": -3,
+            "comfort": 5
+          },
+          "text": "大会を月1回に絞った。"
+        },
+        {
+          "label": "時間帯を分ける",
+          "effects": {
+            "cash": -30,
+            "fame": 3,
+            "comfort": 3,
+            "slack": -4
+          },
+          "text": "大会は週末の昼、通常営業は夜、と分けた。"
+        }
+      ]
+    },
+    {
+      "id": "neighbor",
+      "title": "近隣から苦情。原因は店内ではなく帰り道",
+      "when": {
+        "minMonth": 6,
+        "minClose": 23
+      },
+      "omen": "近所から「夜中に店の前で騒ぐ人がいる」と苦情が来た。騒いでいるのは帰り道の客らしい。",
+      "choices": [
+        {
+          "label": "退店時に声をかける",
+          "effects": {
+            "slack": -4,
+            "trust": 4
+          },
+          "text": "帰り際にスタッフが一声かけるようにした。"
+        },
+        {
+          "label": "店の前にスタッフを置く",
+          "effects": {
+            "cash": -60,
+            "trust": 6
+          },
+          "text": "閉店前後に、店の前へスタッフを立たせた。"
+        },
+        {
+          "label": "営業時間を1時間短くする",
+          "effects": {
+            "trust": 5,
+            "closeDelta": -1
+          },
+          "text": "閉店を1時間早めた。"
+        },
+        {
+          "label": "様子を見る",
+          "later": {
+            "months": 3,
+            "text": "苦情が町内会で取り上げられた。",
+            "effects": {
+              "trust": -8,
+              "fame": -2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "raid",
+      "title": "近くの店が摘発され、うちにも問い合わせが殺到",
+      "when": {
+        "minMonth": 12
+      },
+      "omen": "近くのアミューズメント店が摘発されたと報道された。「お宅は大丈夫？」という問い合わせが相次いでいる。",
+      "choices": [
+        {
+          "label": "営業内容を説明する",
+          "effects": {
+            "cash": -20
+          },
+          "text": "料金の仕組みと、換金・景品をしていないことを掲示し、問い合わせに答えた。",
+          "outcomes": [
+            {
+              "p": 1.0,
+              "text": "説明が信頼につながった。",
+              "effects": {
+                "trust": 8
+              }
+            }
+          ]
+        },
+        {
+          "label": "予定どおり営業する",
+          "effects": {
+            "demand": {
+              "mult": 0.9,
+              "months": 2
+            }
+          },
+          "text": "特に何もしなかった。客足が少し落ちた。"
+        },
+        {
+          "label": "企画を点検する",
+          "effects": {
+            "cash": -30,
+            "trust": 4,
+            "slack": -3
+          },
+          "text": "景品や大会の企画を一つずつ点検した。"
+        }
+      ]
+    },
+    {
+      "id": "pro",
+      "title": "契約したプロに過去の不正疑惑",
+      "when": {
+        "minMonth": 18,
+        "minFame": 55
+      },
+      "omen": "看板として契約したプロ選手に、過去の大会での不正疑惑が報じられた。",
+      "choices": [
+        {
+          "label": "事実を確認する",
+          "effects": {
+            "cash": -40
+          },
+          "outcomes": [
+            {
+              "p": 0.6,
+              "text": "疑いは晴れた。確認の姿勢が評価された。",
+              "effects": {
+                "trust": 5,
+                "fame": 2
+              }
+            },
+            {
+              "p": 0.4,
+              "text": "事実だった。契約を解除し、違約金を払った。",
+              "effects": {
+                "trust": 3,
+                "cash": -80
+              }
+            }
+          ]
+        },
+        {
+          "label": "起用を保留する",
+          "effects": {
+            "fame": -3,
+            "trust": 2
+          },
+          "text": "調査が終わるまで、イベントへの起用を止めた。"
+        },
+        {
+          "label": "契約を続けて説明する",
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "説明が受け入れられた。",
+              "effects": {
+                "fame": 4
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "説明が火に油を注いだ。",
+              "effects": {
+                "trust": -12
+              },
+              "later": {
+                "months": 2,
+                "text": "スポンサーが離れた。",
+                "effects": {
+                  "trust": -5,
+                  "fame": -3
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "eventChance": 0.3,
+  "troubleTexts": [
+    "空調が故障した",
+    "漏水で一部の卓が使えなくなった",
+    "決済端末が止まった",
+    "カードシャッフラーが壊れた",
+    "内装の一部が破損した"
+  ],
+  "shockTexts": [
+    "近くで大型イベントがあり、客が流れた",
+    "悪天候が続いた",
+    "SNSで根拠のない悪評が出回った"
+  ]
 }
     </script>
 <script type="application/json" id="provisions-data">
@@ -339,6 +938,13 @@ summary{cursor:pointer;color:var(--muted)}
     "text": "賭博をした者は、五十万円以下の罰金又は科料に処する。ただし、一時の娯楽に供する物を賭けたにとどまるときは、この限りでない。",
     "verified": true,
     "url": "https://laws.e-gov.go.jp/law/140AC0000000045#Mp-At_185"
+  },
+  "keiho186": {
+    "id": "keiho186",
+    "name": "刑法186条（常習賭博・賭博場開張等図利）",
+    "text": "",
+    "verified": false,
+    "url": "https://laws.e-gov.go.jp/law/140AC0000000045#Mp-At_186"
   },
   "fueiho23-2": {
     "id": "fueiho23-2",
@@ -354,12 +960,19 @@ summary{cursor:pointer;color:var(--muted)}
     "verified": false,
     "url": "https://laws.e-gov.go.jp/law/323AC0000000122#Mp-At_2"
   },
-  "keiho186": {
-    "id": "keiho186",
-    "name": "刑法186条（常習賭博・賭博場開張等図利）",
-    "text": "",
-    "verified": false,
-    "url": "https://laws.e-gov.go.jp/law/140AC0000000045#Mp-At_186"
+  "fueiho13": {
+    "id": "fueiho13",
+    "name": "風営法13条1項（営業時間の制限）",
+    "text": "風俗営業者は、深夜（午前零時から午前六時までの時間をいう。以下同じ。）においては、その営業を営んではならない。ただし、都道府県の条例に特別の定めがある場合は、次の各号に掲げる日の区分に応じそれぞれ当該各号に定める地域内に限り、午前零時以後において当該条例で定める時までその営業を営むことができる。一　都道府県が習俗的行事その他の特別な事情のある日として当該条例で定める日　当該事情のある地域として当該条例で定める地域二　前号に掲げる日以外の日　午前零時以後において風俗営業を営むことが許容される特別な事情のある地域として政令で定める基準に従い当該条例で定める地域",
+    "verified": true,
+    "note": "風俗営業者に対する規定。店がどの営業類型に当たるかで適用は変わる。各号の地域・時刻は都道府県の条例による。号の区切りは「一　」「二　」で表記した。",
+    "url": "https://laws.e-gov.go.jp/law/323AC0000000122#Mp-At_13",
+    "source": {
+      "api": "https://laws.e-gov.go.jp/api/2/law_data/323AC0000000122",
+      "law_revision_id": "323AC0000000122_20251128_507AC0000000045",
+      "amendment_enforcement_date": "2025-11-28",
+      "retrieved": "2026-11-15"
+    }
   }
 }
     </script>
@@ -368,369 +981,670 @@ summary{cursor:pointer;color:var(--muted)}
 "use strict";
 const D = JSON.parse(document.getElementById("shop-data").textContent);
 const PROV = JSON.parse(document.getElementById("provisions-data").textContent);
-const E = D.economy, R = D.risk, M = D.meta;
+const M = D.meta, L = D.layout, O = D.operations, R = D.risk, V = D.valuation, F = D.finance, IND = D.indicators;
 const $ = (id) => document.getElementById(id);
 const byId = (arr, id) => arr.find((x) => x.id === id);
-const fmt = (n) => Math.round(n).toLocaleString("ja-JP");
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const QS = new URLSearchParams(location.search);
+const TEST = QS.has("test");
+let rand = Math.random;
+if (QS.has("seed")) { let s = (+QS.get("seed") >>> 0) || 1; rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
-/* ---------- state ---------- */
+/* 金額：万円 → 「1億2,345万円」 */
+function yen(man, sign){
+  const neg = man < 0, v = Math.round(Math.abs(man));
+  const oku = Math.floor(v / 10000), rest = v % 10000;
+  let s = oku ? `${oku}億${rest ? rest.toLocaleString("ja-JP") + "万" : ""}円` : `${rest.toLocaleString("ja-JP")}万円`;
+  if (oku && !rest) s = `${oku}億円`;
+  return (neg ? "−" : sign && man > 0 ? "+" : "") + s;
+}
+const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
+const hh = (h) => `${h >= 24 ? h - 24 : h}時`;
+const hhLong = (h) => h >= 24 ? `翌${h - 24}時` : `${h}時`;
+
+/* ---------- 店の形 ---------- */
+function build(loc, tables){
+  const area = tables * L.tsuboPerTable + L.commonTsubo;
+  const rent = area * loc.tsuboRent;
+  const deposit = rent * L.depositMonths;
+  const fitout = area * loc.fitoutPerTsubo;
+  const tablesCost = tables * L.tablePrice;
+  return { area, rent, deposit, fitout, tablesCost, invest: deposit + fitout + tablesCost + L.openingCost };
+}
+function bandWeight(open, close){
+  let w = 0;
+  for (const b of O.bands){ const a = Math.max(open, b.from), z = Math.min(close, b.to); if (z > a) w += (z - a) * b.w; }
+  return w;
+}
+const BASE_W = bandWeight(14, 24);
+function turnsFor(open, close){ return bandWeight(open, close) / O.avgStayHours * O.turnsScale; }
+
+/* ---------- 状態 ---------- */
 let S = null;
 function newState(cfg){
-  return {
-    cfg, loc: byId(D.locations, cfg.loc), rule: byId(D.rules, cfg.rule), lic: byId(D.licenses, cfg.lic),
-    cash: M.startCash - cfg.tables * E.tablePrice - (byId(D.licenses, cfg.lic).fee),
-    tables: cfg.tables, ad: 0, rep: E.reputation.start, heat: 0,
-    month: 0, monthT: 0, profit: -(cfg.tables * E.tablePrice) - byId(D.licenses, cfg.lic).fee,
-    waitMonths: byId(D.licenses, cfg.lic).waitMonths, suspend: 0, strikes: 0,
-    last: { demand: 0, served: 0, rev: 0, cost: 0 },
-    log: [], lastCashout: null, over: null, paused: false, speed: 1,
+  const loc = byId(D.locations, cfg.loc), b = build(loc, cfg.tables);
+  const legalWait = !cfg.unlicensed;
+  const st = {
+    cfg, loc, tables: cfg.tables, area: b.area, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost,
+    open: cfg.open, close: cfg.close, price: cfg.price, ad: 0,
+    cash: M.fund - b.invest - (legalWait ? D.license.fee : 0), debt: 0,
+    month: 0, monthT: 0, openedAt: null,
+    licensed: false, licenseWait: legalWait ? D.license.waitMonths : 0, applying: false,
+    illegal: { cashout: !!cfg.cashout, prize: !!cfg.prize, unlicensed: !!cfg.unlicensed, latenight: false },
+    used: { cashout: 0, prize: 0, unlicensed: 0, latenight: 0 }, lastUsed: {}, stopUntil: {},
+    illegalMonths: [], orders: 0, rumor: 0, shock: 0,
+    ind: { ...IND.start },
+    share: Math.max(0.3, 1 + gauss() * loc.demandSd), competitors: 0,
+    tempDemand: [], pending: [], eventsSeen: new Set(),
+    ops: [], last: { guests: 0, occ: 0, rev: 0, net: 0, cost: 0 }, peakMonth: -Infinity,
+    year: { rev: 0, op: 0 }, q: [], log: [], timeline: [], over: null, paused: false, speed: 1, ddNotified: false,
   };
+  st.illegal.latenight = st.close > O.legalClose;
+  return st;
 }
+function gauss(){ let u = 0, v = 0; while (!u) u = rand(); while (!v) v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function logEv(type, data){ S.log.push({ t: S.month, type, ...data }); }
+function story(text){ S.timeline.push({ t: S.month, text }); }
+const monthLabel = (t) => `${Math.floor(t / 12) + 1}年目${(t % 12) + 1}か月`;
 
-/* ---------- rules & risk ---------- */
-function violations(){
-  const v = [];
-  if (S.rule.violation) v.push({ kind: S.rule.violation, src: S.rule });
-  if (S.lic.violation) v.push({ kind: S.lic.violation, src: S.lic });
-  const tail = R.cashoutTail;
-  if (S.rule.id !== "cashout" && S.lastCashout != null && S.month - S.lastCashout <= tail.months)
-    v.push({ kind: "criminal", src: byId(D.rules, "cashout"), weight: tail.factor, tail: true });
-  // ゲーム上：許可営業で景品を出すと23条2項の論点。無許可でも景品は論点として残す。
-  return v;
+/* ---------- 計算 ---------- */
+function demandMult(){
+  const i = S.ind;
+  let m = (0.82 + 0.6 * i.fame / 100) * (0.8 + 0.4 * i.comfort / 100); // 開業時（知名度30・居心地50）で1.0
+  m *= Math.pow(S.price, -O.price.elasticity);
+  if (S.illegal.prize && !stopped("prize") && !demandMult.legal) m *= byId(D.illegal, "prize").effect.demand;
+  for (const t of S.tempDemand) m *= t.mult;
+  return m;
 }
-function hazard(){
-  const v = violations();
-  if (!v.length) return 0;
-  const ad = E.ads[S.ad];
-  let base = v.reduce((s, x) => s + R.base[x.kind] * (x.weight ?? 1), 0);
-  return Math.min(0.6, base * S.loc.visibility * (1 + R.adFactor * ad.level) * (1 + S.tables / R.tablesDivisor) * (1 + S.heat));
+function ramp(){ const t = S.openedAt == null ? 0 : S.month - S.openedAt; return Math.min(1, O.rampStart + (1 - O.rampStart) * t / O.rampMonths); }
+function isOpen(){ return S.licensed || S.illegal.unlicensed; }
+function stopped(id){ return (S.stopUntil[id] || 0) > S.month; }
+function activeIllegal(){
+  return D.illegal.filter((a) => {
+    if (a.id === "latenight") return S.close > O.legalClose && isOpen();
+    if (a.id === "unlicensed") return !S.licensed && S.illegal.unlicensed;
+    return S.illegal[a.id] && !stopped(a.id) && isOpen();
+  });
 }
-function heatNorm(){ const h = hazard(); return Math.min(1, h / 0.15); }
-
-/* ---------- monthly tick ---------- */
-function monthTick(){
-  S.month++;
-  const ad = E.ads[S.ad];
-  const waiting = S.waitMonths > 0;
-  const rent = S.loc.rent, staff = waiting ? 0 : S.tables * E.dealerPerTable, adCost = waiting ? 0 : ad.cost; // 許可待ちはディーラー未雇用・広告なし。営業停止中は人件費が出ていく
-  let demand = 0, served = 0, rev = 0;
-  const open = S.waitMonths <= 0 && S.suspend <= 0;
-  if (open){
-    demand = E.baseVisitors * S.loc.traffic * S.rule.demand * ad.mult * S.rep;
-    const cap = S.tables * E.tableCapacity;
-    served = Math.min(demand, cap);
-    rev = served * (S.rule.spend - S.rule.prizeCost);
-    const fill = cap ? served / cap : 0;
-    const er = E.reputation;
-    if (demand >= cap * 0.95) S.rep = Math.min(er.max, S.rep + er.gainWhenFull);
-    else if (fill < 0.5) S.rep = Math.max(er.min, S.rep - er.lossWhenIdle);
-    else S.rep = Math.min(er.max, S.rep + er.gainWhenFull / 3);
-  } else {
-    if (S.waitMonths > 0){ S.waitMonths--; if (S.waitMonths === 0) note("許可が下りた。開店。"); }
-    if (S.suspend > 0){ S.suspend--; if (S.suspend === 0) note("営業停止が明けた。"); }
+function hoursLen(){ return S.close - S.open; }
+function project(legalOnly){
+  // 今月の見込み（月次処理とHUDで共用）。legalOnly=true なら違法の効果を除く
+  const seats = S.tables * 9, turns = turnsFor(S.open, S.close);
+  const hoursF = bandWeight(S.open, S.close) / BASE_W;
+  demandMult.legal = !!legalOnly;
+  const demand = S.loc.demand * S.share * ramp() * demandMult() * hoursF;
+  demandMult.legal = false;
+  const occ = seats ? Math.min(S.loc.occCap, demand / (seats * turns)) : 0;
+  const guests = seats * occ * turns;
+  let spend = S.loc.spend * S.price;
+  if (S.illegal.cashout && !stopped("cashout") && !legalOnly) spend *= byId(D.illegal, "cashout").effect.spend;
+  let rev = guests * O.days * spend;
+  if (S.rumor > 0) rev *= 1 - R.orderRumor;
+  if (S.shock > 0) rev *= 1 - O.trouble.shock;
+  const staff = S.loc.staffPerTable * S.tables * hoursLen() / O.baseHours;
+  const adCost = O.ads[S.ad].cost;
+  const interest = S.debt * F.rate / 12;
+  const op = rev * (1 - O.variableRate) - S.rent - staff - O.otherFixed - adCost;
+  return { demand, occ, guests, rev, staff, adCost, interest, op, net: op - interest, turns };
+}
+function risks(){
+  let arrest = 0, order = 0;
+  const act = activeIllegal();
+  const jump = Math.pow(R.orderJump, S.orders);
+  for (const a of act){ arrest += (a.arrest + a.arrestGrowth * S.used[a.id]) * jump; order += a.order; }
+  for (const a of D.illegal){
+    if (act.includes(a)) continue;
+    const lu = S.lastUsed[a.id];
+    if (lu != null && S.month - lu <= R.tailMonths) arrest += a.arrest * R.tailFactor * jump;
   }
-  const cost = rent + staff + adCost;
-  const net = rev - cost;
-  S.cash += net; S.profit += net;
-  S.last = { demand, served, rev, cost, net, open };
-  logEv("month", { net: Math.round(net), served: Math.round(served), demand: Math.round(demand) });
-
-  // heat
-  const h = R.heat;
-  if (S.rule.id === "cashout" && open) S.lastCashout = S.month;
-  if (S.rule.id === "cashout" && open) S.heat = Math.min(h.max, S.heat + h.cashoutPerMonth);
-  else S.heat = Math.max(0, S.heat - h.decay);
-
-  // inspection
-  if (open && Math.random() < hazard()) { inspection(); }
-  if (S.over) return;
-  if (S.cash < M.bankruptAt) return finish("bankrupt");
-  if (S.month >= M.months) return finish("complete");
+  return { arrest: Math.min(0.9, arrest), order: Math.min(0.9, order), active: act };
 }
 
-function inspection(){
+/* DCF */
+function dcfParts(){
+  const recent = S.ops.slice(-12);
+  const fcfMonth = (recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : 0) - O.maintenancePerTable * S.tables;
+  const i = S.ind;
+  const r = V.discountBase + (50 - i.trust) / 100 * V.discountTrust * 2 + V.discountPerOrder * S.orders + (i.slack < 30 ? V.discountLowSlack : 0);
+  const g = clamp(V.growthBase + (i.comfort - 50) / 100 * V.growthComfort * 2 + (i.fame - 50) / 100 * V.growthFame * 2, V.growthMin, V.growthMax);
+  const rows = []; let fcf = fcfMonth * 12, pv = 0;
+  for (let y = 1; y <= V.years; y++){ fcf *= 1 + g; const d = fcf / Math.pow(1 + r, y); pv += d; rows.push({ y, fcf, pv: d }); }
+  const tv = fcf * (1 + V.terminalGrowth) / (r - V.terminalGrowth), tvPv = tv / Math.pow(1 + r, V.years);
+  const ev = pv + tvPv;
+  return { fcfMonth, r, g, rows, tv, tvPv, ev: Math.max(0, ev), raw: ev };
+}
+function shellValue(){ return S.deposit + S.fitout * L.fitoutResidual + S.tablesValue * L.tableResidual; }
+function storeValue(){ const d = dcfParts(); return Math.max(d.ev + S.deposit, shellValue()); }
+
+/* ---------- 月次 ---------- */
+function monthTick(){
+  const wasOpen = isOpen();
+  let orderActs = null;
+  if (wasOpen && S.openedAt == null){ S.openedAt = S.month; story(S.licensed ? "許可が下り、開業した。" : "許可を待たずに開業した。"); }
+  let p;
+  if (wasOpen){
+    p = project();
+  } else {
+    p = { demand: 0, occ: 0, guests: 0, rev: 0, op: -S.rent, interest: 0, net: -S.rent };
+  }
+  S.cash += p.net; S.last = p;
+  if (wasOpen){ S.ops.push(p.op); S.year.rev += p.rev; S.year.op += p.op; S.peakMonth = Math.max(S.peakMonth, p.net); }
+  logEv("month", { net: Math.round(p.net), guests: Math.round(p.guests), occ: +p.occ.toFixed(3) });
+
+  // 違法の記録とリスク
+  if (wasOpen){
+    const rk = risks();
+    for (const a of rk.active){ S.used[a.id]++; S.lastUsed[a.id] = S.month; }
+    if (rk.active.length) S.illegalMonths.push(S.month);
+    if (rand() < rk.arrest){ logEv("arrest", {}); story("摘発された。"); spawnPolice(); S.month++; return finish("arrest"); }
+    if (rk.active.length && rand() < rk.order) orderActs = rk.active;
+  }
+
+  // 指標の動き
+  const i = S.ind;
+  if (wasOpen){
+    i.fame = clamp(i.fame + O.ads[S.ad].fame + (p.occ > 0.8 ? 0.5 : 0), 0, 100);
+    const slackTarget = 85 - 70 * Math.max(0, p.occ - 0.5) / 0.4 - Math.max(0, hoursLen() - 10) * 3;
+    i.slack = clamp(i.slack + (slackTarget - i.slack) * 0.2, 0, 100);
+    i.comfort = clamp(i.comfort + ((50 + (i.slack - 50) * 0.4) - i.comfort) * 0.1, 0, 100);
+    i.trust = clamp(i.trust + (50 - i.trust) * 0.03, 0, 100);
+  }
+  // 期限つき効果
+  S.tempDemand = S.tempDemand.filter((t) => --t.months > 0);
+  if (S.rumor > 0) S.rumor--;
+  if (S.shock > 0) S.shock--;
+  // 許可
+  if (S.licenseWait > 0){ S.licenseWait--; if (S.licenseWait === 0){ S.licensed = true; S.illegal.unlicensed = false; note("許可が下りた。"); logEv("licensed", {}); } }
+
+  // 競合・トラブル
+  if (wasOpen && rand() < S.loc.competition.p){ S.competitors++; S.share *= 1 - S.loc.competition.hit; note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`); story("近くに競合店が開業した。"); }
+  const trP = S.loc.troubleP * (i.slack < 30 ? 1.5 : 1);
+  if (wasOpen && rand() < trP){
+    if (rand() < 0.5){ const c = (O.trouble.costMin + rand() * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; const t = D.troubleTexts[Math.floor(rand() * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
+    else { S.shock = O.trouble.shockMonths; const t = D.shockTexts[Math.floor(rand() * D.shockTexts.length)]; note(`${t}（3か月 売上−30%）`); story(`${t}。`); logEv("shock", {}); }
+  }
+
+  // 後日談
+  for (const pd of S.pending.filter((x) => x.at <= S.month)){ applyEffects(pd.effects || {}); note(`後日談：${pd.text}`); story(`後日談：${pd.text}`); }
+  S.pending = S.pending.filter((x) => x.at > S.month);
+
+  S.month++;
+  if (S.cash < M.bankruptAt){ story("資金が尽きた。"); return finish("bankrupt"); }
+
+  // 区切り（同じ月に重なったら順番に出す）
+  if (orderActs) enqueue(() => order(orderActs));
+  if (S.month >= M.months) enqueue(proposal);
+  else {
+    if (S.month % 12 === 0) enqueue(annual);
+    if (S.month >= R.ddStart && !S.ddNotified){ S.ddNotified = true; enqueue(offer); }
+    if (wasOpen && !orderActs) maybeEvent();
+  }
+  if (S.q.length && !ov.classList.contains("show")) S.q.shift()();
+}
+function enqueue(fn){ S.q.push(fn); S.paused = true; }
+function applyEffects(e){
+  const i = S.ind;
+  for (const k of ["fame", "trust", "comfort", "slack"]) if (e[k]) i[k] = clamp(i[k] + e[k], 0, 100);
+  if (e.cash){ S.cash += e.cash; }
+  if (e.demand) S.tempDemand.push({ mult: e.demand.mult, months: e.demand.months });
+  if (e.closeDelta){ S.close = clamp(S.close + e.closeDelta, S.open + 4, O.closeMax); }
+}
+
+/* ---------- 是正指摘・摘発 ---------- */
+function order(acts){
+  S.orders++;
+  const legalOp = Math.max(0, project(true).op);  // 違法の上乗せを除いた月の利益が基準
+  const cost = Math.max(R.orderCostMin, legalOp * R.orderCostMonths);
+  S.cash -= cost; S.ind.trust = clamp(S.ind.trust + R.orderTrust, 0, 100); S.rumor = R.orderRumorMonths;
+  for (const a of acts){ if (a.id === "latenight"){ S.close = O.legalClose; } else if (a.id !== "unlicensed"){ S.illegal[a.id] = false; S.stopUntil[a.id] = S.month + R.orderStopMonths; } }
+  logEv("order", { acts: acts.map((a) => a.id), cost: Math.round(cost) });
+  story(`${R.labels.order}を受けた（${acts.map((a) => a.short).join("・")}）。${R.labels.orderCost} ${yen(cost)}。`);
   spawnPolice();
-  const v = violations();
-  if (v.some((x) => x.kind === "criminal")){ logEv("arrest", {}); return finish("arrest"); }
-  S.strikes++;
-  const step = R.ladder[Math.min(S.strikes, R.ladder.length) - 1];
-  logEv("strike", { step: step.id });
-  if (step.end){ S.cash -= step.fine; S.profit -= step.fine; return finish("closed"); }
-  if (step.suspendMonths){ S.suspend = step.suspendMonths; S.heat += R.heat.afterWarning; note(`${step.name}：${step.suspendMonths}か月`); return; }
-  S.heat += R.heat.afterWarning;
-  S.paused = true;
-  openStrike(step, v);
+  pauseWith(() => show(`
+    <div class="kicker">${monthLabel(S.month - 1)}</div>
+    <h1>${esc(R.labels.order)}</h1>
+    <p>${acts.map((a) => esc(a.name)).join("、")}について指摘を受けた。</p>
+    <table class="t"><tr><td>${esc(R.labels.orderCost)}</td><td>${yen(cost)}</td></tr>
+      <tr><td>信頼</td><td>${R.orderTrust}</td></tr>
+      <tr><td>その違法アクション</td><td>${R.orderStopMonths}か月 止まる</td></tr>
+      <tr><td>風評（売上）</td><td>${R.orderRumorMonths}か月 −${Math.round(R.orderRumor * 100)}%</td></tr>
+      <tr><td>以後の摘発率</td><td>×${Math.pow(R.orderJump, S.orders)}</td></tr>
+      <tr><td>店の値段（DCFの割引率）</td><td>+${Math.round(V.discountPerOrder * 100)}%</td></tr></table>
+    <p class="muted" style="font-size:12px">${esc(R.note)}</p>
+    <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set(acts.flatMap((a) => a.provisionIds))])}</details>
+    <div class="row"><button class="btn primary" id="okBtn">営業を続ける</button></div>`, () => { $("okBtn").onclick = resume; }));
 }
 
+/* ---------- 事件 ---------- */
+function eligible(ev){
+  const w = ev.when || {};
+  if (S.eventsSeen.has(ev.id)) return false;
+  if (w.minMonth && S.month < w.minMonth) return false;
+  if (w.minFame && S.ind.fame < w.minFame) return false;
+  if (w.maxSlack && S.ind.slack > w.maxSlack) return false;
+  if (w.minOcc && S.last.occ < w.minOcc) return false;
+  if (w.minClose && S.close < w.minClose) return false;
+  return true;
+}
+function maybeEvent(){
+  if (rand() > D.eventChance) return;
+  const list = D.events.filter(eligible);
+  if (!list.length) return;
+  const ev = list[Math.floor(rand() * list.length)];
+  S.eventsSeen.add(ev.id);
+  enqueue(() => pauseWith(() => {
+    show(`<div class="kicker">${monthLabel(S.month)} ・ 事件</div><h1>${esc(ev.title)}</h1><p>${esc(ev.omen)}</p>
+      <h2>どうする？</h2>${ev.choices.map((c, k) => `<button class="opt choice" data-k="${k}"><b>${esc(c.label)}</b></button>`).join("")}`);
+    card.querySelectorAll(".choice").forEach((b) => b.onclick = () => decide(ev, ev.choices[+b.dataset.k]));
+  }));
+}
+function decide(ev, c){
+  if (c.effects) applyEffects(c.effects);
+  let text = c.text || "";
+  let later = c.later;
+  if (c.outcomes){
+    let r = rand(), o = c.outcomes.at(-1);
+    for (const x of c.outcomes){ if (r < x.p){ o = x; break; } r -= x.p; }
+    if (o.effects) applyEffects(o.effects);
+    text = (text ? text + " " : "") + o.text; if (o.later) later = o.later;
+  }
+  if (later) S.pending.push({ at: S.month + later.months, text: later.text, effects: later.effects });
+  logEv("event", { id: ev.id, choice: c.label });
+  story(`${ev.title} → 「${c.label}」。${text}`);
+  const eff = { ...(c.effects || {}) };
+  show(`<div class="kicker">${monthLabel(S.month)} ・ 結果</div><h1>${esc(c.label)}</h1><p>${esc(text)}</p>
+    ${later ? `<p class="muted" style="font-size:12.5px">この判断は、後から効いてくるかもしれない。</p>` : ""}
+    <div class="row"><button class="btn primary" id="okBtn">営業に戻る</button></div>`);
+  $("okBtn").onclick = resume;
+  if (TEST) autoClick();
+}
+
+/* ---------- 区切りの画面 ---------- */
+function dcfTable(d, label){
+  return `<table class="t"><tr><th>${label || "年"}</th><th>予測FCF</th><th>今の価値</th></tr>
+    ${d.rows.map((r) => `<tr><td>${r.y}年目</td><td>${yen(r.fcf)}</td><td>${yen(r.pv)}</td></tr>`).join("")}
+    <tr><td>6年目以降（ターミナルバリュー ${yen(d.tv)}）</td><td></td><td>${yen(d.tvPv)}</td></tr>
+    <tr><td>敷金</td><td></td><td>${yen(S.deposit)}</td></tr>
+    <tr class="total"><td>店の値段</td><td></td><td>${yen(Math.max(d.ev + S.deposit, shellValue()))}</td></tr></table>
+    <p class="muted" style="font-size:12px">直近12か月の平均FCF ${yen(d.fcfMonth)}/月 ・ 割引率 r ${pct(d.r)} ・ 成長率 g ${pct(d.g)}${d.ev + S.deposit < shellValue() ? " ・ DCFがハコの価値を下回るため、ハコの価値で評価" : ""}</p>`;
+}
+function rDetail(d){
+  const i = S.ind;
+  return `<details><summary>割引率と成長率の内訳</summary><table class="t">
+    <tr><td>割引率の基本（小規模店舗）</td><td>${pct(V.discountBase)}</td></tr>
+    <tr><td>信頼 ${Math.round(i.trust)}</td><td>${pct((50 - i.trust) / 100 * V.discountTrust * 2, 1)}</td></tr>
+    <tr><td>${R.labels.order} ${S.orders}回</td><td>+${pct(V.discountPerOrder * S.orders, 0)}</td></tr>
+    <tr><td>スタッフの余力 ${Math.round(i.slack)}${i.slack < 30 ? "（30未満）" : ""}</td><td>${i.slack < 30 ? "+" + pct(V.discountLowSlack, 0) : "0%"}</td></tr>
+    <tr><td>成長率の基本</td><td>${pct(V.growthBase)}</td></tr>
+    <tr><td>初心者の居心地 ${Math.round(i.comfort)}</td><td>${pct((i.comfort - 50) / 100 * V.growthComfort * 2)}</td></tr>
+    <tr><td>知名度 ${Math.round(i.fame)}</td><td>${pct((i.fame - 50) / 100 * V.growthFame * 2)}</td></tr></table></details>`;
+}
+function annual(){
+  const y = S.month / 12, d = dcfParts();
+  story(`${y}年目の決算：売上 ${yen(S.year.rev)}、営業利益 ${yen(S.year.op)}。`);
+  logEv("annual", { y, rev: Math.round(S.year.rev), op: Math.round(S.year.op), value: Math.round(storeValue()) });
+  const fin = canBorrow();
+  pauseWith(() => show(`
+    <div class="kicker">${y}年目の決算</div><h1>${y}年目が終わった</h1>
+    <div class="grid2"><span>売上</span><span>${yen(S.year.rev)}</span><span>営業利益</span><span>${yen(S.year.op)}</span>
+      <span>手元資金</span><span>${yen(S.cash)}</span><span>借入残高</span><span>${yen(S.debt)}</span>
+      ${Object.entries(IND.names).map(([k, n]) => `<span>${n}</span><span>${Math.round(S.ind[k])}</span>`).join("")}</div>
+    <h2>いまの店の値段（DCF）</h2>${dcfTable(d)}${rDetail(d)}
+    <p style="font-size:13px">${fin.ok ? `借入できます（上限 ${yen(fin.limit)}）。ドックの「借入」から。` : `借入はまだできません：${esc(fin.why)}`}</p>
+    <div class="row"><button class="btn primary" id="okBtn">${y + 1}年目へ</button></div>`, () => { S.year = { rev: 0, op: 0 }; $("okBtn").onclick = resume; }));
+}
+function offer(){
+  story("大手から買収の打診が来た。ここから6か月が買収前調査。");
+  pauseWith(() => show(`
+    <div class="kicker">${monthLabel(S.month)}</div><h1>大手から買収の打診</h1>
+    <p>5年目の終わりに、あなたの店を買いたいという話が来た。ここから6か月かけて、買い手が店の中身を調べる（買収前調査）。</p>
+    <p>この期間の違法営業は、ほぼ確実に見つかる。過去の違法も、1か月ごとに一定の確率で見つかる。見つかれば、売却額は「ハコとしての価値」だけになる。</p>
+    <div class="row"><button class="btn primary" id="okBtn">分かった</button></div>`, () => { $("okBtn").onclick = resume; }));
+}
+function proposal(){
+  const early = S.illegalMonths.filter((t) => t < R.ddStart).length, late = S.illegalMonths.filter((t) => t >= R.ddStart).length;
+  const pFound = 1 - Math.pow(1 - R.ddEarlyQ, early) * Math.pow(1 - R.ddLateQ, late);
+  const found = S.illegalMonths.length > 0 && rand() < pFound;
+  const d = dcfParts();
+  const sale = found ? shellValue() : storeValue();
+  logEv("proposal", { found, sale: Math.round(sale), pFound: +pFound.toFixed(3) });
+  story(found ? "買収前調査で違法営業が見つかった。" : "買収提案がまとまった。");
+  S.sale = sale; S.found = found;
+  pauseWith(() => show(`
+    <div class="kicker">60か月目</div><h1>${found ? "買収前調査の結果" : "買収提案"}</h1>
+    ${found ? `<p><b>${esc(V.shellMessage)}</b></p>
+      <table class="t"><tr><td>敷金</td><td>${yen(S.deposit)}</td></tr><tr><td>内装の残存価値（${Math.round(L.fitoutResidual * 100)}%）</td><td>${yen(S.fitout * L.fitoutResidual)}</td></tr>
+      <tr><td>卓の残存価値（${Math.round(L.tableResidual * 100)}%）</td><td>${yen(S.tablesValue * L.tableResidual)}</td></tr><tr class="total"><td>売却額</td><td>${yen(sale)}</td></tr></table>
+      <p class="muted" style="font-size:12px">違法営業 ${S.illegalMonths.length}か月（調査期間中 ${late}か月）。見つかる確率は ${pct(pFound, 0)} だった。参考：健全なら ${yen(storeValue())}。</p>`
+      : `<p>あなたの店の将来のキャッシュフローを、今の価値に直した金額で買いたい、という提案。</p>${dcfTable(d)}${rDetail(d)}`}
+    <div class="row"><button class="btn primary" id="okBtn">結果発表へ</button></div>`, () => { $("okBtn").onclick = () => finish("complete"); }));
+}
+
+/* ---------- 終了 ---------- */
 function finish(kind){
   S.over = kind; S.paused = true;
-  const score = kind === "arrest" ? 0 : Math.round(S.profit);
-  logEv("end", { kind, score });
-  openEnd(kind, score);
+  const sale = kind === "complete" ? S.sale : 0;
+  const amount = kind === "complete" ? S.cash + sale - S.debt : 0;
+  const disq = kind === "arrest";
+  logEv("end", { kind, amount: Math.round(amount), sale: Math.round(sale), peak: Math.round(S.peakMonth) });
+  const rank = saveRank(kind, amount);
+  const title = { complete: "結果発表", arrest: R.labels.arrest, bankrupt: "資金が尽きた" }[kind];
+  const lead = { complete: S.found ? "店は売れたが、ハコの値段にしかならなかった。" : "5年の経営を終え、店を売却した。", arrest: "違法営業が摘発され、店は続けられなくなった。両方のランキングで失格。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
+  show(`
+    <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓 ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
+    <div class="kicker" style="margin-top:12px">最終手取り額</div>
+    <div class="big num">${yen(amount)}<small class="${amount - M.fund >= 0 ? "pos" : "negc"}">元手${yen(M.fund)}から ${yen(amount - M.fund, true)}</small></div>
+    ${kind === "complete" ? `<table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額${S.found ? "（ハコとしての価値）" : "（DCF）"}</td><td>${yen(sale)}</td></tr>
+      <tr><td>借入残高</td><td>${yen(-S.debt)}</td></tr><tr class="total"><td>最終手取り額</td><td>${yen(amount)}</td></tr></table>` : ""}
+    <p class="muted num" style="font-size:12.5px">一番稼いだ月の利益：${isFinite(S.peakMonth) ? yen(S.peakMonth) : "—"}${disq ? "（失格）" : ""}</p>
+    <h2>5年の物語</h2><div class="timeline">${S.timeline.map((x) => `${monthLabel(x.t)}：${esc(x.text)}`).join("<br>") || "—"}</div>
+    <h2>ランキング（この端末）</h2>${rankHTML(rank)}
+    <div class="row"><button class="btn" id="dlBtn">プレイログを保存（JSONL）</button><button class="btn primary" id="againBtn">もう一度</button></div>
+    <div class="foot">ログとランキングはこの端末に保存されるだけで、送信されない。${esc(M.disclaimer)}</div>`);
+  $("dlBtn").onclick = exportLog; $("againBtn").onclick = () => { S = null; resetScene(); openTitle(); };
 }
-
-/* ---------- log (for local RAG/analysis; never sent) ---------- */
-function logEv(type, data){ S.log.push({ t: S.month, type, ...data }); }
+const RANK_KEY = "poker-shop-v06-rank";
+function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
+function saveRank(kind, amount){
+  const r = loadRank();
+  if (kind !== "arrest"){
+    const base = { loc: S.loc.name, tables: S.tables, date: new Date().toISOString().slice(0, 10) };
+    if (kind === "complete" || kind === "bankrupt") r.final.push({ ...base, amount: Math.round(amount), mine: true });
+    if (isFinite(S.peakMonth)) r.peak.push({ ...base, amount: Math.round(S.peakMonth), illegal: S.illegalMonths.length > 0, mine: true });
+  }
+  r.final.sort((a, b) => b.amount - a.amount); r.peak.sort((a, b) => b.amount - a.amount);
+  const out = { final: r.final.slice(0, 10), peak: r.peak.slice(0, 10) };
+  try { localStorage.setItem(RANK_KEY, JSON.stringify({ final: out.final.map(({ mine, ...x }) => x), peak: out.peak.map(({ mine, ...x }) => x) })); } catch {}
+  return out;
+}
+function rankHTML(r){
+  const li = (x) => `<li${x.mine ? ' style="font-weight:600"' : ""}>${yen(x.amount)} ・ ${esc(x.loc)} ${x.tables}卓${x.illegal ? " ・ 違法あり" : ""} ・ ${esc(x.date)}</li>`;
+  return `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額</div><ol class="rank">${r.final.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div>
+    <div><div class="kicker">瞬間収益（一番稼いだ月）</div><ol class="rank">${r.peak.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div></div>`;
+}
 function exportLog(){
-  const meta = { type: "run", game: "poker-shop", version: M.version, cfg: S.cfg, outcome: S.over, profit: Math.round(S.profit), at: new Date().toISOString(), note: "ゲームの架空パラメータによるプレイログ。実データではない。" };
-  const lines = [meta, ...S.log.map((x) => ({ type: "event", ...x }))].map((x) => JSON.stringify(x)).join("\n") + "\n";
+  const meta = { type: "run", game: "poker-shop", version: M.version, cfg: S.cfg, outcome: S.over, found: !!S.found, at: new Date().toISOString(), note: "ゲームの架空パラメータによるプレイログ。実データではない。" };
+  const lines = [meta, ...S.log.map((x) => ({ type: "event", ...x })), ...S.timeline.map((x) => ({ type: "story", ...x }))].map((x) => JSON.stringify(x)).join("\n") + "\n";
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([lines], { type: "application/jsonl" }));
   a.download = `poker-shop-run-${Date.now()}.jsonl`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-/* ---------- UI: notes ---------- */
+/* ---------- UI 共通 ---------- */
+const ov = $("ov"), card = $("card");
+function show(html, after){ card.innerHTML = html; ov.classList.add("show"); card.scrollTop = 0; if (after) after(); }
+function hide(){ ov.classList.remove("show"); }
+function pauseWith(fn, after){ S.paused = true; fn(); if (after) after(); if (TEST) autoClick(); }
+function resume(){ hide(); if (!S || S.over) return; if (S.q.length) S.q.shift()(); else S.paused = false; }
+function autoClick(){ setTimeout(() => { const cs = card.querySelectorAll(".choice"); const b = cs.length ? cs[Math.floor(Math.random() * cs.length)] : $("okBtn"); if (b && ov.classList.contains("show")) b.click(); }, 10); }
 function note(text){
   const d = document.createElement("div"); d.textContent = text; $("toast").prepend(d);
-  setTimeout(() => d.remove(), 4000);
+  setTimeout(() => d.remove(), 4500);
   while ($("toast").children.length > 3) $("toast").lastChild.remove();
 }
-
 function provHTML(ids){
   return (ids || []).map((id) => {
     const p = PROV[id]; if (!p) return "";
     const body = p.verified && p.text ? `「${esc(p.text)}」` : `<span class="muted">逐語は未確認（正本で確認中）</span>`;
-    const n = p.note ? `<br><span class="muted">${esc(p.note)}</span>` : "";
-    return `<div class="prov"><b>${esc(p.name)}</b><br>${body}${n}<br><a href="${esc(p.url)}" target="_blank" rel="noopener">一次ソース</a></div>`;
+    return `<div class="prov"><b>${esc(p.name)}</b><br>${body}${p.note ? `<br><span class="muted">${esc(p.note)}</span>` : ""}<br><a href="${esc(p.url)}" target="_blank" rel="noopener">一次ソース</a></div>`;
   }).join("");
 }
-function esc(s){ return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
 
-/* ---------- overlays ---------- */
-const ov = $("ov"), card = $("card");
-function show(html){ card.innerHTML = html; ov.classList.add("show"); }
-function hide(){ ov.classList.remove("show"); }
-
-function optButtons(list, sel, key, extra){
-  return `<div class="opts" data-k="${key}">` + list.map((x) =>
-    `<button class="opt" data-v="${x.id}" aria-pressed="${x.id === sel}"><b>${esc(x.name)}</b><small>${esc(extra(x))}</small></button>`).join("") + "</div>";
-}
-function wireOpts(cfg, onChange){
-  card.querySelectorAll(".opts").forEach((g) => g.addEventListener("click", (e) => {
-    const b = e.target.closest(".opt"); if (!b) return;
-    cfg[g.dataset.k] = b.dataset.v;
-    g.querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", o === b));
-    onChange && onChange();
-  }));
-}
-
-function openSetup(){
-  const cfg = { loc: "station", tables: 3, rule: "noprize", lic: "licensed" };
-  const render = () => show(`
-    <h1>ポーカー店を開く</h1>
-    <p class="muted">5年間（60か月）で、いちばん利益を残す。開店後も卓数・広告・ルールは変えられる。</p>
-    <h2>立地</h2>
-    ${optButtons(D.locations, cfg.loc, "loc", (x) => `家賃 ${x.rent}/月 ・ ${x.note}`)}
-    <h2>卓数</h2>
-    <div class="stepper"><button data-s="-1" aria-label="減らす">−</button><output id="tblOut">${cfg.tables}</output><button data-s="1" aria-label="増やす">＋</button>
-      <span class="muted" style="font-size:12px">1卓 ${E.tablePrice}・ディーラー ${E.dealerPerTable}/月・月${E.tableCapacity}人まで</span></div>
-    <h2>ルール</h2>
-    ${optButtons(D.rules, cfg.rule, "rule", (x) => x.note)}
-    <h2>許可</h2>
-    ${optButtons(D.licenses, cfg.lic, "lic", (x) => x.note)}
-    <details><summary>このゲームでの条文の扱い</summary>
-      <p>摘発の確率・処分の段階はゲーム用の架空の値。条文は既存の大会設計ゲームと同じ正本から引いている。</p>
-      ${provHTML(["keiho185","keiho186","fueiho23-2","fueiho2-1"])}
-      ${D.licenses.filter((l)=>l.missingSource).map((l)=>`<p class="muted">未収録：${esc(l.missingSource)}</p>`).join("")}
-    </details>
-    <div class="row"><span class="muted" style="margin-right:auto;font-size:12px" id="startCash"></span><button class="btn primary" id="go">開店する</button></div>
+/* ---------- 開始〜店づくり ---------- */
+function openTitle(){
+  const r = loadRank();
+  show(`<div class="kicker">ポーカー店経営 5年</div><h1>5,000万円で、ポーカー店をつくる</h1>
+    <p>立地と卓数を決めて店をつくり、5年（60か月）経営したら、店を売る。<b>最後に手元に残った金額</b>がスコア。</p>
+    <p class="muted" style="font-size:13px">突っ込みすぎると、立ち上がりの赤字やトラブルに耐えられない。都心は当たれば大きいが、家賃と競合で潰れやすい。違法な営業は一時的に儲かるが、売るときに値段がつかない。</p>
+    <h2>この端末の記録</h2>${rankHTML(r)}
+    <div class="row"><button class="btn primary" id="goBtn">物件を選ぶ</button></div>
     <div class="foot">${esc(M.disclaimer)}</div>`);
-  const upd = () => {
-    const lic = byId(D.licenses, cfg.lic);
-    const left = M.startCash - cfg.tables * E.tablePrice - lic.fee;
-    $("startCash").textContent = `元手 ${M.startCash} → 開店時 ${left} 万円` + (lic.waitMonths ? `（${lic.waitMonths}か月待ち）` : "");
+  $("goBtn").onclick = openProperty;
+}
+const CFG = { loc: "metro", tables: 5, open: 14, close: 24, price: 1, unlicensed: false, cashout: false, prize: false };
+function openProperty(){
+  show(`<div class="kicker">1 / 2 ・ 物件を選ぶ</div><h1>どこに出す？</h1>
+    <div class="opts">${D.locations.map((l) => `<button class="opt" data-v="${l.id}" aria-pressed="${l.id === CFG.loc}"><b>${esc(l.name)}</b>
+      <small>家賃 坪${l.tsuboRent}万円/月 ・ 客単価 ${Math.round(l.spend * 10000).toLocaleString("ja-JP")}円<br>読みにくさ ±${Math.round(l.demandSd * 100)}% ・ 競合の出店 ${pct(l.competition.p, 1)}/月<br>${esc(l.note)}</small></button>`).join("")}</div>
+    <div class="row"><button class="btn" id="backBtn">戻る</button><button class="btn primary" id="goBtn">この立地で店をつくる</button></div>`);
+  card.querySelectorAll(".opt").forEach((b) => b.onclick = () => { CFG.loc = b.dataset.v; card.querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", o === b)); });
+  $("backBtn").onclick = openTitle; $("goBtn").onclick = openBuild;
+}
+function hoursBar(open, close){
+  const x = (h) => ((h - O.openMin) / (O.closeMax - O.openMin) * 100).toFixed(2) + "%";
+  return `<div class="hours">${O.bands.map((b) => `<div class="band" style="left:${x(Math.max(b.from, O.openMin))};width:calc(${x(Math.min(b.to, O.closeMax))} - ${x(Math.max(b.from, O.openMin))});opacity:${0.15 + b.w * 0.25}"></div>`).join("")}
+    <div class="open" style="left:${x(open)};width:calc(${x(close)} - ${x(open)})"></div><div class="legal" style="left:${x(O.legalClose)}"></div></div>
+    <div class="muted" style="font-size:11px;display:flex;justify-content:space-between"><span>${hh(O.openMin)}</span><span>昼 ・ 夕 ・ 夜 ・ 深夜（帯の濃さ＝客入り）</span><span>${hhLong(O.closeMax)}</span></div>`;
+}
+function openBuild(){
+  const loc = byId(D.locations, CFG.loc);
+  const render = () => {
+    const b = build(loc, CFG.tables), lic = !CFG.unlicensed;
+    const left = M.fund - b.invest - (lic ? D.license.fee : 0);
+    const seats = CFG.tables * 9, turns = turnsFor(CFG.open, CFG.close);
+    const staff = loc.staffPerTable * CFG.tables * (CFG.close - CFG.open) / O.baseHours;
+    const fixed = b.rent + staff + O.otherFixed;
+    const perOcc = seats * turns * O.days * loc.spend * CFG.price * (1 - O.variableRate);
+    const be = perOcc ? fixed / perOcc : 1;
+    const hoursF = bandWeight(CFG.open, CFG.close) / BASE_W;
+    const expOcc = Math.min(loc.occCap, loc.demand * Math.pow(CFG.price, -O.price.elasticity) * hoursF / (seats * turns));
+    const late = CFG.close > O.legalClose;
+    show(`<div class="kicker">2 / 2 ・ 店をつくる ・ ${esc(loc.name)}</div><h1>どんな店にする？</h1>
+      <h2>卓数（1卓＝9席）</h2>
+      <div class="stepper"><button data-s="-1" aria-label="減らす">−</button><output>${CFG.tables}</output><button data-s="1" aria-label="増やす">＋</button>
+        <span class="muted" style="font-size:12px">面積 ${b.area}坪 ・ 家賃 ${yen(b.rent)}/月 ・ ${seats}席</span></div>
+      <h2>営業時間</h2>
+      <div class="slider"><span>開店</span><input type="range" id="openR" min="${O.openMin}" max="20" value="${CFG.open}"><span>${hhLong(CFG.open)}</span></div>
+      <div class="slider"><span>閉店</span><input type="range" id="closeR" min="18" max="${O.closeMax}" value="${CFG.close}"><span>${hhLong(CFG.close)}</span></div>
+      ${hoursBar(CFG.open, CFG.close)}
+      <p class="${late ? "warn" : "muted"}" style="font-size:12.5px">赤い点線＝法定の営業時間の線（${hhLong(O.legalClose)}）。${late ? "越えているので違法アクション「深夜営業」になる。" : "越えると違法アクション「深夜営業」になる。"}<br>
+        <span class="muted">条例で延長できる地域があるが、ゲームでは${hhLong(O.legalClose)}を線にする。</span></p>
+      <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML(O.legalCloseProvisionIds)}</details>
+      <h2>料金</h2>
+      <div class="slider"><span>安く</span><input type="range" id="priceR" min="${O.price.min * 100}" max="${O.price.max * 100}" step="5" value="${Math.round(CFG.price * 100)}"><span>高く</span></div>
+      <p class="muted" style="font-size:12.5px">客単価 ${Math.round(loc.spend * CFG.price * 10000).toLocaleString("ja-JP")}円（高くすると客は減る）</p>
+      <h2>開業のしかた</h2>
+      <label class="chk"><input type="radio" name="lic" value="0" ${lic ? "checked" : ""}> <span>許可を待って開く（申請費 ${yen(D.license.fee)}・${D.license.waitMonths}か月待ち。その間も家賃はかかる）</span></label>
+      <label class="chk"><input type="radio" name="lic" value="1" ${lic ? "" : "checked"}> <span class="warn">許可を待たずにすぐ開く（違法アクション「無許可」）</span></label>
+      <h2>初期投資と見込み</h2>
+      <table class="t"><tr><td>敷金（家賃${L.depositMonths}か月）</td><td>${yen(b.deposit)}</td></tr><tr><td>内装（${b.area}坪 × ${loc.fitoutPerTsubo}万円）</td><td>${yen(b.fitout)}</td></tr>
+        <tr><td>卓（${CFG.tables}台 × ${L.tablePrice}万円）</td><td>${yen(b.tablesCost)}</td></tr><tr><td>開業準備</td><td>${yen(L.openingCost)}</td></tr>
+        ${lic ? `<tr><td>許可の申請費</td><td>${yen(D.license.fee)}</td></tr>` : ""}
+        <tr class="total"><td>初期投資</td><td>${yen(b.invest + (lic ? D.license.fee : 0))}</td></tr><tr><td>残りの手元資金</td><td class="${left < 1500 ? "negc" : ""}">${yen(left)}</td></tr></table>
+      <div class="grid2"><span>損益分岐の満席率</span><span>${be > 1 ? "100%超（黒字にならない）" : pct(be, 0)}</span>
+        <span>成熟時の満席率の見込み</span><span>${pct(expOcc, 0)}（±${Math.round(loc.demandSd * 100)}%）</span>
+        <span>1日の客の見込み</span><span>${Math.round(seats * expOcc * turns)}人</span></div>
+      <p class="muted" style="font-size:12px">開業直後の客は見込みの${Math.round(O.rampStart * 100)}%から始まり、${O.rampMonths}か月かけて増える。換金・景品は開業後に「営業設定」で選べる。</p>
+      <div class="row"><button class="btn" id="backBtn">戻る</button><button class="btn primary" id="goBtn">この店で開業する</button></div>`);
+    card.querySelectorAll("[data-s]").forEach((x) => x.onclick = () => { CFG.tables = clamp(CFG.tables + +x.dataset.s, L.minTables, L.maxTables); render(); });
+    $("openR").oninput = (e) => { CFG.open = +e.target.value; if (CFG.close - CFG.open < 4) CFG.close = CFG.open + 4; render(); };
+    $("closeR").oninput = (e) => { CFG.close = +e.target.value; if (CFG.close - CFG.open < 4) CFG.open = CFG.close - 4; render(); };
+    $("priceR").oninput = (e) => { CFG.price = +e.target.value / 100; render(); };
+    card.querySelectorAll('input[name="lic"]').forEach((x) => x.onchange = () => { CFG.unlicensed = x.value === "1"; render(); });
+    $("backBtn").onclick = openProperty;
+    $("goBtn").onclick = () => {
+      S = newState({ ...CFG }); hide(); resetScene();
+      logEv("open", { ...CFG });
+      story(`${loc.name}に${CFG.tables}卓の店をつくった。初期投資 ${yen(M.fund - S.cash)}。`);
+      note(S.licenseWait ? `許可申請中。開業まで${S.licenseWait}か月。` : "開業した。");
+    };
   };
-  render(); upd();
-  wireOpts(cfg, upd);
-  card.querySelectorAll("[data-s]").forEach((b) => b.onclick = () => {
-    cfg.tables = Math.max(1, Math.min(E.maxTables, cfg.tables + +b.dataset.s)); $("tblOut").textContent = cfg.tables; upd();
-  });
-  $("go").onclick = () => { S = newState(cfg); hide(); resetScene(); logEv("open", { ...cfg });
-    note(S.waitMonths ? `許可申請中。開店まで${S.waitMonths}か月。` : "開店。"); };
+  render();
 }
 
-function openRules(){
-  if (!S || S.over) return;
-  const was = S.paused; S.paused = true;
-  const cfg = { rule: S.rule.id, lic: S.lic.id };
-  show(`
-    <h1>ルール設定</h1>
-    <p class="muted">変えると翌月から効く。許可を取り直すと開店待ちが入る。</p>
-    <h2>ルール</h2>${optButtons(D.rules, cfg.rule, "rule", (x) => x.note)}
-    <h2>許可</h2>${optButtons(D.licenses, cfg.lic, "lic", (x) => x.id === "licensed" && S.lic.id !== "licensed" ? `${x.note}（いまから申請：${x.fee}・休業${x.waitMonths}か月）` : x.note)}
-    <p id="hz" class="muted"></p>
-    <details><summary>詳しく見る（条文）</summary><div id="pv"></div></details>
-    <div class="row"><button class="btn" id="cancel">戻る</button><button class="btn primary" id="ok">これでいく</button></div>`);
-  const upd = () => {
-    const r = byId(D.rules, cfg.rule), l = byId(D.licenses, cfg.lic);
-    $("pv").innerHTML = provHTML([...new Set([...r.provisionIds, ...l.provisionIds])]);
-    const risky = r.violation || l.violation;
-    $("hz").textContent = risky ? (r.violation === "criminal" ? "ゲーム上：摘発されたら逮捕で終了（スコア0）。" : "ゲーム上：摘発されたら 指示→営業停止→廃業 と進む。") : "ゲーム上：摘発の対象にならない。";
-    if (r.id !== "cashout" && S.lastCashout != null) $("hz").textContent += " " + R.cashoutTail.text;
-  };
-  upd(); wireOpts(cfg, upd);
-  $("cancel").onclick = () => { hide(); S.paused = was; };
-  $("ok").onclick = () => { applyRules(cfg); hide(); S.paused = was; };
-}
-function applyRules(cfg){
-  const prev = { rule: S.rule.id, lic: S.lic.id };
-  S.rule = byId(D.rules, cfg.rule);
-  const nl = byId(D.licenses, cfg.lic);
-  if (nl.id !== S.lic.id){
-    if (nl.id === "licensed"){ S.cash -= nl.fee; S.profit -= nl.fee; S.waitMonths = nl.waitMonths; note(`許可申請。${nl.waitMonths}か月休業。`); }
-    S.lic = nl;
-  }
-  if (prev.rule !== S.rule.id || prev.lic !== S.lic.id){ logEv("rules", { rule: S.rule.id, lic: S.lic.id }); note(`ルール：${S.rule.short}／${S.lic.id === "licensed" ? "許可あり" : "無許可"}`); }
-}
-
-function openStrike(step, v){
-  show(`
-    <h1>立入り：${esc(step.name)}</h1>
-    <p>${esc(step.text)}</p>
-    <p class="muted">指摘：${v.map((x) => esc(x.src.name)).join("、")}</p>
-    <details open><summary>詳しく見る（条文）</summary>${provHTML([...new Set(v.flatMap((x) => x.src.provisionIds))])}</details>
-    <p class="muted" style="font-size:12px">次に摘発されると「${esc(R.ladder[Math.min(S.strikes, R.ladder.length - 1)].name)}」。監視も強まった。</p>
-    <div class="row"><button class="btn" id="keep">このまま続ける</button><button class="btn primary" id="fix">是正する（換金なし・景品なし／許可申請）</button></div>`);
-  $("keep").onclick = () => { logEv("choice", { after: step.id, choice: "keep" }); hide(); S.paused = false; };
-  $("fix").onclick = () => { logEv("choice", { after: step.id, choice: "fix" }); applyRules({ rule: "noprize", lic: "licensed" }); hide(); S.paused = false; };
-}
-
-function openEnd(kind, score){
-  const title = { complete: "5年が経った", arrest: R.arrest.name, closed: "廃業", bankrupt: "資金が尽きた" }[kind];
-  const lead = { complete: "最後まで店を続けた。", arrest: R.arrest.text, closed: R.ladder[R.ladder.length - 1].text, bankrupt: "赤字が膨らみ、店を畳んだ。" }[kind];
-  const tl = S.log.filter((x) => x.type !== "month").map((x) => {
-    const when = `${Math.floor(x.t / 12) + 1}年目${(x.t % 12) + 1}か月`;
-    if (x.type === "open") return `${when}：開店準備（${byId(D.locations, x.loc).name}・${x.tables}卓・${byId(D.rules, x.rule).short}・${x.lic === "licensed" ? "許可あり" : "無許可"}）`;
-    if (x.type === "rules") return `${when}：ルール変更（${byId(D.rules, x.rule).short}・${x.lic === "licensed" ? "許可あり" : "無許可"}）`;
-    if (x.type === "strike") return `${when}：${byId(R.ladder, x.step) ? byId(R.ladder, x.step).name : x.step}`;
-    if (x.type === "choice") return `${when}：${x.choice === "fix" ? "是正した" : "続けた"}`;
-    if (x.type === "arrest") return `${when}：摘発・逮捕`;
-    if (x.type === "end") return `${when}：終了`;
-    return "";
-  }).filter(Boolean).map(esc).join("<br>");
-  show(`
-    <h1>${esc(title)}</h1>
-    <p>${esc(lead)}</p>
-    <div class="big"><span class="chip" style="background:var(--ink);box-shadow:inset 0 0 0 .12em var(--panel)"></span>${fmt(score)}<span style="font-size:16px">万円</span></div>
-    <p class="muted">${kind === "arrest" ? `没収前の累計：${fmt(S.profit)} 万円` : `${S.month}か月営業 ・ 最終 ${S.tables}卓 ・ ${S.rule.short}`}</p>
-    <h2>経過</h2><div class="timeline">${tl || "—"}</div>
-    <div class="row"><button class="btn" id="dl">プレイログを保存（JSONL）</button><button class="btn primary" id="again">もう一度</button></div>
-    <div class="foot">ログはこの端末に保存されるだけで、送信されない。${esc(M.disclaimer)}</div>`);
-  $("dl").onclick = exportLog;
-  $("again").onclick = () => { openSetup(); };
-}
-
-/* ---------- dock ---------- */
+/* ---------- 開業後の操作 ---------- */
+function lateTableCost(){ return L.tablePrice + L.tsuboPerTable * S.loc.fitoutPerTsubo * L.lateTableMarkup + L.tsuboPerTable * S.loc.tsuboRent * L.depositMonths; }
 function act(a){
-  if (!S || S.over || ov.classList.contains("show")) { if (a === "rules") openRules(); return; }
-  if (a === "ad"){ S.ad = (S.ad + 1) % E.ads.length; note(S.ad ? `広告 Lv${S.ad}（${E.ads[S.ad].cost}/月）` : "広告を止めた"); logEv("ad", { level: S.ad }); }
+  if (!S || S.over || ov.classList.contains("show")) return;
+  if (a === "ad"){ S.ad = (S.ad + 1) % O.ads.length; note(S.ad ? `広告 Lv${S.ad}（${yen(O.ads[S.ad].cost)}/月）` : "広告を止めた"); logEv("ad", { level: S.ad }); }
   if (a === "tableAdd"){
-    if (S.tables >= E.maxTables) return note("これ以上は置けない");
-    S.tables++; S.cash -= E.tablePrice; S.profit -= E.tablePrice; logEv("tables", { n: S.tables }); placeTables();
+    if (S.tables >= L.maxTables) return note("これ以上は置けない");
+    const c = lateTableCost();
+    S.tables++; S.cash -= c; S.area += L.tsuboPerTable; S.rent += L.tsuboPerTable * S.loc.tsuboRent; S.deposit += L.tsuboPerTable * S.loc.tsuboRent * L.depositMonths;
+    S.fitout += L.tsuboPerTable * S.loc.fitoutPerTsubo * L.lateTableMarkup; S.tablesValue += L.tablePrice;
+    note(`増卓（${yen(c)}。家賃 +${yen(L.tsuboPerTable * S.loc.tsuboRent)}/月）`); logEv("tables", { n: S.tables }); placeTables();
   }
   if (a === "tableSub"){
-    if (S.tables <= 1) return;
-    S.tables--; S.cash += E.tableResale; S.profit += E.tableResale; logEv("tables", { n: S.tables }); placeTables();
+    if (S.tables <= L.minTables) return;
+    S.tables--; const back = L.tablePrice * L.tableResidual; S.cash += back; S.tablesValue -= L.tablePrice;
+    note(`減卓（${yen(back)}で売却。面積と家賃はそのまま）`); logEv("tables", { n: S.tables }); placeTables();
   }
-  if (a === "rules") openRules();
+  if (a === "edu"){ const e = O.education; S.cash -= e.cost; S.ind.slack = clamp(S.ind.slack + e.slack, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort, 0, 100); note(`スタッフ教育（${yen(-e.cost)}）余力 +${e.slack}・居心地 +${e.comfort}`); logEv("edu", {}); }
+  if (a === "settings") openSettings();
+  if (a === "finance") openFinance();
   syncHUD();
+}
+function openSettings(){
+  const was = S.paused; S.paused = true;
+  const cfg = { open: S.open, close: S.close, price: S.price, cashout: S.illegal.cashout, prize: S.illegal.prize };
+  const render = () => {
+    const late = cfg.close > O.legalClose;
+    show(`<div class="kicker">営業設定</div><h1>店の運営を変える</h1>
+      <h2>営業時間</h2>
+      <div class="slider"><span>開店</span><input type="range" id="openR" min="${O.openMin}" max="20" value="${cfg.open}"><span>${hhLong(cfg.open)}</span></div>
+      <div class="slider"><span>閉店</span><input type="range" id="closeR" min="18" max="${O.closeMax}" value="${cfg.close}"><span>${hhLong(cfg.close)}</span></div>
+      ${hoursBar(cfg.open, cfg.close)}
+      <p class="${late ? "warn" : "muted"}" style="font-size:12.5px">赤い点線＝法定の営業時間の線（${hhLong(O.legalClose)}）。${late ? "越えているので「深夜営業」になる。" : ""}</p>
+      <h2>料金</h2>
+      <div class="slider"><span>安く</span><input type="range" id="priceR" min="${O.price.min * 100}" max="${O.price.max * 100}" step="5" value="${Math.round(cfg.price * 100)}"><span>高く</span></div>
+      <p class="muted" style="font-size:12.5px">客単価 ${Math.round(S.loc.spend * cfg.price * 10000).toLocaleString("ja-JP")}円</p>
+      <h2>違法アクション（ゲーム上の確率は毎月の数字で表示する）</h2>
+      ${["cashout", "prize"].map((id) => { const a = byId(D.illegal, id), st = stopped(id); return `<label class="chk"><input type="checkbox" data-il="${id}" ${cfg[id] ? "checked" : ""} ${st ? "disabled" : ""}> <span><b>${esc(a.name)}</b>${st ? `（${R.labels.order}で停止中）` : ""}<br><span class="muted">${id === "cashout" ? "客単価 ×5" : "客数 ×1.5"} ・ 摘発 ${pct(a.arrest)}/月〜 ・ ${R.labels.order} ${pct(a.order, 0)}/月</span></span></label>`; }).join("")}
+      ${!S.licensed ? `<p class="warn">いまは無許可で営業中。${S.licenseWait > 0 ? `許可申請中（あと${S.licenseWait}か月）。` : `<button class="btn" id="applyBtn">許可を申請する（${yen(D.license.fee)}・${D.license.waitMonths}か月）</button>`}</p>` : ""}
+      <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set(D.illegal.flatMap((a) => a.provisionIds))])}
+        ${D.illegal.filter((a) => a.missingSource).map((a) => `<p class="muted">未収録：${esc(a.missingSource)}</p>`).join("")}<p class="muted">${esc(R.note)}</p></details>
+      <div class="row"><button class="btn" id="cancelBtn">戻る</button><button class="btn primary" id="okBtn">これでいく</button></div>`);
+    $("openR").oninput = (e) => { cfg.open = +e.target.value; if (cfg.close - cfg.open < 4) cfg.close = cfg.open + 4; render(); };
+    $("closeR").oninput = (e) => { cfg.close = +e.target.value; if (cfg.close - cfg.open < 4) cfg.open = cfg.close - 4; render(); };
+    $("priceR").oninput = (e) => { cfg.price = +e.target.value / 100; render(); };
+    card.querySelectorAll("[data-il]").forEach((x) => x.onchange = () => { cfg[x.dataset.il] = x.checked; });
+    if ($("applyBtn")) $("applyBtn").onclick = () => { S.cash -= D.license.fee; S.licenseWait = D.license.waitMonths; note("許可を申請した。"); story("許可を申請した。"); render(); };
+    $("cancelBtn").onclick = () => { hide(); S.paused = was; };
+    $("okBtn").onclick = () => {
+      const ch = [];
+      if (cfg.open !== S.open || cfg.close !== S.close) ch.push(`営業時間 ${hhLong(cfg.open)}〜${hhLong(cfg.close)}`);
+      if (cfg.price !== S.price) ch.push(`料金 ×${cfg.price.toFixed(2)}`);
+      for (const id of ["cashout", "prize"]) if (cfg[id] !== S.illegal[id]) ch.push(`${byId(D.illegal, id).short}${cfg[id] ? "を始めた" : "をやめた"}`);
+      S.open = cfg.open; S.close = cfg.close; S.price = cfg.price; S.illegal.cashout = cfg.cashout; S.illegal.prize = cfg.prize;
+      if (ch.length){ note(ch.join("・")); story(`方針を変えた：${ch.join("、")}。`); logEv("settings", { ...cfg }); }
+      hide(); S.paused = was; syncHUD();
+    };
+  };
+  render();
+}
+function canBorrow(){
+  if (S.month < F.unlockMonths) return { ok: false, why: `開業から${F.unlockMonths}か月たっていない` };
+  if (activeIllegal().length) return { ok: false, why: "違法営業中" };
+  if (S.illegalMonths.some((t) => t >= S.month - F.unlockMonths)) return { ok: false, why: `直近${F.unlockMonths}か月に違法営業がある` };
+  if (S.rumor > 0) return { ok: false, why: `${R.labels.order}の風評が残っている` };
+  const last6 = S.ops.slice(-6).reduce((a, b) => a + b, 0);
+  if (last6 <= 0) return { ok: false, why: "直近6か月のキャッシュフローがマイナス" };
+  const limit = Math.max(0, S.ops.slice(-12).reduce((a, b) => a + b, 0) * F.limitMultiple);
+  return { ok: limit > S.debt, why: "上限まで借りている", limit };
+}
+function openFinance(){
+  const was = S.paused; S.paused = true;
+  const render = () => {
+    const f = canBorrow();
+    show(`<div class="kicker">借入</div><h1>お金を借りる・返す</h1>
+      <p>健全営業で、直近6か月のキャッシュフローがプラスなら借りられる。上限は直近12か月の営業キャッシュフローの${F.limitMultiple}倍、金利は年${pct(F.rate, 0)}（案）。借入残高は最後に手取り額から引かれる。</p>
+      <div class="grid2"><span>借入残高</span><span>${yen(S.debt)}</span><span>手元資金</span><span>${yen(S.cash)}</span><span>上限</span><span>${f.limit != null ? yen(f.limit) : "—"}</span></div>
+      ${f.ok ? "" : `<p class="muted">いまは借りられない：${esc(f.why)}</p>`}
+      <div class="row"><button class="btn" id="repayBtn" ${S.debt > 0 && S.cash > 0 ? "" : "disabled"}>${yen(F.step)}返す</button>
+        <button class="btn" id="borrowBtn" ${f.ok ? "" : "disabled"}>${yen(F.step)}借りる</button><button class="btn primary" id="okBtn">閉じる</button></div>`);
+    $("borrowBtn").onclick = () => { const amt = Math.min(F.step, f.limit - S.debt); S.debt += amt; S.cash += amt; note(`${yen(amt)}借りた`); story(`${yen(amt)}借りた。`); logEv("borrow", { amt }); render(); };
+    $("repayBtn").onclick = () => { const amt = Math.min(F.step, S.debt, S.cash); S.debt -= amt; S.cash -= amt; note(`${yen(amt)}返した`); logEv("repay", { amt }); render(); };
+    $("okBtn").onclick = () => { hide(); S.paused = was; syncHUD(); };
+  };
+  render();
 }
 $("dock").addEventListener("click", (e) => { const b = e.target.closest(".act"); if (b) act(b.dataset.a); });
 addEventListener("keydown", (e) => {
-  const m = { "1": "ad", "2": "tableAdd", "3": "tableSub", "4": "rules" }[e.key];
+  if (e.target.tagName === "INPUT") return;
+  const m = { "1": "ad", "2": "tableAdd", "3": "tableSub", "4": "settings", "5": "edu", "6": "finance" }[e.key];
   if (m) act(m);
   if (e.key === " " && S && !S.over && !ov.classList.contains("show")) { e.preventDefault(); togglePause(); }
-  if (e.key === "Escape" && ov.classList.contains("show") && S && !S.over && $("cancel")) $("cancel").click();
 });
 function togglePause(){ if (!S || S.over) return; S.paused = !S.paused; $("pauseBtn").textContent = S.paused ? "▶" : "II"; }
 $("pauseBtn").onclick = togglePause;
 $("speedBtn").onclick = () => { if (!S) return; S.speed = S.speed === 1 ? 2 : S.speed === 2 ? 4 : 1; $("speedBtn").textContent = "×" + S.speed; };
 
 function syncHUD(){
+  $("ind").innerHTML = Object.entries(IND.names).map(([k, n]) => `<span>${n}</span><span class="bar"><i style="width:${S ? S.ind[k] : IND.start[k]}%"></i></span>`).join("");
   if (!S) return;
-  $("moneyV").textContent = fmt(S.cash);
+  $("moneyV").textContent = Math.round(S.cash).toLocaleString("ja-JP");
   $("money").classList.toggle("neg", S.cash < 0);
-  $("visV").textContent = fmt(S.last.served); $("demV").textContent = fmt(S.last.demand);
-  const y = Math.floor(S.month / 12) + 1, mo = (S.month % 12) + 1;
-  $("timeV").textContent = `${Math.min(y, 5)}年目 ${S.month >= M.months ? 12 : mo}か月 ・ 残り ${Math.max(0, M.months - S.month)}か月`;
-  $("profitV").textContent = fmt(S.profit);
-  $("heatBar").style.width = (heatNorm() * 100) + "%";
-  const nextAd = E.ads[(S.ad + 1) % E.ads.length];
-  $("adC").textContent = S.ad === E.ads.length - 1 ? "停止" : nextAd.cost;
-  $("tblC").textContent = E.tablePrice; $("tblN").textContent = S.tables;
-  $("ruleC").textContent = S.rule.short;
+  const net = S.last.net || 0;
+  $("netV").textContent = (net >= 0 ? "+" : "−") + Math.round(Math.abs(net)).toLocaleString("ja-JP");
+  $("netV").className = net >= 0 ? "pos" : "negc";
+  $("guestV").textContent = Math.round(S.last.guests || 0); $("occV").textContent = Math.round((S.last.occ || 0) * 100);
+  $("timeV").textContent = S.openedAt == null && !isOpen() ? `開業準備 ・ 残り${M.months - S.month}か月` : `${Math.min(5, Math.floor(S.month / 12) + 1)}年目 ${(S.month % 12) + 1}か月 ・ 残り${Math.max(0, M.months - S.month)}か月`;
+  $("valueV").textContent = S.ops.length >= 3 ? yen(storeValue()) : "—";
+  $("debtV").textContent = S.debt > 0 ? `借入残高 ${yen(S.debt)}` : "";
+  const rk = risks();
+  $("riskV").textContent = rk.arrest > 0 || rk.order > 0 ? `今月 摘発 ${pct(rk.arrest)} ／ ${R.labels.order} ${pct(rk.order, 0)}` : "";
+  $("adC").textContent = S.ad ? `広告Lv${S.ad}` : "広告";
   document.querySelector('[data-a="ad"]').classList.toggle("on", S.ad > 0);
-  const cap = S.tables * E.tableCapacity;
+  $("addC").textContent = `増卓 ${Math.round(lateTableCost())}万`;
+  $("subC").textContent = `${S.tables}卓`;
+  $("eduC").textContent = `教育 ${O.education.cost}万`;
   let tag = "";
-  if (S.waitMonths > 0) tag = `許可待ち あと${S.waitMonths}か月`;
-  else if (S.suspend > 0) tag = `営業停止 あと${S.suspend}か月`;
-  else if (heatNorm() > 0.66) tag = "監視強め";
-  else if (S.last.demand && S.last.demand > cap) tag = "満卓";
-  else if (S.last.demand && S.last.demand < cap * 0.6) tag = "集客不足";
+  if (!isOpen()) tag = `許可待ち あと${S.licenseWait}か月`;
+  else if (S.month >= R.ddStart) tag = "買収前調査中";
+  else if (S.rumor > 0) tag = `風評 あと${S.rumor}か月`;
+  else if (rk.active.length) tag = `違法営業中：${rk.active.map((a) => a.short).join("・")}`;
+  else if (S.ind.slack < 30) tag = "スタッフが疲れている";
+  else if ((S.last.occ || 0) >= S.loc.occCap - 0.01) tag = "満席続き";
+  else if (S.last.occ && S.last.occ < 0.4) tag = "集客不足";
   $("tag").textContent = tag;
 }
 
-/* ---------- scene (canvas) ---------- */
+/* ---------- 見下ろし画面 ---------- */
 const cv = $("cv"), cx = cv.getContext("2d");
-let W = 0, H = 0, DPR = 1, U = 1; // U: unit length
-function resize(){
-  DPR = Math.min(2, devicePixelRatio || 1);
-  W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR;
-  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  U = Math.min(W, H) / 1000;
-  placeTables();
-}
+let W = 0, H = 0, U = 1;
+function resize(){ const dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); U = Math.min(W, H) / 1000; placeTables(); }
 addEventListener("resize", resize);
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let C = {};
-function readColors(){ C = { ink: css("--ink"), bg: css("--bg"), wall: css("--wall"), wallD: css("--wall-dark"), sh: css("--shadow"), muted: css("--muted"), soft: css("--soft"), danger: css("--danger") }; }
+function readColors(){ C = { ink: css("--ink"), bg: css("--bg"), wall: css("--wall"), wallD: css("--wall-dark"), sh: css("--shadow"), muted: css("--muted"), danger: css("--danger"), font: css("--font") }; }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
-
-let people = [], tables = [], pops = [], police = [];
-const center = () => ({ x: W / 2, y: H * 0.47 });
+let people = [], tablesPos = [], pops = [], police = [], bubbles = [];
+const center = () => ({ x: W / 2, y: H * 0.5 });
 const shopR = () => 150 * U * (S ? 1 + Math.min(S.tables, 12) * 0.035 : 1);
-const reachR = () => Math.min(W, H) * 0.62 * (S ? E.ads[S.ad].reach : 0.55);
-
-function resetScene(){ people = []; pops = []; police = []; placeTables(); readColors(); }
+const reachR = () => Math.min(W, H) * 0.62 * (S ? 0.55 + 0.15 * S.ad : 0.55);
+function resetScene(){ people = []; pops = []; police = []; bubbles = []; placeTables(); readColors(); }
 function placeTables(){
-  tables = [];
-  if (!S) return;
+  tablesPos = []; if (!S) return;
   const n = S.tables, r = shopR() * 0.58;
   for (let i = 0; i < n; i++){
-    const ring = n > 6 && i >= 6 ? 1 : 0;
-    const k = ring ? n - 6 : Math.min(n, 6), j = ring ? i - 6 : i;
-    const a = (j / k) * Math.PI * 2 + (ring ? Math.PI / k : 0) - Math.PI / 2;
-    const rr = ring ? r * 0.35 : (n === 1 ? 0 : r);
-    tables.push({ x: Math.cos(a) * rr, y: Math.sin(a) * rr * 0.62, seats: 0 });
+    const ring = n > 6 && i >= 6 ? 1 : 0, k = ring ? n - 6 : Math.min(n, 6), j = ring ? i - 6 : i;
+    const a = (j / k) * Math.PI * 2 + (ring ? Math.PI / k : 0) - Math.PI / 2, rr = ring ? r * 0.35 : (n === 1 ? 0 : r);
+    tablesPos.push({ x: Math.cos(a) * rr, y: Math.sin(a) * rr * 0.62 });
   }
 }
-
 function spawnPerson(toShop){
   const c = center(), R0 = reachR() * (1.05 + Math.random() * 0.3), a = Math.random() * Math.PI * 2;
-  const p = { x: c.x + Math.cos(a) * R0, y: c.y + Math.sin(a) * R0 * 0.62, toShop, ph: Math.random() * 6, sp: (28 + Math.random() * 18) * U * 1.6, state: "walk", t: 0 };
-  if (toShop){ const tb = tables[Math.floor(Math.random() * tables.length)] || { x: 0, y: 0 }; p.tx = c.x + tb.x + (Math.random() - .5) * 40 * U; p.ty = c.y + tb.y + (Math.random() - .5) * 26 * U; }
-  else { const b = a + Math.PI + (Math.random() - .5); p.tx = c.x + Math.cos(b) * R0 * 1.4; p.ty = c.y + Math.sin(b) * R0 * 0.62 * 1.4; }
+  const p = { x: c.x + Math.cos(a) * R0, y: c.y + Math.sin(a) * R0 * 0.62, toShop, ph: Math.random() * 6, sp: (30 + Math.random() * 18) * U * 1.6, state: "walk", t: 0 };
+  if (toShop){
+    // 居心地が低いと、入口で引き返す新規客が出る
+    p.turnBack = S && Math.random() < (60 - S.ind.comfort) / 120;
+    const tb = p.turnBack ? { x: -shopR() * 0.8, y: shopR() * 0.4 } : tablesPos[Math.floor(Math.random() * tablesPos.length)] || { x: 0, y: 0 };
+    p.tx = c.x + tb.x + (Math.random() - .5) * 40 * U; p.ty = c.y + tb.y + (Math.random() - .5) * 26 * U;
+  } else { const b = a + Math.PI + (Math.random() - .5); p.tx = c.x + Math.cos(b) * R0 * 1.4; p.ty = c.y + Math.sin(b) * R0 * 0.62 * 1.4; }
   people.push(p);
 }
 function spawnPolice(){ const c = center(); police.push({ x: c.x - reachR() * 1.1, y: c.y + reachR() * 0.3, tx: c.x - shopR() * 0.9, ty: c.y + shopR() * 0.25, t: 0, ph: 0 }); }
-
 function figure(x, y, s, ph, moving, outline){
-  // shadow
   cx.fillStyle = C.sh; cx.beginPath(); cx.ellipse(x + 6 * s, y + 2 * s, 9 * s, 3.5 * s, 0, 0, Math.PI * 2); cx.fill();
   const bob = moving ? Math.sin(ph) * 1.2 * s : 0, leg = moving ? Math.sin(ph) * 3 * s : 0;
   cx.fillStyle = outline ? C.bg : C.ink; cx.strokeStyle = C.ink; cx.lineWidth = 1.6 * s;
-  // legs
   cx.beginPath(); cx.roundRect(x - 5 * s + leg * .3, y - 10 * s, 4 * s, 10 * s, 2 * s); cx.roundRect(x + 1 * s - leg * .3, y - 10 * s, 4 * s, 10 * s, 2 * s); cx.fill(); if (outline) cx.stroke();
-  // body
   cx.beginPath(); cx.roundRect(x - 6.5 * s, y - 24 * s + bob, 13 * s, 16 * s, 5 * s); cx.fill(); if (outline) cx.stroke();
-  // head
   cx.beginPath(); cx.arc(x, y - 30 * s + bob, 6.5 * s, 0, Math.PI * 2); cx.fill(); if (outline) cx.stroke();
-  if (outline){ cx.fillStyle = C.ink; cx.fillRect(x - 7 * s, y - 37 * s + bob, 14 * s, 3.5 * s); }
 }
-
 function wallArc(c, r, a0, a1, h){
-  // extruded elliptical wall (oblique view)
   const k = 0.62, steps = 40;
   cx.beginPath();
   for (let i = 0; i <= steps; i++){ const a = a0 + (a1 - a0) * i / steps; const X = c.x + Math.cos(a) * r, Y = c.y + Math.sin(a) * r * k; i ? cx.lineTo(X, Y) : cx.moveTo(X, Y); }
@@ -740,105 +1654,102 @@ function wallArc(c, r, a0, a1, h){
   for (let i = 0; i <= steps; i++){ const a = a0 + (a1 - a0) * i / steps; const X = c.x + Math.cos(a) * r, Y = c.y + Math.sin(a) * r * k - h; i ? cx.lineTo(X, Y) : cx.moveTo(X, Y); }
   cx.lineWidth = 2.2; cx.stroke();
 }
-
 function draw(dt){
   const c = center();
   cx.fillStyle = C.bg; cx.fillRect(0, 0, W, H);
-
-  // road (立地) — wider/busier by traffic
-  const tr = S ? S.loc.traffic : 1, ang = -0.36, len = Math.hypot(W, H);
-  const ux = Math.cos(ang), uy = Math.sin(ang) * -1, nx = -uy, ny = ux;
-  const rw = (14 + tr * 10) * U;
-  cx.save();
+  // 道（立地）
+  const tr = S ? S.loc.tsuboRent : 1.5, ang = -0.36, len = Math.hypot(W, H);
+  const ux = Math.cos(ang), uy = -Math.sin(ang), nx = -uy, ny = ux, rw = (10 + tr * 6) * U;
   cx.beginPath(); cx.moveTo(c.x - ux * len + nx * rw, c.y + uy * len + ny * rw); cx.lineTo(c.x + ux * len + nx * rw, c.y - uy * len + ny * rw);
   cx.lineTo(c.x + ux * len + nx * (rw + 26 * U), c.y - uy * len + ny * (rw + 26 * U)); cx.lineTo(c.x - ux * len + nx * (rw + 26 * U), c.y + uy * len + ny * (rw + 26 * U)); cx.closePath();
   const g = cx.createLinearGradient(c.x + nx * rw, c.y + ny * rw, c.x + nx * (rw + 26 * U), c.y + ny * (rw + 26 * U)); g.addColorStop(0, C.wallD); g.addColorStop(1, C.bg);
-  cx.fillStyle = g; cx.fill();
-  cx.strokeStyle = C.ink; cx.lineWidth = 1.5;
+  cx.fillStyle = g; cx.fill(); cx.strokeStyle = C.ink; cx.lineWidth = 1.5;
   for (const s of [-rw, rw]){ cx.beginPath(); cx.moveTo(c.x - ux * len + nx * s, c.y + uy * len + ny * s); cx.lineTo(c.x + ux * len + nx * s, c.y - uy * len + ny * s); cx.stroke(); }
-  if (S){ cx.fillStyle = C.muted; cx.font = `${12}px ${css("--font")}`; cx.save(); cx.translate(c.x - ux * W * 0.36, c.y + uy * W * 0.36 - rw - 8); cx.rotate(-Math.atan2(uy, ux)); cx.fillText(S.loc.name, 0, 0); cx.restore(); }
-  cx.restore();
-
-  // reach circle (広告の届く範囲)
+  if (S){ cx.fillStyle = C.muted; cx.font = `12px ${C.font}`; cx.save(); cx.translate(c.x - ux * W * 0.36, c.y + uy * W * 0.36 - rw - 8); cx.rotate(-Math.atan2(uy, ux)); cx.fillText(S.loc.name, 0, 0); cx.restore(); }
+  // 競合店（道沿いの灰色の箱）
+  if (S) for (let i = 0; i < S.competitors; i++){
+    const d = (i % 2 ? 1 : -1) * (0.55 + 0.12 * Math.floor(i / 2)) * Math.min(W, H) * 0.6;
+    const x = c.x + ux * d - nx * (rw + 30 * U), y = c.y - uy * d - ny * (rw + 30 * U), s = 26 * U;
+    cx.fillStyle = C.sh; cx.fillRect(x - s + 5, y - s * 0.6 + 6, s * 2, s * 1.2);
+    cx.fillStyle = C.wallD; cx.strokeStyle = C.ink; cx.lineWidth = 1; cx.fillRect(x - s, y - s * 0.6, s * 2, s * 1.2); cx.strokeRect(x - s, y - s * 0.6, s * 2, s * 1.2);
+    cx.fillStyle = C.muted; cx.font = `10px ${C.font}`; cx.textAlign = "center"; cx.fillText("競合", x, y + 4); cx.textAlign = "start";
+  }
+  // 広告の届く範囲 + 5年の時計
   const RR = reachR();
-  cx.strokeStyle = C.ink; cx.globalAlpha = .55; cx.lineWidth = 1;
-  cx.beginPath(); cx.ellipse(c.x, c.y, RR, RR * 0.62 * 1.25, 0, 0, Math.PI * 2); cx.stroke();
-  for (let i = 0; i < 8; i++){ const a = i / 8 * Math.PI * 2, x = c.x + Math.cos(a) * RR, y = c.y + Math.sin(a) * RR * 0.775; cx.beginPath(); cx.moveTo(x - Math.cos(a) * 6, y - Math.sin(a) * 6); cx.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6); cx.stroke(); }
+  cx.strokeStyle = C.ink; cx.globalAlpha = .5; cx.lineWidth = 1;
+  cx.beginPath(); cx.ellipse(c.x, c.y, RR, RR * 0.775, 0, 0, Math.PI * 2); cx.stroke();
+  for (let i = 0; i < 5; i++){ const a = i / 5 * Math.PI * 2 - Math.PI / 2, x = c.x + Math.cos(a) * RR, y = c.y + Math.sin(a) * RR * 0.775; cx.beginPath(); cx.moveTo(x - Math.cos(a) * 7, y - Math.sin(a) * 7); cx.lineTo(x + Math.cos(a) * 7, y + Math.sin(a) * 7); cx.stroke(); }
   cx.globalAlpha = 1;
-  // month marker on the reach ring (like the compass dot)
   if (S){ const a = (S.month + S.monthT) / M.months * Math.PI * 2 - Math.PI / 2, x = c.x + Math.cos(a) * RR, y = c.y + Math.sin(a) * RR * 0.775;
     cx.fillStyle = C.bg; cx.beginPath(); cx.arc(x, y, 8, 0, Math.PI * 2); cx.fill(); cx.stroke(); cx.fillStyle = C.ink; cx.beginPath(); cx.arc(x, y, 2.5, 0, Math.PI * 2); cx.fill(); }
-
-  // shop
-  const r = shopR(), h = 34 * U, k = 0.62;
+  // 店
+  const r = shopR(), h = 34 * U, k = 0.62, closed = S && !isOpen();
   cx.fillStyle = C.sh; cx.beginPath(); cx.ellipse(c.x + 10, c.y + 10, r + 6, (r + 6) * k, 0, 0, Math.PI * 2); cx.fill();
   cx.fillStyle = C.bg; cx.beginPath(); cx.ellipse(c.x, c.y, r, r * k, 0, 0, Math.PI * 2); cx.fill();
-  // back walls (behind tables)
-  const closed = S && (S.waitMonths > 0 || S.suspend > 0);
-  wallArc(c, r, Math.PI * 1.05, Math.PI * 1.65, h);
-  wallArc(c, r, Math.PI * 1.78, Math.PI * 2.0, h);
-  // tables
-  for (const t of tables){
+  wallArc(c, r, Math.PI * 1.05, Math.PI * 1.65, h); wallArc(c, r, Math.PI * 1.78, Math.PI * 2.0, h);
+  for (const t of tablesPos){
     const x = c.x + t.x, y = c.y + t.y, tw = 46 * U, th = 24 * U;
     cx.fillStyle = C.sh; cx.beginPath(); cx.ellipse(x + 5, y + 6, tw, th, 0, 0, Math.PI * 2); cx.fill();
     cx.fillStyle = C.ink; cx.beginPath(); cx.ellipse(x, y + 5 * U, tw, th, 0, 0, Math.PI * 2); cx.fill();
     cx.fillStyle = closed ? C.wallD : C.ink; cx.strokeStyle = C.bg; cx.lineWidth = 1.2;
-    cx.beginPath(); cx.ellipse(x, y, tw, th, 0, 0, Math.PI * 2); cx.fill();
-    cx.beginPath(); cx.ellipse(x, y, tw * .78, th * .7, 0, 0, Math.PI * 2); cx.stroke();
+    cx.beginPath(); cx.ellipse(x, y, tw, th, 0, 0, Math.PI * 2); cx.fill(); cx.beginPath(); cx.ellipse(x, y, tw * .78, th * .7, 0, 0, Math.PI * 2); cx.stroke();
   }
-  // seated people drawn with others below; front walls drawn after people
-
-  // people
-  if (S && !S.paused && !S.over){
-    const open = !closed;
-    const visitRate = open ? (S.last.served || S.tables * E.tableCapacity * 0.3) / 110 : 0; // per second-ish
-    const walkRate = 0.6 + S.loc.traffic * 1.2;
-    if (Math.random() < dt * visitRate * 0.9 * S.speed) spawnPerson(true);
-    if (Math.random() < dt * walkRate * S.speed) spawnPerson(false);
+  const running = S && !S.paused && !S.over;
+  if (running && isOpen()){
+    const visitRate = (S.last.guests || S.tables * 4) / 18;
+    if (Math.random() < dt * visitRate * S.speed) spawnPerson(true);
+    if (Math.random() < dt * (0.6 + S.loc.tsuboRent * 0.5) * S.speed) spawnPerson(false);
+    // 口論（信頼・居心地が低いと卓で「!」）
+    const tension = Math.max(0, 45 - Math.min(S.ind.trust, S.ind.comfort)) / 45;
+    if (tablesPos.length && Math.random() < dt * tension * 0.8 * S.speed){ const t = tablesPos[Math.floor(Math.random() * tablesPos.length)]; bubbles.push({ x: c.x + t.x, y: c.y + t.y - 40 * U, t: 0 }); }
   }
   people.sort((a, b) => a.y - b.y);
+  const staffSpeed = S ? 1 + (100 - S.ind.slack) / 40 : 1;
   for (const p of people){
-    if (!S.paused && !S.over){
+    if (running){
       const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy);
       if (p.state === "walk"){
-        if (d < 3){ if (p.toShop){ p.state = "sit"; p.t = 0; pops.push({ x: p.x, y: p.y - 50 * U, t: 0, v: S.rule.spend - S.rule.prizeCost }); } else p.dead = true; }
-        else { const s = p.sp * dt * S.speed; p.x += dx / d * s; p.y += dy / d * s; p.ph += dt * 10 * S.speed; }
-      } else { p.t += dt * S.speed; if (p.t > 5){ p.dead = true; } }
+        if (d < 3){
+          if (p.toShop && !p.turnBack){ p.state = "sit"; p.t = 0; pops.push({ x: p.x, y: p.y - 50 * U, t: 0, v: Math.round(S.loc.spend * S.price * (S.illegal.cashout && !stopped("cashout") ? 5 : 1) * 10000) }); }
+          else if (p.turnBack){ p.turnBack = false; p.toShop = false; p.state = "walk"; const b = Math.random() * Math.PI * 2; p.tx = c.x + Math.cos(b) * RR * 1.5; p.ty = c.y + Math.sin(b) * RR; bubbles.push({ x: p.x, y: p.y - 50 * U, t: 0, text: "…" }); }
+          else p.dead = true;
+        } else { const s = p.sp * dt * S.speed; p.x += dx / d * s; p.y += dy / d * s; p.ph += dt * 10 * S.speed; }
+      } else { p.t += dt * S.speed; if (p.t > 5) p.dead = true; }
     }
     figure(p.x, p.y, U * 1.15, p.ph, p.state === "walk", false);
   }
   people = people.filter((p) => !p.dead).slice(-160);
-  // police
+  // スタッフ（白抜き・腕章）：余力が低いと速く動き回る
+  if (S && isOpen()){
+    const n = Math.max(1, Math.round(S.tables * 0.6)), tt = performance.now() / 1000 * staffSpeed;
+    for (let i = 0; i < n; i++){ const a = tt * 0.6 + i * 2.1, rr = r * 0.82; figure(c.x + Math.cos(a) * rr, c.y + Math.sin(a) * rr * k, U * 1.0, tt * 8 + i, true, true); }
+  }
   for (const q of police){
     const dx = q.tx - q.x, dy = q.ty - q.y, d = Math.hypot(dx, dy);
-    if (d > 3){ const s = 80 * U * (1 / 60) * 2; q.x += dx / d * s; q.y += dy / d * s; q.ph += .2; } else q.t += 1 / 60;
-    figure(q.x, q.y, U * 1.25, q.ph, d > 3, true);
+    if (d > 3){ const s = 80 * U / 30; q.x += dx / d * s; q.y += dy / d * s; q.ph += .2; } else q.t += 1 / 60;
+    figure(q.x, q.y, U * 1.25, q.ph, d > 3, true); cx.fillStyle = C.ink; cx.fillRect(q.x - 7 * U * 1.25, q.y - 39 * U * 1.25, 14 * U * 1.25, 4 * U * 1.25);
   }
   police = police.filter((q) => q.t < 3);
-
-  // front walls (open entrance at bottom-left like the reference)
-  wallArc(c, r, Math.PI * 0.05, Math.PI * 0.42, h);
-  wallArc(c, r, Math.PI * 0.62, Math.PI * 0.95, h);
-
-  // risk gauge: dashed arc around shop (fills with hazard)
+  wallArc(c, r, Math.PI * 0.05, Math.PI * 0.42, h); wallArc(c, r, Math.PI * 0.62, Math.PI * 0.95, h);
+  // 違法リスクの点線（店の周り）と状態ピル
   if (S){
-    const hz = heatNorm();
-    cx.save(); cx.setLineDash([4, 4]); cx.strokeStyle = C.ink; cx.lineWidth = 2;
-    cx.beginPath(); cx.ellipse(c.x, c.y - h, r * 0.92, r * 0.92 * k, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, hz)); cx.stroke(); cx.restore();
-    // label pill
-    const cap = S.tables * E.tableCapacity, fill = cap ? Math.min(999, Math.round((S.last.served || 0) / cap * 100)) : 0;
-    const label = closed ? (S.waitMonths > 0 ? "許可待ち" : "営業停止") : `${S.tables}卓 : ${fill}%`;
-    cx.font = `600 ${15}px ${css("--font")}`; const tw = cx.measureText(label).width + 26;
-    const ly = c.y - r * k - h - 18;
+    const rk = risks(), hz = Math.min(1, (rk.arrest + rk.order) / 0.3);
+    if (hz > 0){ cx.save(); cx.setLineDash([4, 4]); cx.strokeStyle = C.danger; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(c.x, c.y - h, r * 0.92, r * 0.92 * k, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.03, hz)); cx.stroke(); cx.restore(); }
+    const label = !isOpen() ? `許可待ち あと${S.licenseWait}か月` : `${S.tables}卓 : 満席率 ${Math.round((S.last.occ || 0) * 100)}%`;
+    cx.font = `600 15px ${C.font}`; const tw = cx.measureText(label).width + 26, ly = c.y - r * k - h - 18;
     cx.fillStyle = C.ink; cx.beginPath(); cx.roundRect(c.x - tw / 2, ly - 15, tw, 30, 9); cx.fill();
     cx.fillStyle = C.bg; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(label, c.x, ly + 1); cx.textAlign = "start"; cx.textBaseline = "alphabetic";
   }
-
-  // pops (+売上)
+  for (const b of bubbles){
+    b.t += dt; const a = Math.max(0, 1 - b.t / 1.5); cx.globalAlpha = a;
+    cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(b.x, b.y - b.t * 10, 11, 0, Math.PI * 2); cx.fill(); cx.stroke();
+    cx.fillStyle = b.text ? C.ink : C.danger; cx.font = `700 13px ${C.font}`; cx.textAlign = "center"; cx.fillText(b.text || "!", b.x, b.y - b.t * 10 + 5); cx.textAlign = "start"; cx.globalAlpha = 1;
+  }
+  bubbles = bubbles.filter((b) => b.t < 1.5);
   for (const p of pops){
     p.t += dt; const a = Math.max(0, 1 - p.t / 1.6); if (!a) continue;
-    cx.globalAlpha = a; const txt = `+${(p.v * 10000).toLocaleString("ja-JP")}円`;
-    cx.font = `${13}px ${css("--font")}`; const w = cx.measureText(txt).width + 30, y = p.y - p.t * 20;
+    cx.globalAlpha = a; const txt = `+${p.v.toLocaleString("ja-JP")}円`;
+    cx.font = `13px ${C.font}`; const w = cx.measureText(txt).width + 30, y = p.y - p.t * 20;
     cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 1.5; cx.beginPath(); cx.roundRect(p.x - w / 2, y - 12, w, 24, 8); cx.fill(); cx.stroke();
     cx.beginPath(); cx.arc(p.x - w / 2 + 12, y, 4, 0, Math.PI * 2); cx.lineWidth = 2.5; cx.stroke();
     cx.fillStyle = C.ink; cx.fillText(txt, p.x - w / 2 + 20, y + 4.5); cx.globalAlpha = 1;
@@ -846,21 +1757,21 @@ function draw(dt){
   pops = pops.filter((p) => p.t < 1.6);
 }
 
-/* ---------- loop ---------- */
+/* ---------- ループ ---------- */
 let lastT = performance.now(), hudT = 0;
+const SPM = TEST ? 0.02 : M.secondsPerMonth;
 function frame(now){
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
   if (S && !S.paused && !S.over){
-    S.monthT += dt * S.speed / M.secondsPerMonth;
+    S.monthT += dt * S.speed / SPM;
     while (S.monthT >= 1 && !S.over && !S.paused){ S.monthT -= 1; monthTick(); }
   }
   draw(dt);
   hudT += dt; if (hudT > 0.15){ hudT = 0; syncHUD(); }
   requestAnimationFrame(frame);
 }
-
-readColors(); resize(); openSetup(); requestAnimationFrame(frame);
+window.__shop = { state: () => S, cfg: CFG, start: (cfg) => { Object.assign(CFG, cfg); S = newState({ ...CFG }); hide(); resetScene(); } };
+readColors(); resize(); syncHUD(); openTitle(); requestAnimationFrame(frame);
 })();
 </script>
 </body>
-</html>

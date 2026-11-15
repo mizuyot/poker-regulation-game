@@ -22,15 +22,18 @@ python3 scripts/build_rag.py   # docs/questions.json → data/questions_rag.json
 
 手で `questions_rag.jsonl` を編集しないこと。正本は常に `docs/questions.json`。ACT 2 の出来事は `events`。旧設問（q00 以降）は解説・条文の参照元として残す。
 
-## 姉妹作：ポーカー店経営 5年（試作）
+## 姉妹作：ポーカー店経営 5年（v0.6）
 
-立地・卓数・ルール（換金あり/なし）・許可を決めて、5年間の累計利益を競う。違法な設定は指示→営業停止→廃業、換金は摘発で逮捕（スコア0）。設計は `docs/shop/DESIGN.md`。
+5,000万円で立地と卓数を決めてポーカー店をつくり、5年経営して売却する。スコアは最終的な手取り額（円）。売却額はDCFで決まり、違法営業が買収前調査で見つかると「ハコとしての価値」だけになる。設計は `docs/shop/DESIGN.md`。
 
 ```bash
-python3 scripts/build_shop.py               # docs/shop/shop.json + 条文 → docs/shop/index.html と data/shop_rag.jsonl
-python3 scripts/sim_shop.py docs/shop/shop.json   # バランス確認
+python3 scripts/build_shop.py               # docs/shop/shop.json + 条文（questions.json）→ docs/shop/index.html と data/shop_rag.jsonl
+python3 scripts/sim_v05.py                  # 立地×卓数ごとの手取り・倒産率（抽象モデル）
+python3 scripts/sim_buyout.py               # 違法戦略が健全営業に勝てないかの検証
 python3 server.py                           # http://127.0.0.1:8765/shop/
 ```
+
+`/shop/?test=1` で1か月が0.02秒になり、事件カードや決算画面を自動で進める（動作確認用。`&seed=7` で乱数を固定）。
 
 ## データの置き場所
 

@@ -1,208 +1,777 @@
 {
   "meta": {
     "title": "ポーカー店経営 5年",
-    "version": "0.1.0",
+    "version": "0.6.0",
     "unit": "万円",
-    "disclaimer": "このゲームは適法性の判断・法的助言ではありません。摘発確率・処分の段階・金額はすべてゲーム用の架空の値です。",
-    "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在市場の統計ではない。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
+    "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
+    "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。scripts/sim_v05.py・sim_buyout.py で検証した値に合わせている。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
     "months": 60,
     "secondsPerMonth": 6,
-    "startCash": 500,
-    "bankruptAt": -200
+    "fund": 5000,
+    "bankruptAt": 0
+  },
+  "layout": {
+    "tsuboPerTable": 4,
+    "commonTsubo": 10,
+    "depositMonths": 6,
+    "tablePrice": 50,
+    "openingCost": 200,
+    "lateTableMarkup": 1.3,
+    "minTables": 1,
+    "maxTables": 12,
+    "tableResidual": 0.3,
+    "fitoutResidual": 0.5
   },
   "locations": [
     {
-      "id": "downtown",
-      "name": "繁華街",
-      "note": "人通りは最多。目にも付きやすい。",
-      "rent": 80,
-      "traffic": 1.6,
-      "visibility": 1.5
+      "id": "tokyo",
+      "name": "東京都心",
+      "tsuboRent": 4.0,
+      "spend": 0.55,
+      "demand": 64,
+      "fitoutPerTsubo": 35,
+      "occCap": 0.9,
+      "demandSd": 0.35,
+      "competition": {
+        "p": 0.05,
+        "hit": 0.12
+      },
+      "troubleP": 0.1,
+      "staffPerTable": 50,
+      "note": "当たれば一番大きい。家賃が高く、競合の出店も多い。"
     },
     {
-      "id": "station",
-      "name": "駅前",
-      "note": "通勤客が流れる。家賃と人通りの釣り合い型。",
-      "rent": 50,
-      "traffic": 1.2,
-      "visibility": 1.1
+      "id": "metro",
+      "name": "大都市都心",
+      "tsuboRent": 2.0,
+      "spend": 0.42,
+      "demand": 70,
+      "fitoutPerTsubo": 30,
+      "occCap": 0.85,
+      "demandSd": 0.28,
+      "competition": {
+        "p": 0.035,
+        "hit": 0.1
+      },
+      "troubleP": 0.09,
+      "staffPerTable": 45,
+      "note": "大阪・名古屋・福岡のような都心。東京ほどではないが競合は激しい。"
     },
     {
-      "id": "upper",
-      "name": "雑居ビル上階",
-      "note": "家賃は安く、目立たない。そのぶん来ない。",
-      "rent": 25,
-      "traffic": 0.75,
-      "visibility": 0.6
+      "id": "regional",
+      "name": "地方都市中心",
+      "tsuboRent": 1.2,
+      "spend": 0.36,
+      "demand": 60,
+      "fitoutPerTsubo": 25,
+      "occCap": 0.8,
+      "demandSd": 0.18,
+      "competition": {
+        "p": 0.015,
+        "hit": 0.08
+      },
+      "troubleP": 0.07,
+      "staffPerTable": 36,
+      "note": "読みやすく、そこそこ稼げる。（坪単価は案）"
     },
     {
       "id": "suburb",
-      "name": "郊外ロードサイド",
-      "note": "車で来る常連向け。地元の目はある。",
-      "rent": 20,
-      "traffic": 0.55,
-      "visibility": 0.85
+      "name": "郊外",
+      "tsuboRent": 0.7,
+      "spend": 0.35,
+      "demand": 42,
+      "fitoutPerTsubo": 22,
+      "occCap": 0.75,
+      "demandSd": 0.1,
+      "competition": {
+        "p": 0.005,
+        "hit": 0.08
+      },
+      "troubleP": 0.05,
+      "staffPerTable": 32,
+      "note": "小さく確実。大きくは伸びない。（坪単価は案）"
     }
   ],
-  "rules": [
-    {
-      "id": "noprize",
-      "name": "換金なし・景品なし",
-      "short": "参加費のみ",
-      "note": "参加費（席料・ドリンク）だけで回す。勝っても何も持ち帰れない。",
-      "demand": 1.0,
-      "spend": 0.5,
-      "prizeCost": 0,
-      "violation": null,
-      "provisionIds": [
-        "keiho185"
-      ]
+  "operations": {
+    "days": 26,
+    "avgStayHours": 4,
+    "turnsScale": 0.594,
+    "baseHours": 10,
+    "otherFixed": 60,
+    "variableRate": 0.15,
+    "rampStart": 0.3,
+    "rampMonths": 18,
+    "maintenancePerTable": 2,
+    "bands": [
+      {
+        "from": 12,
+        "to": 17,
+        "w": 0.5,
+        "name": "昼"
+      },
+      {
+        "from": 17,
+        "to": 20,
+        "w": 1.0,
+        "name": "夕"
+      },
+      {
+        "from": 20,
+        "to": 24,
+        "w": 1.4,
+        "name": "夜"
+      },
+      {
+        "from": 24,
+        "to": 30,
+        "w": 1.6,
+        "name": "深夜"
+      }
+    ],
+    "openMin": 10,
+    "closeMax": 29,
+    "legalClose": 24,
+    "legalCloseProvisional": true,
+    "legalCloseProvisionIds": [
+      "fueiho13"
+    ],
+    "price": {
+      "min": 0.8,
+      "max": 1.3,
+      "elasticity": 1.5
     },
-    {
-      "id": "prize",
-      "name": "成績に応じて景品",
-      "short": "景品あり",
-      "note": "上位者に景品を渡す。集客は伸びるが、風営法の許可営業では賞品提供が禁じられている。",
-      "demand": 1.5,
-      "spend": 0.65,
-      "prizeCost": 0.12,
-      "violation": "admin",
-      "provisionIds": [
-        "fueiho23-2",
-        "fueiho2-1"
-      ]
-    },
-    {
-      "id": "cashout",
-      "name": "チップを現金に換える",
-      "short": "換金あり",
-      "note": "勝ったチップを現金に戻す。客は一番集まる。ゲーム上は摘発＝逮捕で、5年分がゼロになる。",
-      "demand": 2.6,
-      "spend": 1.0,
-      "prizeCost": 0,
-      "violation": "criminal",
-      "provisionIds": [
-        "keiho185",
-        "keiho186"
-      ]
-    }
-  ],
-  "licenses": [
-    {
-      "id": "licensed",
-      "name": "風営許可を取ってから開く",
-      "note": "申請費がかかり、開店まで3か月待つ。",
-      "fee": 40,
-      "waitMonths": 3,
-      "violation": null,
-      "provisionIds": [
-        "fueiho2-1"
-      ]
-    },
-    {
-      "id": "unlicensed",
-      "name": "許可を取らずにすぐ開く",
-      "note": "初月から営業できる。ゲーム上は行政処分の対象として監視度に効く。",
-      "fee": 0,
-      "waitMonths": 0,
-      "violation": "admin",
-      "provisionIds": [
-        "fueiho2-1"
-      ],
-      "missingSource": "無許可営業の罰則条文は provisions に未収録。一次ソース確認待ち。"
-    }
-  ],
-  "economy": {
-    "baseVisitors": 400,
-    "tableCapacity": 110,
-    "tablePrice": 12,
-    "tableResale": 4,
-    "dealerPerTable": 28,
-    "maxTables": 12,
     "ads": [
       {
         "level": 0,
         "cost": 0,
-        "mult": 1.0,
-        "reach": 0.55
+        "fame": -0.5
       },
       {
         "level": 1,
         "cost": 10,
-        "mult": 1.35,
-        "reach": 0.7
+        "fame": 1
       },
       {
         "level": 2,
         "cost": 25,
-        "mult": 1.7,
-        "reach": 0.85
+        "fame": 2
       },
       {
         "level": 3,
         "cost": 45,
-        "mult": 2.05,
-        "reach": 1.0
+        "fame": 3
       }
     ],
-    "reputation": {
-      "start": 0.8,
-      "min": 0.5,
-      "max": 1.6,
-      "gainWhenFull": 0.025,
-      "lossWhenIdle": 0.01
+    "education": {
+      "cost": 20,
+      "slack": 4,
+      "comfort": 2
+    },
+    "trouble": {
+      "costMin": 200,
+      "costMax": 1000,
+      "shockMonths": 3,
+      "shock": 0.3
     }
   },
-  "risk": {
-    "base": {
-      "admin": 0.015,
-      "criminal": 0.012
+  "indicators": {
+    "start": {
+      "fame": 30,
+      "trust": 50,
+      "comfort": 50,
+      "slack": 60
     },
-    "adFactor": 0.25,
-    "tablesDivisor": 8,
-    "heat": {
-      "cashoutPerMonth": 0.03,
-      "afterWarning": 0.5,
-      "decay": 0.02,
-      "max": 3
-    },
-    "ladder": [
-      {
-        "step": 1,
-        "id": "shiji",
-        "name": "指示",
-        "text": "立入りで違反を指摘された。是正するか、続けるか。",
-        "suspendMonths": 0,
-        "fine": 0
-      },
-      {
-        "step": 2,
-        "id": "teishi",
-        "name": "営業停止",
-        "text": "営業停止。家賃と人件費だけが出ていく。",
-        "suspendMonths": 3,
-        "fine": 0
-      },
-      {
-        "step": 3,
-        "id": "haigyo",
-        "name": "廃業",
-        "text": "これ以上は続けられない。ここまでの利益で終わる。",
-        "suspendMonths": 0,
-        "fine": 100,
-        "end": true
-      }
-    ],
-    "arrest": {
-      "name": "摘発・逮捕",
-      "text": "換金の実態が押さえられた。ゲーム上、5年分の利益は没収扱いでスコアは0。",
-      "end": true,
-      "scoreZero": true
-    },
-    "cashoutTail": {
-      "months": 12,
-      "factor": 0.5,
-      "text": "換金をやめても、過去の実態はしばらく問われうる（ゲーム上の抽象化）。"
+    "names": {
+      "fame": "知名度",
+      "trust": "信頼",
+      "comfort": "初心者の居心地",
+      "slack": "スタッフの余力"
     }
-  }
+  },
+  "license": {
+    "fee": 40,
+    "waitMonths": 2,
+    "provisionIds": [
+      "fueiho2-1"
+    ]
+  },
+  "illegal": [
+    {
+      "id": "cashout",
+      "name": "換金（チップを現金に戻す）",
+      "short": "換金",
+      "effect": {
+        "spend": 5
+      },
+      "arrest": 0.02,
+      "arrestGrowth": 0.002,
+      "order": 0.15,
+      "provisionIds": [
+        "keiho185",
+        "keiho186"
+      ]
+    },
+    {
+      "id": "prize",
+      "name": "成績に応じた景品",
+      "short": "景品",
+      "effect": {
+        "demand": 1.5
+      },
+      "arrest": 0.003,
+      "arrestGrowth": 0,
+      "order": 0.08,
+      "provisionIds": [
+        "fueiho23-2"
+      ]
+    },
+    {
+      "id": "unlicensed",
+      "name": "許可を待たずに開く",
+      "short": "無許可",
+      "effect": {
+        "skipWait": true
+      },
+      "arrest": 0.005,
+      "arrestGrowth": 0,
+      "order": 0.06,
+      "provisionIds": [
+        "fueiho2-1"
+      ],
+      "missingSource": "無許可営業の罰則条文は正本に未収録。"
+    },
+    {
+      "id": "latenight",
+      "name": "法定の営業時間を越えて開ける",
+      "short": "深夜営業",
+      "effect": {
+        "hours": true
+      },
+      "arrest": 0.003,
+      "arrestGrowth": 0,
+      "order": 0.06,
+      "provisionIds": [
+        "fueiho13"
+      ]
+    }
+  ],
+  "risk": {
+    "orderJump": 4,
+    "orderStopMonths": 2,
+    "orderRumorMonths": 6,
+    "orderRumor": 0.25,
+    "orderTrust": -20,
+    "orderCostMonths": 3,
+    "orderCostMin": 100,
+    "tailMonths": 12,
+    "tailFactor": 0.5,
+    "ddStart": 54,
+    "ddLateQ": 0.9,
+    "ddEarlyQ": 0.5,
+    "labels": {
+      "order": "是正指摘",
+      "orderCost": "是正対応費",
+      "arrest": "摘発エンド",
+      "tail": "ゲーム上の残存リスク"
+    },
+    "note": "是正指摘・摘発エンド・確率はゲーム上の不利益イベントで、現実の法的手続きの順序や確率ではない。"
+  },
+  "valuation": {
+    "discountBase": 0.25,
+    "discountTrust": 0.1,
+    "discountPerOrder": 0.1,
+    "discountLowSlack": 0.03,
+    "growthBase": 0.02,
+    "growthComfort": 0.06,
+    "growthFame": 0.04,
+    "growthMin": -0.03,
+    "growthMax": 0.06,
+    "terminalGrowth": 0.01,
+    "years": 5,
+    "shellMessage": "継続的なキャッシュフローと認められませんでした。評価額は、敷金や内装・設備など「ハコとしての価値」のみです。"
+  },
+  "finance": {
+    "unlockMonths": 6,
+    "limitMultiple": 3,
+    "rate": 0.03,
+    "step": 500
+  },
+  "events": [
+    {
+      "id": "whale",
+      "title": "一番お金を使う常連が、一番嫌われている",
+      "when": {
+        "minMonth": 6,
+        "minOcc": 0.45
+      },
+      "omen": "高額を使う常連が、初心者に強い言葉を投げる場面が増えた。スタッフから「注意してほしい」と相談が来た。彼は店の売上を支えている。",
+      "choices": [
+        {
+          "label": "個別に注意する",
+          "outcomes": [
+            {
+              "p": 0.6,
+              "text": "彼は態度を改めた。初心者の顔が明るくなった。",
+              "effects": {
+                "comfort": 6,
+                "trust": 3
+              }
+            },
+            {
+              "p": 0.4,
+              "text": "彼は怒って来なくなった。売上は落ちたが、初心者は残った。",
+              "effects": {
+                "demand": {
+                  "mult": 0.92,
+                  "months": 6
+                },
+                "comfort": 8
+              },
+              "later": {
+                "months": 6,
+                "text": "初心者が常連になり始めた。",
+                "effects": {
+                  "comfort": 4,
+                  "fame": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "label": "全員に同じルールを掲示する",
+          "effects": {
+            "cash": -10,
+            "comfort": 5,
+            "trust": 5
+          },
+          "text": "マナーの掲示を出し、スタッフ全員で同じ基準で注意することにした。",
+          "later": {
+            "months": 4,
+            "text": "ルールが店の文化になった。",
+            "effects": {
+              "comfort": 3
+            }
+          }
+        },
+        {
+          "label": "出禁にする",
+          "effects": {
+            "demand": {
+              "mult": 0.85,
+              "months": 4
+            },
+            "comfort": 10
+          },
+          "text": "彼に出入りを断った。取り巻きも来なくなり、売上が落ちた。",
+          "later": {
+            "months": 6,
+            "text": "初心者が戻ってきた。口コミが変わった。",
+            "effects": {
+              "fame": 3,
+              "comfort": 4
+            }
+          }
+        },
+        {
+          "label": "いまは何もしない",
+          "effects": {
+            "fame": 1
+          },
+          "text": "売上を優先し、様子を見ることにした。",
+          "later": {
+            "months": 3,
+            "text": "初心者への暴言を撮った動画がSNSで拡散した。",
+            "effects": {
+              "comfort": -12,
+              "trust": -8,
+              "fame": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cheat",
+      "title": "「あのコール、おかしくない？」配信卓で不正疑惑",
+      "when": {
+        "minMonth": 8,
+        "minFame": 40
+      },
+      "omen": "配信卓で、特定の客の勝ち方を疑う声がSNSに出始めた。不正かどうかは、まだ分からない。",
+      "choices": [
+        {
+          "label": "配信を続ける",
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "不正ではなかった。疑いは自然に消えた。",
+              "effects": {
+                "fame": 3,
+                "trust": -2
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "外部の人物がリアルタイムで助言していた（共謀）。",
+              "effects": {
+                "fame": 6,
+                "trust": -15
+              },
+              "later": {
+                "months": 2,
+                "text": "「店は気づいていたのでは」という切り抜きが拡散した。",
+                "effects": {
+                  "trust": -8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "label": "一時止めて調べる",
+          "effects": {
+            "cash": -60,
+            "fame": -2
+          },
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "不正ではなかった。調査結果を公表し、疑われた客にも経緯を説明した。",
+              "effects": {
+                "trust": 7
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "外部の人物がリアルタイムで助言していた。出禁にし、経緯を公表した。",
+              "effects": {
+                "trust": 10
+              }
+            }
+          ]
+        },
+        {
+          "label": "当事者を一時的に卓から外す",
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "疑われた客は潔白だった。「説明もなく外された」と常連が離れた。",
+              "effects": {
+                "trust": -8,
+                "comfort": -6
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "不正だった。早い対応が評価された。",
+              "effects": {
+                "trust": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "leak",
+      "title": "配信設備から情報が漏れている？",
+      "when": {
+        "minMonth": 12,
+        "minFame": 45
+      },
+      "omen": "配信のカード表示が、遅延なしで外から見られる状態だったかもしれない、という指摘が届いた。",
+      "choices": [
+        {
+          "label": "配信を止める",
+          "effects": {
+            "fame": -4,
+            "demand": {
+              "mult": 0.95,
+              "months": 3
+            }
+          },
+          "text": "配信をいったん止めた。配信目当ての客が少し減った。"
+        },
+        {
+          "label": "設備と権限を点検する",
+          "effects": {
+            "cash": -80,
+            "trust": 6,
+            "slack": -4
+          },
+          "text": "遅延設定と閲覧権限を点検し、穴を塞いだ。スタッフは手間取った。"
+        },
+        {
+          "label": "外部に調査を頼む",
+          "effects": {
+            "cash": -150,
+            "trust": 10
+          },
+          "text": "外部の専門家に調べてもらい、報告を公表した。"
+        }
+      ]
+    },
+    {
+      "id": "ace",
+      "title": "エースディーラーの退職",
+      "when": {
+        "minMonth": 10,
+        "maxSlack": 55
+      },
+      "omen": "店の顔だったディーラーが「疲れた」と退職を申し出た。指名で来る客も多い。",
+      "choices": [
+        {
+          "label": "待遇を上げて引き留める",
+          "effects": {
+            "cash": -120,
+            "slack": 10
+          },
+          "text": "給与と休みを見直し、残ってもらった。"
+        },
+        {
+          "label": "後任を育てる",
+          "effects": {
+            "slack": -8,
+            "comfort": -4
+          },
+          "text": "引き留めず、後任の育成に切り替えた。しばらく卓の回りが悪い。",
+          "later": {
+            "months": 4,
+            "text": "後任が育ち、一人に頼らない体制になった。",
+            "effects": {
+              "slack": 12,
+              "trust": 2
+            }
+          }
+        },
+        {
+          "label": "店長が現場に入る",
+          "effects": {
+            "slack": 4
+          },
+          "text": "店長がディーラーとして卓に立つことにした。",
+          "later": {
+            "months": 3,
+            "text": "店長が体調を崩した。",
+            "effects": {
+              "slack": -10,
+              "trust": -2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "tournament",
+      "title": "大会は満員。でも普段の常連が来なくなった",
+      "when": {
+        "minMonth": 14,
+        "minFame": 50
+      },
+      "omen": "週末の大会は毎回満員。ところが、平日の常連から「最近は居場所がない」という声が出ている。",
+      "choices": [
+        {
+          "label": "大会を広げる",
+          "effects": {
+            "fame": 8,
+            "comfort": -8
+          },
+          "text": "大会の回数を増やした。知名度は上がったが、普段の常連は減った。"
+        },
+        {
+          "label": "開催を減らす",
+          "effects": {
+            "fame": -3,
+            "comfort": 5
+          },
+          "text": "大会を月1回に絞った。"
+        },
+        {
+          "label": "時間帯を分ける",
+          "effects": {
+            "cash": -30,
+            "fame": 3,
+            "comfort": 3,
+            "slack": -4
+          },
+          "text": "大会は週末の昼、通常営業は夜、と分けた。"
+        }
+      ]
+    },
+    {
+      "id": "neighbor",
+      "title": "近隣から苦情。原因は店内ではなく帰り道",
+      "when": {
+        "minMonth": 6,
+        "minClose": 23
+      },
+      "omen": "近所から「夜中に店の前で騒ぐ人がいる」と苦情が来た。騒いでいるのは帰り道の客らしい。",
+      "choices": [
+        {
+          "label": "退店時に声をかける",
+          "effects": {
+            "slack": -4,
+            "trust": 4
+          },
+          "text": "帰り際にスタッフが一声かけるようにした。"
+        },
+        {
+          "label": "店の前にスタッフを置く",
+          "effects": {
+            "cash": -60,
+            "trust": 6
+          },
+          "text": "閉店前後に、店の前へスタッフを立たせた。"
+        },
+        {
+          "label": "営業時間を1時間短くする",
+          "effects": {
+            "trust": 5,
+            "closeDelta": -1
+          },
+          "text": "閉店を1時間早めた。"
+        },
+        {
+          "label": "様子を見る",
+          "later": {
+            "months": 3,
+            "text": "苦情が町内会で取り上げられた。",
+            "effects": {
+              "trust": -8,
+              "fame": -2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "raid",
+      "title": "近くの店が摘発され、うちにも問い合わせが殺到",
+      "when": {
+        "minMonth": 12
+      },
+      "omen": "近くのアミューズメント店が摘発されたと報道された。「お宅は大丈夫？」という問い合わせが相次いでいる。",
+      "choices": [
+        {
+          "label": "営業内容を説明する",
+          "effects": {
+            "cash": -20
+          },
+          "text": "料金の仕組みと、換金・景品をしていないことを掲示し、問い合わせに答えた。",
+          "outcomes": [
+            {
+              "p": 1.0,
+              "text": "説明が信頼につながった。",
+              "effects": {
+                "trust": 8
+              }
+            }
+          ]
+        },
+        {
+          "label": "予定どおり営業する",
+          "effects": {
+            "demand": {
+              "mult": 0.9,
+              "months": 2
+            }
+          },
+          "text": "特に何もしなかった。客足が少し落ちた。"
+        },
+        {
+          "label": "企画を点検する",
+          "effects": {
+            "cash": -30,
+            "trust": 4,
+            "slack": -3
+          },
+          "text": "景品や大会の企画を一つずつ点検した。"
+        }
+      ]
+    },
+    {
+      "id": "pro",
+      "title": "契約したプロに過去の不正疑惑",
+      "when": {
+        "minMonth": 18,
+        "minFame": 55
+      },
+      "omen": "看板として契約したプロ選手に、過去の大会での不正疑惑が報じられた。",
+      "choices": [
+        {
+          "label": "事実を確認する",
+          "effects": {
+            "cash": -40
+          },
+          "outcomes": [
+            {
+              "p": 0.6,
+              "text": "疑いは晴れた。確認の姿勢が評価された。",
+              "effects": {
+                "trust": 5,
+                "fame": 2
+              }
+            },
+            {
+              "p": 0.4,
+              "text": "事実だった。契約を解除し、違約金を払った。",
+              "effects": {
+                "trust": 3,
+                "cash": -80
+              }
+            }
+          ]
+        },
+        {
+          "label": "起用を保留する",
+          "effects": {
+            "fame": -3,
+            "trust": 2
+          },
+          "text": "調査が終わるまで、イベントへの起用を止めた。"
+        },
+        {
+          "label": "契約を続けて説明する",
+          "outcomes": [
+            {
+              "p": 0.5,
+              "text": "説明が受け入れられた。",
+              "effects": {
+                "fame": 4
+              }
+            },
+            {
+              "p": 0.5,
+              "text": "説明が火に油を注いだ。",
+              "effects": {
+                "trust": -12
+              },
+              "later": {
+                "months": 2,
+                "text": "スポンサーが離れた。",
+                "effects": {
+                  "trust": -5,
+                  "fame": -3
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "eventChance": 0.3,
+  "troubleTexts": [
+    "空調が故障した",
+    "漏水で一部の卓が使えなくなった",
+    "決済端末が止まった",
+    "カードシャッフラーが壊れた",
+    "内装の一部が破損した"
+  ],
+  "shockTexts": [
+    "近くで大型イベントがあり、客が流れた",
+    "悪天候が続いた",
+    "SNSで根拠のない悪評が出回った"
+  ]
 }
