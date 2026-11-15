@@ -40,6 +40,7 @@ button{font-family:inherit;color:inherit}
 .ind .bar{height:6px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
 .ind .bar i{display:block;height:100%;background:var(--gray);width:0;transition:width .3s}
 .ind .v{font-family:var(--mono);text-align:right;color:var(--muted)}
+.ind .short{display:none}
 
 /* 上中央：時間 */
 .time{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(560px,calc(100vw - 600px));min-width:320px;text-align:center;z-index:2;background:color-mix(in srgb,var(--bg) 82%,transparent);border-radius:12px;padding:4px 8px 6px}
@@ -82,6 +83,9 @@ button{font-family:inherit;color:inherit}
 .frow.out .fb i{background:var(--danger);opacity:.75} .frow.out b{color:var(--danger)}
 .fnet{border-top:1px solid var(--soft);margin-top:5px;padding-top:4px;text-align:right}
 .fnet b{font-family:var(--mono);font-size:14px}
+.why{font-size:11.5px;line-height:1.6;margin-top:5px;border-top:1px dashed var(--soft);padding-top:4px}
+.why:empty{display:none}
+.why .up{color:var(--good)} .why .dn{color:var(--danger)}
 .toast{position:fixed;top:120px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:min(520px,calc(100vw - 32px));z-index:2}
 .toast div.bad{border-color:var(--danger);color:var(--danger)}
 .toast div.good{border-color:var(--good);color:var(--good)}
@@ -194,7 +198,8 @@ summary{cursor:pointer;color:var(--muted)}
 }
 @media (max-width:720px){
   .toast{top:190px}
-  .money{font-size:24px}.hud{top:10px;right:10px}.tl{top:10px;left:10px}.ind{display:none}
+  .money{font-size:24px}.hud{top:10px;right:10px}.tl{top:10px;left:10px}
+  .ind{grid-template-columns:repeat(4,auto auto);gap:2px 4px;font-size:11px;padding:4px 6px;cursor:pointer}.ind .bar{display:none}.ind .full{display:none}.ind .short{display:inline}.ind .v{color:var(--ink)}
   .act .ic{width:42px;height:42px;font-size:16px}.act{min-width:46px}.act .k{top:28px}.dock{gap:6px;padding:10px 8px 6px}
   .time{bottom:140px}.tdate b{font-size:18px}
 }
@@ -233,6 +238,7 @@ summary{cursor:pointer;color:var(--muted)}
   <div class="frow out"><span>人件費</span><span class="fb"><i></i></span><b>0</b></div>
   <div class="frow out"><span>その他</span><span class="fb"><i></i></span><b>0</b></div>
   <div class="fnet">差し引き <b id="flowNet">—</b></div>
+  <div class="why" id="flowWhy"></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -885,7 +891,7 @@ summary{cursor:pointer;color:var(--muted)}
           "effects": {
             "cash": -20
           },
-          "text": "料金の仕組みと、換金・景品をしていないことを掲示し、問い合わせに答えた。",
+          "text": "料金の仕組みと、店の営業内容を掲示し、問い合わせに答えた。",
           "outcomes": [
             {
               "p": 1.0,
@@ -894,7 +900,14 @@ summary{cursor:pointer;color:var(--muted)}
                 "trust": 8
               }
             }
-          ]
+          ],
+          "whenNotClean": {
+            "text": "説明と実際の営業が食い違っていた。かえって疑いを招いた。",
+            "effects": {
+              "trust": -10
+            },
+            "orderChance": 0.5
+          }
         },
         {
           "label": "予定どおり営業する",
@@ -1161,36 +1174,39 @@ summary{cursor:pointer;color:var(--muted)}
       {
         "id": "exp",
         "name": "経験者を中心に採る",
-        "desc": "人件費は高いが、最初から回る。",
+        "desc": "人件費は高いが、最初から回り、忙しくても崩れにくい。",
         "staffMult": 1.08,
         "start": {
           "slack": 15,
           "comfort": 5
         },
         "trouble": 0.8,
-        "eduMult": 1.0
+        "eduMult": 1.0,
+        "slackTarget": 10
       },
       {
         "id": "rookie",
         "name": "未経験から育てる",
-        "desc": "人件費は安い。最初は手が回らないが、教育がよく効く。",
+        "desc": "人件費は安い。最初は手が回らないが、教育がよく効き、育つと余裕が出る。",
         "staffMult": 0.92,
         "start": {
           "slack": -10
         },
         "trouble": 1.1,
-        "eduMult": 1.6
+        "eduMult": 1.6,
+        "slackTarget": -5
       },
       {
         "id": "lean",
         "name": "少人数で回す",
-        "desc": "人件費は一番安い。いつも余裕がない。",
+        "desc": "人件費は一番安い。人が足りず、いつも余裕がない。",
         "staffMult": 0.82,
         "start": {
           "slack": -20
         },
         "trouble": 1.25,
-        "eduMult": 1.0
+        "eduMult": 1.0,
+        "slackTarget": -20
       }
     ],
     "policy": [
@@ -1776,7 +1792,7 @@ function newState(cfg){
   for (const src of [hiring.start, contact.start]) for (const [k, v] of Object.entries(src || {})) ind[k] = clamp(ind[k] + v, 0, 100);
   const st = {
     cfg, loc, hiring, policy, contact, style: byId(STYLES, cfg.style),
-    tables: cfg.tables, area: b.area, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost,
+    tables: cfg.tables, capacity: cfg.tables, area: b.area, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost,
     open: cfg.open, close: cfg.close, price: cfg.price, ad: 0,
     cash: M.fund - b.invest - (cfg.unlicensed ? 0 : D.license.fee), debt: 0,
     month: 0, monthT: 0, openedAt: null,
@@ -1809,11 +1825,13 @@ function demandMult(legalOnly){
 function ramp(){ const t = S.openedAt == null ? 0 : S.month - S.openedAt; return Math.min(1, O.rampStart + (1 - O.rampStart) * t / O.rampMonths); }
 const hoursLen = () => S.close - S.open;
 function project(legalOnly){
+  // スタッフの余力が低いと、さばききれずに客を逃す（余力60以上で1.0、30で0.88、0で0.76）
+  const svc = clamp(0.76 + S.ind.slack / 250, 0.76, 1);
   const seats = S.tables * 9, turns = turnsFor(S.open, S.close, S.policy);
   const hoursF = bandWeight(S.open, S.close) / BASE_W;
   const demand = S.loc.demand * S.share * ramp() * demandMult(legalOnly) * hoursF;
   const occ = seats ? Math.min(S.loc.occCap, demand / (seats * turns)) : 0;
-  const guests = seats * occ * turns;
+  const guests = seats * occ * turns * svc;
   const spend = S.loc.spend * S.price * (legalOnly ? 1 : styleNow().effect.spend);
   let rev = guests * O.days * spend;
   if (S.rumor > 0) rev *= 1 - R.orderRumor;
@@ -1876,7 +1894,8 @@ function monthTick(){
   const i = S.ind;
   if (wasOpen){
     i.fame = clamp(i.fame + O.ads[S.ad].fame + (p.occ > 0.8 ? 0.5 : 0), 0, 100);
-    const slackTarget = 85 - 70 * Math.max(0, p.occ - 0.5) / 0.4 - Math.max(0, hoursLen() - 10) * 3;
+    // 採用方式（経験者＋10／未経験−5、教育で育つ／少人数−20）を毎月の余力の戻り先に入れる
+    const slackTarget = 85 + (S.hiring.slackTarget || 0) + Math.min(10, (S.eduCount || 0) * (S.hiring.id === "rookie" ? 1.5 : 0.5)) - 70 * Math.max(0, p.occ - 0.5) / 0.4 - Math.max(0, hoursLen() - 10) * 3;
     i.slack = clamp(i.slack + (slackTarget - i.slack) * 0.2, 0, 100);
     i.comfort = clamp(i.comfort + ((50 + (i.slack - 50) * 0.4 + S.policy.comfortTarget) - i.comfort) * 0.1, 0, 100);
     i.trust = clamp(i.trust + ((50 + S.policy.trustTarget) - i.trust) * 0.04, 0, 100);
@@ -1898,6 +1917,8 @@ function monthTick(){
   S.month++;
   rec(p, wasOpen);
   flowAnim(p, wasOpen);
+  explainMonth();
+  tutorialHint();
   if (S.cash < M.bankruptAt){ story("資金が尽きた。"); return finish("bankrupt"); }
   if (orderActs) enqueue(() => order(orderActs));
   if (S.month >= M.months) enqueue(proposal);
@@ -1907,6 +1928,7 @@ function monthTick(){
     if (wasOpen && !orderActs) maybeEvent();
   }
   if (S.q.length && !ov.classList.contains("show")) S.q.shift()();
+  saveGame();
 }
 /* 月ごとの記録（結果画面のシミュレーション表示に使う）。extra＝営業損益以外の出入り（トラブル・事件・増卓・教育・借入・是正対応費など） */
 function rec(p, wasOpen){
@@ -1976,6 +1998,11 @@ function maybeEvent(){
   }));
 }
 function decide(ev, c){
+  if (c.whenNotClean && styleNow().tier !== "clean"){
+    // 黒・グレーで営業しているのに「していない」と説明した場合は、裏目に出る
+    const w = c.whenNotClean; c = { ...c, effects: { ...(c.effects || {}), ...(w.effects || {}) }, text: w.text, outcomes: null };
+    if (w.orderChance && rand() < w.orderChance){ const acts = riskSources(); if (acts.length) S.q.unshift(() => order(acts)); }
+  }
   if (c.effects) applyEffects(c.effects);
   let text = c.text || "", later = c.later;
   if (c.outcomes){
@@ -1990,6 +2017,7 @@ function decide(ev, c){
   show(`<div class="kicker">${monthLabel(S.month)} ・ 結果</div><h1>${esc(c.label)}</h1><p>${esc(text)}</p>
     ${later ? `<p class="muted" style="font-size:12.5px">この判断は、後から効いてくるかもしれない。</p>` : ""}
     <div class="row"><button class="btn primary" id="okBtn">営業に戻る</button></div>`, () => { $("okBtn").onclick = resume; });
+  saveGame();
   if (TEST) autoClick();
 }
 
@@ -2071,7 +2099,7 @@ function proposal(){
 
 /* ---------- 終了 ---------- */
 function finish(kind){
-  S.over = kind; S.paused = true;
+  S.over = kind; S.paused = true; clearSave();
   const sale = kind === "complete" ? S.sale : 0;
   const amount = kind === "complete" ? S.cash + sale - S.debt : 0;
   logEv("end", { kind, amount: Math.round(amount), sale: Math.round(sale), peak: Math.round(S.peakMonth) });
@@ -2235,6 +2263,71 @@ async function makeShareImage(kind, amount, rank){
   g.fillStyle = muted; g.font = `500 22px ${F}`; g.fillText("数値はすべてゲーム用の架空の値です。適法性の判断・法的助言ではありません。", 80, 1256);
   return c.toDataURL("image/png");
 }
+/* ---------- 営業中の「判断→結果」：先月と比べて、何が利益を動かしたか ---------- */
+function explainMonth(){
+  const box = $("flowWhy"); if (!box) return;
+  const open = S.recs.filter((r) => r.open); if (open.length < 2){ box.textContent = ""; return; }
+  const a = open.at(-2), b = open.at(-1), days = O.days, v = 1 - O.variableRate;
+  const spA = a.guests ? a.rev / (a.guests * days) : 0, spB = b.guests ? b.rev / (b.guests * days) : 0;
+  const parts = [
+    ["客数", (b.guests - a.guests) * days * spA * v, a.guests ? (b.guests - a.guests) / a.guests : 0],
+    ["客単価", b.guests * days * (spB - spA) * v, spA ? (spB - spA) / spA : 0],
+    ["人件費", -(b.staff - a.staff), null], ["家賃", -(b.rent - a.rent), null], ["その他費用", -((b.other + b.interest) - (a.other + a.interest)), null],
+  ].filter((x) => Math.abs(x[1]) >= 3).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3);
+  const causes = [], mo = b.t;
+  for (const e of S.log.filter((x) => x.t === mo || x.t === mo - 1)){
+    if (e.type === "settings") causes.push("設定の変更");
+    if (e.type === "tables") causes.push(`卓数${e.n}`);
+    if (e.type === "ad") causes.push(e.level ? `広告Lv${e.level}` : "広告停止");
+    if (e.type === "edu") causes.push("教育");
+    if (e.type === "shock") causes.push("客足が落ちる出来事");
+    if (e.type === "order") causes.push(R.labels.order);
+  }
+  if (b.share < a.share - 0.001) causes.push("競合の出店");
+  if (S.openedAt != null && b.t - S.openedAt < O.rampMonths) causes.push("立ち上がり中（客が増えていく時期）");
+  if (S.rumor > 0) causes.push("風評");
+  const dNet = b.net - a.net, uc = [...new Set(causes)];
+  const fmt = ([n, imp, rate]) => `<span class="${imp >= 0 ? "up" : "dn"}">${n}${rate != null && Math.abs(rate) >= 0.005 ? ` ${rate > 0 ? "+" : "−"}${Math.round(Math.abs(rate) * 100)}%` : ""}（${imp >= 0 ? "+" : "−"}${Math.round(Math.abs(imp))}万）</span>`;
+  box.innerHTML = `先月比 <b class="${dNet >= 0 ? "up" : "dn"}">${dNet >= 0 ? "+" : "−"}${Math.round(Math.abs(dNet))}万円</b>${parts.length ? "：" + parts.map(fmt).join("・") : ""}${uc.length ? `<br><span class="muted">きっかけ：${uc.join("・")}</span>` : ""}`;
+  if (Math.abs(dNet) >= Math.max(30, Math.abs(a.net) * 0.25) && parts.length){
+    const top = parts[0];
+    note(`先月より${dNet >= 0 ? "+" : "−"}${Math.round(Math.abs(dNet))}万円。主に${top[0]}${top[1] >= 0 ? "が効いた" : "が響いた"}${uc.length ? `（${uc[0]}）` : ""}`, dNet >= 0 ? "good" : "bad");
+  }
+}
+/* ---------- おすすめ設定で始めたときのヒント ---------- */
+const HINTS = [[1, "右の「収支」に、毎月入るお金と出るお金が出る。先月比の理由も見よう。"], [3, "満席率が低いなら減卓（3）、満席続きなら増卓（2）。空いた場所に戻すのは卓代だけ。"], [6, "営業設定（4）で営業時間や料金を変えられる。結果は翌月の「先月比」に出る。"], [9, "スタッフの余力が落ちてきたら教育（5）。トラブルが減り、居心地も上がる。"], [13, "決算ごとに「店の値段」が出る。信頼と居心地を育てると、売るときに高くなる。"]];
+function tutorialHint(){
+  if (!S.cfg.quick || S.openedAt == null) return;
+  const m = S.month - S.openedAt, h = HINTS.find((x) => x[0] === m);
+  if (h) note(`ヒント：${h[1]}`);
+}
+/* ---------- 途中保存と「つづきから」 ---------- */
+const SAVE_KEY = "poker-shop-v07-save";
+function saveGame(){
+  if (!S || S.over || TEST) return;
+  try {
+    const o = { ...S, loc: S.loc.id, hiring: S.hiring.id, policy: S.policy.id, contact: S.contact.id, style: S.style.id, eventsSeen: [...S.eventsSeen], q: [], peakMonth: isFinite(S.peakMonth) ? S.peakMonth : null, savedAt: Date.now() };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(o));
+  } catch {}
+}
+function loadSave(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch { return null; } }
+function clearSave(){ try { localStorage.removeItem(SAVE_KEY); } catch {} }
+function resumeGame(o){
+  clearInterval(titleTimer); card.classList.remove("titlecard");
+  S = { ...o, loc: byId(D.locations, o.loc), hiring: byId(ST.hiring, o.hiring), policy: byId(ST.policy, o.policy), contact: byId(ST.contact, o.contact), style: byId(STYLES, o.style),
+    eventsSeen: new Set(o.eventsSeen), q: [], peakMonth: o.peakMonth == null ? -Infinity : o.peakMonth, paused: false, over: null };
+  hide(); resetScene();
+  if (S.month >= M.months){ enqueue(proposal); S.q.shift()(); }
+  note(`${monthLabel(S.month)}から再開した。`, "good");
+}
+/* ---------- スマホ：指標をタップで説明 ---------- */
+$("ind").addEventListener("click", () => {
+  if (!S || ov.classList.contains("show")) return;
+  const was = S.paused; S.paused = true;
+  const desc = { fame: "店を知っている人の多さ。客数と、店の値段の成長率に効く。広告で上がる。", trust: "公平で説明が一貫している店だと思われているか。店の値段の割引率に効く。是正指摘で大きく下がる。", comfort: "初めての客がまた来たいと思うか。客数と成長率に効く。低いと入口で引き返す客が出る。", slack: "忙しさをさばく余裕。低いとトラブルが増え、居心地も下がる。採用方式・満席率・営業時間で決まり、教育で上がる。" };
+  show(`<div class="kicker">店の状態</div><h1>4つの指標</h1>${Object.entries(IND.names).map(([k, n]) => `<p><b>${n} ${Math.round(S.ind[k])}</b><br><span style="font-size:13px">${desc[k]}</span></p>`).join("")}
+    <div class="row"><button class="btn primary" id="okBtn">閉じる</button></div>`, () => { $("okBtn").onclick = () => { hide(); S.paused = was; }; });
+});
 const RANK_KEY = "poker-shop-v07-rank";
 function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
 function saveRank(kind, amount){
@@ -2337,6 +2430,7 @@ const stepsBar = (n) => `<div class="steps">${["営業スタイル", "物件", "
 let titleTimer = null;
 function openTitle(){
   const r = loadRank(), best = r.final[0], bestPeak = r.peak[0];
+  const sv = loadSave();
   card.classList.add("titlecard");
   show(`<div class="hero">
       <div><div class="kicker">ポーカー店経営 5年</div>
@@ -2356,12 +2450,16 @@ function openTitle(){
     </ul>
     <div class="best"><div><div class="kicker">この端末の最高記録</div>
       ${best ? `<div class="amt">${yen(best.amount)}</div><div class="muted" style="font-size:12px">${esc(best.loc)} ${best.tables}卓${bestPeak ? ` ・ 瞬間収益の最高 ${yen(bestPeak.amount)}` : ""}</div>` : `<div style="font-size:15px">まだ記録がない。最初の店を開こう。</div>`}</div>
-      <button class="btn primary start" id="goBtn">はじめる</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${sv ? `<button class="btn primary start" id="contBtn">つづきから（${monthLabel(sv.month)}・${esc(byId(D.locations, sv.loc).name)}）</button>` : ""}
+        <button class="btn ${sv ? "" : "primary start"}" id="quickBtn" title="大都市都心・5卓・預入のみ・14〜24時。最初の数か月はヒントが出る">おすすめ設定ですぐ始める</button>
+        <button class="btn" id="goBtn">自分で決めて始める</button></div></div>
     ${best ? `<details><summary>ランキングを見る</summary>${rankHTML(r)}</details>` : ""}
     <div class="foot">${esc(M.disclaimer)}</div>`);
   let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } drawPreview(c, 6, 11 + (k++ % 6) * 7, false, 0.45 + 0.35 * Math.abs(Math.sin(k / 2))); };
   clearInterval(titleTimer); paint(); titleTimer = setInterval(paint, 1400);
   $("goBtn").onclick = () => { clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
+  $("quickBtn").onclick = () => startGame({ ...CFG, style: "deposit", loc: "metro", tables: 5, open: 14, close: 24, price: 1, hiring: "exp", policy: "hospitality", contact: "ban", unlicensed: false, quick: true });
+  if (sv) $("contBtn").onclick = () => resumeGame(sv);
 }
 function styleList(sel){
   return `<div class="stylelist" data-k="style">${STYLES.map((s) => `<button class="opt" data-v="${s.id}" aria-pressed="${s.id === sel}" aria-label="${esc(s.name)}（${esc(s.tierLabel)}）">
@@ -2454,23 +2552,30 @@ function startGame(cfg){
 }
 
 /* ---------- 開業後の操作 ---------- */
+const addTableCost = () => S.tables < S.capacity ? L.tablePrice : lateTableCost();
 const lateTableCost = () => L.tablePrice + L.tsuboPerTable * S.loc.fitoutPerTsubo * L.lateTableMarkup + L.tsuboPerTable * S.loc.tsuboRent * L.depositMonths;
 function act(a){
   if (!S || S.over || ov.classList.contains("show")) return;
   if (a === "ad"){ S.ad = (S.ad + 1) % O.ads.length; note(S.ad ? `広告 Lv${S.ad}（${yen(O.ads[S.ad].cost)}/月）` : "広告を止めた"); logEv("ad", { level: S.ad }); }
   if (a === "tableAdd"){
     if (S.tables >= L.maxTables) return note("これ以上は置けない");
-    const c = lateTableCost();
-    S.tables++; S.cash -= c; S.area += L.tsuboPerTable; S.rent += L.tsuboPerTable * S.loc.tsuboRent; S.deposit += L.tsuboPerTable * S.loc.tsuboRent * L.depositMonths;
-    S.fitout += L.tsuboPerTable * S.loc.fitoutPerTsubo * L.lateTableMarkup; S.tablesValue += L.tablePrice;
-    note(`増卓（${yen(c)}。家賃 +${yen(L.tsuboPerTable * S.loc.tsuboRent)}/月）`); logEv("tables", { n: S.tables }); layoutRoom();
+    if (S.tables < S.capacity){
+      // 減卓で空いたスペースに戻すだけなら、卓の購入費だけ
+      S.tables++; S.cash -= L.tablePrice; S.tablesValue += L.tablePrice;
+      note(`空いていた場所に卓を戻した（${yen(-L.tablePrice)}）`); logEv("tables", { n: S.tables }); layoutRoom();
+    } else {
+      const c = lateTableCost();
+      S.tables++; S.capacity++; S.cash -= c; S.area += L.tsuboPerTable; S.rent += L.tsuboPerTable * S.loc.tsuboRent; S.deposit += L.tsuboPerTable * S.loc.tsuboRent * L.depositMonths;
+      S.fitout += L.tsuboPerTable * S.loc.fitoutPerTsubo * L.lateTableMarkup; S.tablesValue += L.tablePrice;
+      note(`物件を広げて増卓（${yen(-c)}。家賃 +${yen(L.tsuboPerTable * S.loc.tsuboRent)}/月）`); logEv("tables", { n: S.tables }); layoutRoom();
+    }
   }
   if (a === "tableSub"){
     if (S.tables <= L.minTables) return;
     S.tables--; const back = L.tablePrice * L.tableResidual; S.cash += back; S.tablesValue -= L.tablePrice;
     note(`減卓（${yen(back)}で売却。面積と家賃はそのまま）`); logEv("tables", { n: S.tables }); layoutRoom();
   }
-  if (a === "edu"){ const e = O.education, k = S.hiring.eduMult; S.cash -= e.cost; S.ind.slack = clamp(S.ind.slack + e.slack * k, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort * k, 0, 100); note(`スタッフ教育（${yen(-e.cost)}）余力 +${Math.round(e.slack * k)}・居心地 +${Math.round(e.comfort * k)}`); logEv("edu", {}); }
+  if (a === "edu"){ const e = O.education, k = S.hiring.eduMult; S.cash -= e.cost; S.ind.slack = clamp(S.ind.slack + e.slack * k, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort * k, 0, 100); S.eduCount = (S.eduCount || 0) + 1; note(`スタッフ教育（${yen(-e.cost)}）余力 +${Math.round(e.slack * k)}・居心地 +${Math.round(e.comfort * k)}`); logEv("edu", {}); }
   if (a === "settings") openSettings();
   if (a === "finance") openFinance();
   syncHUD();
@@ -2487,7 +2592,7 @@ function openSettings(){
     <p class="muted" id="priceNote" style="font-size:12.5px"></p>
     <h2>教育方針</h2>${optGroup(ST.policy, cfg.policy, "policy", (p) => esc(p.desc))}
     <h2>スタッフと常連の連絡先交換</h2>${optGroup(ST.contact, cfg.contact, "contact", (c) => esc(c.desc))}
-    ${!S.licensed ? `<p class="warn">いまは無許可で営業中。${S.licenseWait > 0 ? `許可申請中（あと${S.licenseWait}か月）。` : `<button class="btn" id="applyBtn">許可を申請する（${yen(D.license.fee)}・${D.license.waitMonths}か月）</button>`}</p>` : ""}
+    ${S.licensed ? "" : S.unlicensed ? `<p class="warn">いまは無許可で営業中（黒）。${S.licenseWait > 0 ? `許可申請中（あと${S.licenseWait}か月）。` : `<button class="btn" id="applyBtn">許可を申請する（${yen(D.license.fee)}・${D.license.waitMonths}か月）</button>`}</p>` : `<p class="muted">許可待ち・休業中（あと${S.licenseWait}か月で開業）。</p>`}
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set([...STYLES.flatMap((s) => s.provisionIds), ...D.illegal.flatMap((a) => a.provisionIds)])])}
       ${D.illegal.filter((a) => a.missingSource).map((a) => `<p class="muted">未収録：${esc(a.missingSource)}</p>`).join("")}<p class="muted">${esc(R.note)}</p></details>
     <div class="row"><button class="btn" id="cancelBtn">戻る</button><button class="btn primary" id="okBtn">これでいく</button></div>`);
@@ -2579,7 +2684,8 @@ function syncTime(){
   $("tNote").textContent = nx;
 }
 function syncHUD(){
-  $("ind").innerHTML = Object.entries(IND.names).map(([k, n]) => { const v = S ? S.ind[k] : IND.start[k]; return `<span>${n}</span><span class="bar"><i style="width:${v}%"></i></span><span class="v">${Math.round(v)}</span>`; }).join("");
+  const SHORT = { fame: "知", trust: "信", comfort: "居", slack: "余" };
+  $("ind").innerHTML = Object.entries(IND.names).map(([k, n]) => { const v = S ? S.ind[k] : IND.start[k]; return `<span class="n"><span class="full">${n}</span><span class="short">${SHORT[k]}</span></span><span class="bar"><i style="width:${v}%"></i></span><span class="v">${Math.round(v)}</span>`; }).join("");
   syncTime();
   if (!S) return;
   $("moneyV").textContent = Math.round(S.cash).toLocaleString("ja-JP");
@@ -2596,7 +2702,7 @@ function syncHUD(){
   $("riskV").textContent = rk.arrest > 0 || rk.order > 0 ? `今月 摘発 ${pct(rk.arrest)} ／ ${R.labels.order} ${pct(rk.order, 0)}` : "";
   $("adC").textContent = S.ad ? `広告Lv${S.ad}` : "広告";
   document.querySelector('[data-a="ad"]').classList.toggle("on", S.ad > 0);
-  $("addC").textContent = `増卓 ${Math.round(lateTableCost())}万`;
+  $("addC").textContent = `増卓 ${Math.round(addTableCost())}万`;
   $("subC").textContent = `${S.tables}卓`;
   $("eduC").textContent = `教育 ${O.education.cost}万`;
   let tag = "";

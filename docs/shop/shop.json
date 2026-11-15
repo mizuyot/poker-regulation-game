@@ -632,7 +632,7 @@
           "effects": {
             "cash": -20
           },
-          "text": "料金の仕組みと、換金・景品をしていないことを掲示し、問い合わせに答えた。",
+          "text": "料金の仕組みと、店の営業内容を掲示し、問い合わせに答えた。",
           "outcomes": [
             {
               "p": 1.0,
@@ -641,7 +641,14 @@
                 "trust": 8
               }
             }
-          ]
+          ],
+          "whenNotClean": {
+            "text": "説明と実際の営業が食い違っていた。かえって疑いを招いた。",
+            "effects": {
+              "trust": -10
+            },
+            "orderChance": 0.5
+          }
         },
         {
           "label": "予定どおり営業する",
@@ -908,36 +915,39 @@
       {
         "id": "exp",
         "name": "経験者を中心に採る",
-        "desc": "人件費は高いが、最初から回る。",
+        "desc": "人件費は高いが、最初から回り、忙しくても崩れにくい。",
         "staffMult": 1.08,
         "start": {
           "slack": 15,
           "comfort": 5
         },
         "trouble": 0.8,
-        "eduMult": 1.0
+        "eduMult": 1.0,
+        "slackTarget": 10
       },
       {
         "id": "rookie",
         "name": "未経験から育てる",
-        "desc": "人件費は安い。最初は手が回らないが、教育がよく効く。",
+        "desc": "人件費は安い。最初は手が回らないが、教育がよく効き、育つと余裕が出る。",
         "staffMult": 0.92,
         "start": {
           "slack": -10
         },
         "trouble": 1.1,
-        "eduMult": 1.6
+        "eduMult": 1.6,
+        "slackTarget": -5
       },
       {
         "id": "lean",
         "name": "少人数で回す",
-        "desc": "人件費は一番安い。いつも余裕がない。",
+        "desc": "人件費は一番安い。人が足りず、いつも余裕がない。",
         "staffMult": 0.82,
         "start": {
           "slack": -20
         },
         "trouble": 1.25,
-        "eduMult": 1.0
+        "eduMult": 1.0,
+        "slackTarget": -20
       }
     ],
     "policy": [
