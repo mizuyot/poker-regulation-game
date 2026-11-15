@@ -168,6 +168,23 @@ summary{cursor:pointer;color:var(--muted)}
 .grid2 span:nth-child(even){text-align:right;font-family:var(--mono)}
 .rank{font-size:12.5px;line-height:1.7;margin:0;padding-left:1.4em}
 .rank li{font-family:var(--mono)}
+.card.titlecard{width:min(860px,100%);padding:30px 30px 22px}
+.hero{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;align-items:center}
+.hero h1{font-size:clamp(26px,3.3vw,38px);line-height:1.25;margin:6px 0 10px}
+.hero .lead{font-size:15px;line-height:1.8}
+.hero canvas{width:100%;height:280px;display:block}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.tile{border:1.5px solid var(--soft);border-radius:12px;padding:10px 12px}
+.tile .k{font-size:11.5px;color:var(--muted)}
+.tile .v{font-family:var(--mono);font-size:22px;margin:2px 0}
+.tile .s{font-size:12px;color:var(--muted);line-height:1.5}
+.traps{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.traps li{font-size:13px;line-height:1.6;padding-left:22px;position:relative}
+.traps li::before{content:"!";position:absolute;left:0;top:1px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--danger);color:var(--danger);font-size:11px;font-weight:700;display:grid;place-items:center;line-height:1}
+.best{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1.5px solid var(--line);margin-top:18px;padding:12px 0 6px;flex-wrap:wrap;position:sticky;bottom:-22px;background:var(--panel)}
+.best .amt{font-family:var(--mono);font-size:28px}
+.start{font-size:17px;padding:12px 34px}
+@media (max-width:720px){.hero{grid-template-columns:1fr}.hero canvas{height:220px}.tiles{grid-template-columns:1fr}}
 .steps{display:flex;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:4px}
 .steps span.on{color:var(--ink);font-weight:700}
 @media (max-width:900px){
@@ -2317,15 +2334,34 @@ function hoursNote(cfg){
 /* ---------- 開始〜開業 ---------- */
 const CFG = { style: "deposit", loc: "metro", tables: 5, open: 14, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality", contact: "ban" };
 const stepsBar = (n) => `<div class="steps">${["営業スタイル", "物件", "店づくり"].map((s, i) => `<span class="${i === n ? "on" : ""}">${i + 1}. ${s}</span>`).join("<span>›</span>")}</div>`;
+let titleTimer = null;
 function openTitle(){
-  const r = loadRank();
-  show(`<div class="kicker">ポーカー店経営 5年</div><h1>5,000万円で、ポーカー店をつくる</h1>
-    <p>営業スタイルと立地と卓数を決めて店をつくり、5年（60か月）経営したら、店を売る。<b>最後に手元に残った金額</b>がスコア。</p>
-    <p class="muted" style="font-size:13px">突っ込みすぎると、立ち上がりの赤字やトラブルに耐えられない。都心は当たれば大きいが、家賃と競合で潰れやすい。黒やグレーの営業は一時的に儲かるが、売るときに値段がつかない。</p>
-    <h2>この端末の記録</h2>${rankHTML(r)}
-    <div class="row"><button class="btn primary" id="goBtn">はじめる</button></div>
+  const r = loadRank(), best = r.final[0], bestPeak = r.peak[0];
+  card.classList.add("titlecard");
+  show(`<div class="hero">
+      <div><div class="kicker">ポーカー店経営 5年</div>
+        <h1><span style="white-space:nowrap">5,000万円で、</span><br><span style="white-space:nowrap">ポーカー店をつくる。</span></h1>
+        <p class="lead">立地と卓数と営業スタイルを決めて、5年経営したら店を売る。<br><b>最後に手元に残った金額</b>が、あなたのスコア。</p></div>
+      <canvas id="heroCv" aria-label="店のイメージ"></canvas>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="k">資金</div><div class="v">5,000万円</div><div class="s">初期投資の目安は1,500〜2,000万円。残りは赤字とトラブルへの備え。</div></div>
+      <div class="tile"><div class="k">期間</div><div class="v">60か月</div><div class="s">1か月は6秒。事件が起きたら時間が止まり、判断を迫られる。</div></div>
+      <div class="tile"><div class="k">スコア</div><div class="v">手取り額</div><div class="s">手元資金＋売却額。売却額は店の将来の稼ぎ（DCF）で決まる。</div></div>
+    </div>
+    <ul class="traps">
+      <li><b>突っ込みすぎ</b>：開業直後の客は見込みの3割。立ち上がりの赤字に耐えられないと倒産する。</li>
+      <li><b>都心の競合</b>：当たれば一番大きいが、家賃が高く、競合の出店で客を取られる。</li>
+      <li><b>黒とグレー</b>：一時的には儲かるが、摘発されれば終わり。売るときの調査で見つかれば値段がつかない。</li>
+    </ul>
+    <div class="best"><div><div class="kicker">この端末の最高記録</div>
+      ${best ? `<div class="amt">${yen(best.amount)}</div><div class="muted" style="font-size:12px">${esc(best.loc)} ${best.tables}卓${bestPeak ? ` ・ 瞬間収益の最高 ${yen(bestPeak.amount)}` : ""}</div>` : `<div style="font-size:15px">まだ記録がない。最初の店を開こう。</div>`}</div>
+      <button class="btn primary start" id="goBtn">はじめる</button></div>
+    ${best ? `<details><summary>ランキングを見る</summary>${rankHTML(r)}</details>` : ""}
     <div class="foot">${esc(M.disclaimer)}</div>`);
-  $("goBtn").onclick = openStyle;
+  let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } drawPreview(c, 6, 11 + (k++ % 6) * 7, false, 0.45 + 0.35 * Math.abs(Math.sin(k / 2))); };
+  clearInterval(titleTimer); paint(); titleTimer = setInterval(paint, 1400);
+  $("goBtn").onclick = () => { clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
 }
 function styleList(sel){
   return `<div class="stylelist" data-k="style">${STYLES.map((s) => `<button class="opt" data-v="${s.id}" aria-pressed="${s.id === sel}" aria-label="${esc(s.name)}（${esc(s.tierLabel)}）">
@@ -2335,6 +2371,7 @@ function styleList(sel){
     <div class="legend"><span><span class="tsw black"></span> 違法</span><span><span class="tsw gray"></span> グレー</span><span><span class="tsw clean"></span> 健全</span></div>`;
 }
 function openStyle(){
+  clearInterval(titleTimer); card.classList.remove("titlecard");
   show(`${stepsBar(0)}<h1>どんな営業スタイルにする？</h1>
     <p class="muted" style="font-size:13px">上ほどリスクが高い。黒は摘発されればその場で終わり、グレーは${R.labels.order}を受けやすい。どちらも、売るときの買収前調査で見つかれば値段が下がる。開業後も「営業設定」で変えられる。</p>
     ${styleList(CFG.style)}
@@ -2409,6 +2446,7 @@ function openBuild(){
   refresh();
 }
 function startGame(cfg){
+  clearInterval(titleTimer); card.classList.remove("titlecard");
   S = newState(cfg); hide(); resetScene();
   logEv("open", { ...cfg });
   story(`${S.loc.name}に${cfg.tables}卓の店をつくった。営業スタイルは「${S.style.name}」。初期投資 ${yen(M.fund - S.cash)}。`);
@@ -2768,17 +2806,17 @@ function draw(dt){
   coins = coins.filter((c) => c.t < 1);
 }
 /* 店舗イメージ図（開業前の確認用）。卓数ごとのレイアウトをそのまま描く */
-function drawPreview(canvas, n){
+function drawPreview(canvas, n, seed0, caption = true, fill = 0.62){
   const dpr = Math.min(2, devicePixelRatio || 1), w = canvas.clientWidth || 640, h = canvas.clientHeight || 300;
   canvas.width = w * dpr; canvas.height = h * dpr; const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.fillStyle = C.bg; g.fillRect(0, 0, w, h);
   const lay = layoutFor(n), v = makeView(lay, w, h, 34, 8);
-  let seed = n * 97; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  let seed = seed0 != null ? seed0 : n * 97; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
   const ppl = [], stf = [];
-  lay.tables.forEach((t) => { stf.push({ ...dealerPos(t), sit: true }); for (let k = 0; k < 9; k++) if (rnd() < 0.62){ const s = seatPos(t, k); ppl.push({ ...s, sit: true, kind: rnd() < 0.25 ? "newbie" : "guest" }); } });
+  lay.tables.forEach((t) => { stf.push({ ...dealerPos(t), sit: true }); for (let k = 0; k < 9; k++) if (rnd() < fill){ const s = seatPos(t, k); ppl.push({ ...s, sit: true, kind: rnd() < 0.25 ? "newbie" : "guest" }); } });
   stf.push({ x: lay.bar.x0 + 1, y: 1.4 });
   drawShopG(g, v, { lay, lit: true, people: ppl, staff: stf, elev: 0.6 });
-  g.fillStyle = C.muted; g.font = `500 12px ${C.font}`; g.fillText(`店舗イメージ ・ ${n}卓（${n * 9}席）・ エレベーターで入店`, 8, 18);
+  if (caption){ g.fillStyle = C.muted; g.font = `500 12px ${C.font}`; g.fillText(`店舗イメージ ・ ${n}卓（${n * 9}席）・ エレベーターで入店`, 8, 18); }
 }
 
 /* ---------- ループ ---------- */
