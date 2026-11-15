@@ -554,7 +554,9 @@ summary{cursor:pointer;color:var(--muted)}
     "ddArrestText": "買収前調査の期間中に違法営業が見つかり、買い手が手を引いただけでは済まなかった（ゲーム上の処理）。",
     "orderJumpGray": 1.5,
     "heatWarn": 0.03,
-    "raidNote": "立ち入りの人数（摘発＝機動隊20人、是正指摘＝5人と命令書）は演出。実際の捜査・行政手続の人数や手順を表すものではない。"
+    "raidNote": "立ち入りの人数（摘発＝機動隊20人、是正指摘＝5人と命令書）は演出。実際の捜査・行政手続の人数や手順を表すものではない。",
+    "ddAlways": true,
+    "ddNote": "買収前調査は必ず行い、5年間で一度でも黒・グレーの営業をしていれば必ず見つかる（ユーザー指定）。dd.q・lateQ・ddEarlyQ・ddLateQ は使わない。"
   },
   "valuation": {
     "discountBase": 0.25,
@@ -3462,21 +3464,19 @@ function offer(){
   pauseWith(() => show(`
     <div class="kicker">${monthLabel(S.month)}</div><h1>大手から買収の打診</h1>
     <p>5年目の終わりに、あなたの店を買いたいという話が来た。ここから6か月かけて、買い手が店の中身を調べる（買収前調査）。</p>
-    <p>黒の営業や違法営業が見つかれば、売却額は「ハコとしての価値」だけになる。グレーの営業が見つかれば、減額される。調査期間中の営業は、特に見つかりやすい。</p>
+    <p>買い手は帳簿・取引記録・従業員への聞き取りまで必ず調べる。5年間で一度でも黒の営業や違法営業をしていれば必ず見つかり、売却額は「ハコとしての価値」だけになる。グレーの営業をしていれば、必ず見つかって減額される。調査期間中に黒の営業を続けていると、刑事事件になることもある。</p>
     <div class="row stick"><button class="btn primary" id="okBtn">分かった</button></div>`, () => { $("okBtn").onclick = resume; }));
 }
 function ddCheck(){
   // 黒（換金・深夜営業・無許可）と、グレーを別々に判定する
   const black = S.riskMonths.filter((x) => x.tier === "black");
   const bEarly = black.filter((x) => x.t < R.ddStart).length, bLate = black.filter((x) => x.t >= R.ddStart).length;
-  const pBlack = 1 - Math.pow(1 - R.ddEarlyQ, bEarly) * Math.pow(1 - R.ddLateQ, bLate);
-  if (black.length && hr("dd") < pBlack) return { kind: "shell", late: bLate, p: pBlack, months: black.length };
+  // 買収前調査は必ず調べる：一度でも黒・グレーの営業をしていれば、必ず見つかる（v1.1.1）
+  if (black.length) return { kind: "shell", late: bLate, p: 1, months: black.length };
   let worst = null;
   for (const st of STYLES.filter((s) => s.tier === "gray")){
     const ms = S.riskMonths.filter((x) => x.id === st.id); if (!ms.length) continue;
-    const e = ms.filter((x) => x.t < R.ddStart).length, l = ms.length - e;
-    const p = 1 - Math.pow(1 - st.dd.q, e) * Math.pow(1 - st.dd.lateQ, l);
-    if (hr("dd", st.id.length) < p && (!worst || st.dd.cut < worst.cut)) worst = { kind: "cut", cut: st.dd.cut, name: st.name, p, months: ms.length };
+    if (!worst || st.dd.cut < worst.cut) worst = { kind: "cut", cut: st.dd.cut, name: st.name, p: 1, months: ms.length };
   }
   return worst || { kind: "none" };
 }
@@ -4127,7 +4127,7 @@ function openTitle(){
     <ul class="traps">
       <li><b>突っ込みすぎ</b>：開業直後の客は見込みの3割。立ち上がりの赤字に耐えられないと倒産する。</li>
       <li><b>都心の競合</b>：当たれば一番大きいが、家賃が高く、競合の出店で客を取られる。</li>
-      <li><b>黒とグレー</b>：一時的には儲かるが、摘発されれば終わり。売るときの調査で見つかれば値段がつかない。</li>
+      <li><b>黒とグレー</b>：一時的には儲かるが、摘発されれば終わり。売るときの調査で必ず見つかり、値段がつかない。</li>
     </ul>
     <div class="best"><div><div class="kicker">この端末の最高記録</div>
       ${best ? `<div class="amt">${yen(best.amount)}</div><div class="muted" style="font-size:12px">${esc(best.loc)} ${best.tables}卓${bestPeak ? ` ・ 瞬間収益の最高 ${yen(bestPeak.amount)}` : ""}</div>` : `<div style="font-size:15px">まだ記録がない。最初の店を開こう。</div>`}</div>
@@ -4152,7 +4152,7 @@ function styleList(sel){
 function openStyle(){
   clearInterval(titleTimer); card.classList.remove("titlecard");
   show(`${stepsBar(0)}<h1>どんな営業スタイルにする？</h1>
-    <p class="muted" style="font-size:13px">上ほどリスクが高い。黒は摘発されればその場で終わり、グレーは${R.labels.order}を受けやすい。どちらも、売るときの買収前調査で見つかれば値段が下がる。開業後も「営業設定」で変えられる。</p>
+    <p class="muted" style="font-size:13px">上ほどリスクが高い。黒は摘発されればその場で終わり、グレーは${R.labels.order}を受けやすい。どちらも、売るときの買収前調査で必ず見つかり、値段が下がる。開業後も「営業設定」で変えられる。</p>
     ${styleList(CFG.style)}
     <p class="muted" style="font-size:11.5px">${esc(D.styles.note)}</p>
     <details><summary>参考：実際の条文（このゲームの区分や確率の根拠ではない）</summary>${provHTML([...new Set(STYLES.flatMap((s) => s.provisionIds))])}</details>
