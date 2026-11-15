@@ -307,7 +307,7 @@ summary{cursor:pointer;color:var(--muted)}
     "tablePrice": 50,
     "openingCost": 200,
     "lateTableMarkup": 1.3,
-    "minTables": 3,
+    "minTables": 1,
     "maxTables": 12,
     "tableResidual": 0.3,
     "fitoutResidual": 0.5
@@ -385,14 +385,20 @@ summary{cursor:pointer;color:var(--muted)}
   "operations": {
     "days": 26,
     "avgStayHours": 4,
-    "turnsScale": 0.594,
-    "baseHours": 10,
-    "otherFixed": 60,
+    "turnsScale": 0.6976,
+    "baseHours": 7,
+    "otherFixed": 45,
     "variableRate": 0.15,
     "rampStart": 0.3,
     "rampMonths": 18,
     "maintenancePerTable": 2,
     "bands": [
+      {
+        "from": 5,
+        "to": 12,
+        "w": 0.2,
+        "name": "朝"
+      },
       {
         "from": 12,
         "to": 17,
@@ -413,12 +419,12 @@ summary{cursor:pointer;color:var(--muted)}
       },
       {
         "from": 24,
-        "to": 30,
+        "to": 29,
         "w": 1.6,
         "name": "深夜"
       }
     ],
-    "openMin": 10,
+    "openMin": 5,
     "closeMax": 29,
     "legalClose": 24,
     "legalCloseProvisional": true,
@@ -426,9 +432,10 @@ summary{cursor:pointer;color:var(--muted)}
       "fueiho13"
     ],
     "price": {
-      "min": 0.8,
-      "max": 1.3,
-      "elasticity": 1.5
+      "min": 0.7,
+      "max": 1.5,
+      "elasticity": 1.5,
+      "note": "料金は営業スタイルごとの標準の客単価からの上下（%）で決める。"
     },
     "ads": [
       {
@@ -462,7 +469,14 @@ summary{cursor:pointer;color:var(--muted)}
       "costMax": 1000,
       "shockMonths": 3,
       "shock": 0.3
-    }
+    },
+    "legalOpen": 6,
+    "standardHours": [
+      17,
+      24
+    ],
+    "utilityPerTableHour": 0.02,
+    "utilityNote": "光熱費＝卓数×営業時間×営業日数×0.02万円。営業時間を延ばすと人件費と光熱費が増える。"
   },
   "indicators": {
     "start": {
@@ -1143,17 +1157,17 @@ summary{cursor:pointer;color:var(--muted)}
         "tierLabel": "グレー",
         "desc": "勝った人に、次回以降に使えるチケットやコインを渡す。",
         "effect": {
-          "demand": 1.3,
-          "spend": 1.1
+          "demand": 1.0,
+          "spend": 2.0
         },
-        "arrest": 0.002,
+        "arrest": 0.009,
         "arrestGrowth": 0,
-        "order": 0.05,
+        "order": 0.06,
         "dd": {
           "q": 0.3,
           "lateQ": 0.6,
           "result": "cut",
-          "cut": 0.5
+          "cut": 0.3
         },
         "provisionIds": [
           "fueiho23-2"
@@ -1221,7 +1235,8 @@ summary{cursor:pointer;color:var(--muted)}
         "dd": null,
         "provisionIds": []
       }
-    ]
+    ],
+    "spendIndexNote": "標準の客単価の指数（預入のみ＝100）。換金あり500、チケット・コイン200、ほかは従来どおり。架空値。"
   },
   "staff": {
     "hiring": [
@@ -1309,445 +1324,1266 @@ summary{cursor:pointer;color:var(--muted)}
     ]
   },
   "layouts": {
+    "1": {
+      "w": 7.6,
+      "d": 6.0,
+      "lux": 0,
+      "tables": [
+        [
+          3.4,
+          3.3
+        ]
+      ],
+      "elevator": {
+        "y0": 3.6,
+        "y1": 5.0
+      },
+      "bar": {
+        "x0": 4.6,
+        "x1": 7.2
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        }
+      ]
+    },
+    "2": {
+      "w": 9.6,
+      "d": 6.2,
+      "lux": 0,
+      "tables": [
+        [
+          2.8,
+          3.0
+        ],
+        [
+          6.6,
+          3.8
+        ]
+      ],
+      "elevator": {
+        "y0": 3.8,
+        "y1": 5.2
+      },
+      "bar": {
+        "x0": 6.6,
+        "x1": 9.2
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        }
+      ]
+    },
     "3": {
       "w": 11.4,
-      "d": 5.0,
+      "d": 6.2,
+      "lux": 1,
       "tables": [
         [
-          2.0,
-          2.0
+          2.4,
+          2.6
         ],
         [
-          5.6,
-          2.0
+          6.0,
+          3.4
         ],
         [
-          9.2,
-          2.0
+          9.6,
+          2.6
         ]
       ],
       "elevator": {
-        "y0": 2.7,
-        "y1": 4.1
+        "y0": 3.8,
+        "y1": 5.2
       },
       "bar": {
-        "x0": 8.4,
+        "x0": 8.0,
         "x1": 11.0
-      }
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "poster",
+          "x0": 1.6,
+          "x1": 3.2
+        },
+        {
+          "t": "plant",
+          "x": 10.700000000000001,
+          "y": 5.4
+        }
+      ]
     },
     "4": {
-      "w": 7.8,
-      "d": 8.1,
+      "w": 9.4,
+      "d": 8.6,
+      "lux": 1,
       "tables": [
         [
-          2.0,
-          2.0
+          2.4,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          6.6,
+          2.4
         ],
         [
-          2.0,
-          5.1
+          2.4,
+          5.6
         ],
         [
-          5.6,
-          5.1
+          6.6,
+          5.6
         ]
       ],
       "elevator": {
-        "y0": 5.8,
-        "y1": 7.2
+        "y0": 6.2,
+        "y1": 7.6
       },
       "bar": {
-        "x0": 4.8,
-        "x1": 7.4
-      }
+        "x0": 6.0,
+        "x1": 9.0
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "poster",
+          "x0": 1.6,
+          "x1": 3.2
+        },
+        {
+          "t": "plant",
+          "x": 8.700000000000001,
+          "y": 7.8
+        }
+      ]
     },
     "5": {
-      "w": 11.4,
-      "d": 8.1,
+      "w": 11.8,
+      "d": 8.6,
+      "lux": 2,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          2.4
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          3.8,
-          5.1
+          4.0,
+          5.8
         ],
         [
-          7.4,
-          5.1
+          7.6,
+          5.8
         ]
       ],
       "elevator": {
-        "y0": 5.8,
-        "y1": 7.2
+        "y0": 6.2,
+        "y1": 7.6
       },
       "bar": {
-        "x0": 8.4,
-        "x1": 11.0
-      }
+        "x0": 8.0,
+        "x1": 11.4
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "poster",
+          "x0": 1.6,
+          "x1": 3.2
+        },
+        {
+          "t": "plant",
+          "x": 11.100000000000001,
+          "y": 7.8
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 11.3,
+          "y1": 7.3
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 4.0,
+          "y": 5.8
+        },
+        {
+          "t": "lamp",
+          "x": 7.6,
+          "y": 5.8
+        },
+        {
+          "t": "shelf",
+          "x0": 8.2,
+          "x1": 11.200000000000001
+        }
+      ]
     },
     "6": {
-      "w": 11.4,
-      "d": 8.1,
+      "w": 13.0,
+      "d": 8.8,
+      "lux": 2,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          3.0
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          2.0,
-          5.1
+          2.2,
+          6.0
         ],
         [
-          5.6,
-          5.1
+          5.8,
+          6.6
         ],
         [
-          9.2,
-          5.1
+          9.4,
+          6.0
         ]
       ],
       "elevator": {
-        "y0": 5.8,
-        "y1": 7.2
+        "y0": 6.4,
+        "y1": 7.8
       },
       "bar": {
-        "x0": 8.4,
-        "x1": 11.0
-      }
+        "x0": 9.2,
+        "x1": 12.6
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "poster",
+          "x0": 1.6,
+          "x1": 3.2
+        },
+        {
+          "t": "plant",
+          "x": 12.3,
+          "y": 8.0
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 11.3,
+          "y1": 8.1
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 3.0
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 6.0
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 6.6
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 6.0
+        },
+        {
+          "t": "shelf",
+          "x0": 9.399999999999999,
+          "x1": 12.4
+        }
+      ]
     },
     "7": {
-      "w": 15.0,
-      "d": 8.1,
+      "w": 15.4,
+      "d": 8.8,
+      "lux": 3,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          2.4
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          12.8,
-          2.0
+          13.0,
+          2.4
         ],
         [
-          3.8,
-          5.1
+          4.0,
+          5.8
         ],
         [
-          7.4,
-          5.1
+          7.6,
+          5.8
         ],
         [
-          11.0,
-          5.1
+          11.2,
+          5.8
         ]
       ],
       "elevator": {
-        "y0": 5.8,
-        "y1": 7.2
+        "y0": 6.4,
+        "y1": 7.8
       },
       "bar": {
-        "x0": 12.0,
-        "x1": 14.6
-      }
+        "x0": 10.8,
+        "x1": 15.0
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "poster",
+          "x0": 1.6,
+          "x1": 3.2
+        },
+        {
+          "t": "plant",
+          "x": 14.700000000000001,
+          "y": 8.0
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 14.9,
+          "y1": 7.3
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 4.0,
+          "y": 5.8
+        },
+        {
+          "t": "lamp",
+          "x": 7.6,
+          "y": 5.8
+        },
+        {
+          "t": "lamp",
+          "x": 11.2,
+          "y": 5.8
+        },
+        {
+          "t": "shelf",
+          "x0": 11.0,
+          "x1": 14.8
+        },
+        {
+          "t": "sofa",
+          "x": 14.4,
+          "y": 5.6000000000000005,
+          "len": 2.2
+        },
+        {
+          "t": "molding"
+        }
+      ]
     },
     "8": {
-      "w": 15.0,
-      "d": 8.1,
+      "w": 15.4,
+      "d": 11.4,
+      "lux": 3,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          2.4
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          12.8,
-          2.0
+          13.0,
+          2.4
         ],
         [
-          2.0,
-          5.1
+          2.2,
+          5.8
         ],
         [
-          5.6,
-          5.1
+          13.0,
+          5.8
         ],
         [
-          9.2,
-          5.1
+          5.8,
+          9.0
         ],
         [
-          12.8,
-          5.1
+          9.4,
+          9.0
         ]
       ],
       "elevator": {
-        "y0": 5.8,
-        "y1": 7.2
+        "y0": 9.0,
+        "y1": 10.4
       },
       "bar": {
-        "x0": 12.0,
-        "x1": 14.6
-      }
+        "x0": 10.8,
+        "x1": 15.0
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "poster",
+          "x0": 1.6,
+          "x1": 3.2
+        },
+        {
+          "t": "plant",
+          "x": 14.700000000000001,
+          "y": 10.6
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 14.9,
+          "y1": 10.5
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 5.8
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 5.8
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 9.0
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 9.0
+        },
+        {
+          "t": "shelf",
+          "x0": 11.0,
+          "x1": 14.8
+        },
+        {
+          "t": "sofa",
+          "x": 14.4,
+          "y": 8.2,
+          "len": 2.2
+        },
+        {
+          "t": "molding"
+        },
+        {
+          "t": "sofa",
+          "x": 7.6,
+          "y": 5.8,
+          "len": 2.4
+        },
+        {
+          "t": "plant",
+          "x": 7.6,
+          "y": 4.6
+        }
+      ]
     },
     "9": {
-      "w": 11.4,
-      "d": 11.2,
+      "w": 12.2,
+      "d": 11.6,
+      "lux": 4,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          2.4
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          2.0,
-          5.1
+          2.2,
+          5.6
         ],
         [
-          5.6,
-          5.1
+          5.8,
+          5.6
         ],
         [
-          9.2,
-          5.1
+          9.4,
+          5.6
         ],
         [
-          2.0,
-          8.2
+          2.2,
+          8.8
         ],
         [
-          5.6,
-          8.2
+          5.8,
+          8.8
         ],
         [
-          9.2,
-          8.2
+          9.4,
+          8.8
         ]
       ],
       "elevator": {
-        "y0": 8.9,
-        "y1": 10.3
+        "y0": 9.2,
+        "y1": 10.6
       },
       "bar": {
-        "x0": 8.4,
-        "x1": 11.0
-      }
+        "x0": 7.0,
+        "x1": 11.8
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "plant",
+          "x": 11.5,
+          "y": 10.799999999999999
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 11.3,
+          "y1": 10.3
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 8.8
+        },
+        {
+          "t": "shelf",
+          "x0": 7.2,
+          "x1": 11.600000000000001
+        },
+        {
+          "t": "sofa",
+          "x": 11.2,
+          "y": 8.399999999999999,
+          "len": 2.2
+        },
+        {
+          "t": "molding"
+        },
+        {
+          "t": "screen",
+          "x0": 1.4,
+          "x1": 6.4
+        },
+        {
+          "t": "chandelier",
+          "x": 6.1,
+          "y": 5.8
+        },
+        {
+          "t": "vip",
+          "x0": 7.2,
+          "y0": 6.9,
+          "x1": 11.6,
+          "y1": 10.6
+        }
+      ]
     },
     "10": {
-      "w": 15.0,
-      "d": 11.2,
+      "w": 16.6,
+      "d": 11.6,
+      "lux": 4,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          2.4
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          12.8,
-          2.0
+          13.0,
+          2.4
         ],
         [
-          2.0,
-          5.1
+          4.0,
+          5.6
         ],
         [
-          5.6,
-          5.1
+          7.6,
+          5.6
         ],
         [
-          9.2,
-          5.1
+          11.2,
+          5.6
         ],
         [
-          12.8,
-          5.1
+          2.2,
+          8.8
         ],
         [
-          5.6,
-          8.2
+          5.8,
+          8.8
         ],
         [
-          9.2,
-          8.2
+          14.4,
+          8.6
         ]
       ],
       "elevator": {
-        "y0": 8.9,
-        "y1": 10.3
+        "y0": 9.2,
+        "y1": 10.6
       },
       "bar": {
-        "x0": 12.0,
-        "x1": 14.6
-      }
+        "x0": 11.4,
+        "x1": 16.2
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "plant",
+          "x": 15.900000000000002,
+          "y": 10.799999999999999
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 16.3,
+          "y1": 10.3
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 4.0,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 7.6,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 11.2,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 14.4,
+          "y": 8.6
+        },
+        {
+          "t": "shelf",
+          "x0": 11.6,
+          "x1": 16.0
+        },
+        {
+          "t": "sofa",
+          "x": 15.600000000000001,
+          "y": 8.399999999999999,
+          "len": 2.2
+        },
+        {
+          "t": "molding"
+        },
+        {
+          "t": "screen",
+          "x0": 1.4,
+          "x1": 6.4
+        },
+        {
+          "t": "chandelier",
+          "x": 8.3,
+          "y": 5.8
+        },
+        {
+          "t": "vip",
+          "x0": 12.2,
+          "y0": 6.7,
+          "x1": 16.5,
+          "y1": 10.4
+        }
+      ]
     },
     "11": {
-      "w": 15.0,
-      "d": 11.2,
+      "w": 17.0,
+      "d": 11.8,
+      "lux": 5,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          2.4
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          12.8,
-          2.0
+          13.0,
+          2.4
         ],
         [
-          2.0,
-          5.1
+          2.2,
+          5.6
         ],
         [
-          5.6,
-          5.1
+          5.8,
+          5.6
         ],
         [
-          9.2,
-          5.1
+          9.4,
+          5.6
         ],
         [
-          12.8,
-          5.1
+          13.0,
+          5.6
         ],
         [
-          3.8,
-          8.2
+          2.2,
+          8.8
         ],
         [
-          7.4,
-          8.2
+          5.8,
+          8.8
         ],
         [
-          11.0,
-          8.2
+          14.6,
+          9.0
         ]
       ],
       "elevator": {
-        "y0": 8.9,
-        "y1": 10.3
+        "y0": 9.4,
+        "y1": 10.8
       },
       "bar": {
-        "x0": 12.0,
-        "x1": 14.6
-      }
+        "x0": 11.0,
+        "x1": 16.6
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "plant",
+          "x": 16.3,
+          "y": 11.0
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 16.5,
+          "y1": 10.5
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 14.6,
+          "y": 9.0
+        },
+        {
+          "t": "shelf",
+          "x0": 11.2,
+          "x1": 16.400000000000002
+        },
+        {
+          "t": "sofa",
+          "x": 16.0,
+          "y": 8.600000000000001,
+          "len": 2.2
+        },
+        {
+          "t": "molding"
+        },
+        {
+          "t": "screen",
+          "x0": 1.4,
+          "x1": 6.4
+        },
+        {
+          "t": "chandelier",
+          "x": 8.5,
+          "y": 5.9
+        },
+        {
+          "t": "vip",
+          "x0": 12.4,
+          "y0": 7.1,
+          "x1": 16.8,
+          "y1": 10.8
+        },
+        {
+          "t": "chandelier",
+          "x": 4.25,
+          "y": 4.538461538461538
+        },
+        {
+          "t": "statue",
+          "x": 16.2,
+          "y": 1.6
+        },
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 8.8
+        },
+        {
+          "t": "checker"
+        }
+      ]
     },
     "12": {
-      "w": 15.0,
-      "d": 11.2,
+      "w": 19.6,
+      "d": 12.0,
+      "lux": 5,
       "tables": [
         [
-          2.0,
-          2.0
+          2.2,
+          2.4
         ],
         [
-          5.6,
-          2.0
+          5.8,
+          2.4
         ],
         [
-          9.2,
-          2.0
+          9.4,
+          2.4
         ],
         [
-          12.8,
-          2.0
+          13.0,
+          2.4
         ],
         [
-          2.0,
-          5.1
+          2.2,
+          5.6
         ],
         [
-          5.6,
-          5.1
+          5.8,
+          5.6
         ],
         [
-          9.2,
-          5.1
+          9.4,
+          5.6
         ],
         [
-          12.8,
-          5.1
+          13.0,
+          5.6
         ],
         [
-          2.0,
-          8.2
+          2.2,
+          8.8
         ],
         [
-          5.6,
-          8.2
+          5.8,
+          8.8
         ],
         [
-          9.2,
-          8.2
+          9.4,
+          8.8
         ],
         [
-          12.8,
-          8.2
+          16.8,
+          8.4
         ]
       ],
       "elevator": {
-        "y0": 8.9,
-        "y1": 10.3
+        "y0": 9.6,
+        "y1": 11.0
       },
       "bar": {
-        "x0": 12.0,
-        "x1": 14.6
-      }
+        "x0": 13.6,
+        "x1": 19.2
+      },
+      "deco": [
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 0.7
+        },
+        {
+          "t": "plant",
+          "x": 18.900000000000002,
+          "y": 11.2
+        },
+        {
+          "t": "rug",
+          "x0": 0.9,
+          "y0": 1.2,
+          "x1": 18.7,
+          "y1": 10.3
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 2.4
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 13.0,
+          "y": 5.6
+        },
+        {
+          "t": "lamp",
+          "x": 2.2,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 5.8,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 9.4,
+          "y": 8.8
+        },
+        {
+          "t": "lamp",
+          "x": 16.8,
+          "y": 8.4
+        },
+        {
+          "t": "shelf",
+          "x0": 13.799999999999999,
+          "x1": 19.0
+        },
+        {
+          "t": "sofa",
+          "x": 18.6,
+          "y": 8.8,
+          "len": 2.2
+        },
+        {
+          "t": "molding"
+        },
+        {
+          "t": "screen",
+          "x0": 1.4,
+          "x1": 6.4
+        },
+        {
+          "t": "chandelier",
+          "x": 9.8,
+          "y": 6.0
+        },
+        {
+          "t": "vip",
+          "x0": 14.6,
+          "y0": 6.5,
+          "x1": 19.0,
+          "y1": 10.2
+        },
+        {
+          "t": "chandelier",
+          "x": 4.9,
+          "y": 4.615384615384615
+        },
+        {
+          "t": "statue",
+          "x": 18.8,
+          "y": 1.6
+        },
+        {
+          "t": "plant",
+          "x": 0.7,
+          "y": 9.0
+        },
+        {
+          "t": "checker"
+        }
+      ]
     }
   },
   "segments": {
@@ -2111,7 +2947,15 @@ summary{cursor:pointer;color:var(--muted)}
     "tableLifeMonths": 60,
     "tableSale": 0.3,
     "fitoutSale": 0
-  }
+  },
+  "layoutLux": [
+    "素朴",
+    "ととのった",
+    "落ち着いた",
+    "上質",
+    "豪華",
+    "旗艦店"
+  ]
 }
     </script>
 <script type="application/json" id="provisions-data">
@@ -2198,7 +3042,7 @@ function yen(man, sign){
   return (neg ? "−" : sign && man > 0 ? "+" : "") + s;
 }
 const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
-const hhLong = (h) => h >= 24 ? `翌${h - 24}時` : `${h}時`;
+const hhLong = (h) => h >= 29 ? "翌4:59" : h >= 24 ? `翌${h - 24}時` : `${h}時`;
 const clockStr = (h) => { const hh = Math.floor(h) % 24, mm = Math.floor((h % 1) * 60 / 10) * 10; return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`; };
 const tierHTML = (st) => `<span class="tsw ${st.tier}" title="${esc(st.tierLabel)}"></span>`;
 
@@ -2209,7 +3053,10 @@ function build(loc, tables){
   return { area, rent, deposit, fitout, tablesCost, invest: deposit + fitout + tablesCost + L.openingCost };
 }
 function bandWeight(open, close){ let w = 0; for (const b of O.bands){ const a = Math.max(open, b.from), z = Math.min(close, b.to); if (z > a) w += (z - a) * b.w; } return w; }
-const BASE_W = bandWeight(14, 24);
+const BASE_W = bandWeight(...O.standardHours);
+/* 法定の営業時間の外（0時〜6時）にかかっているか */
+const isLate = (open, close) => close > O.legalClose || open < O.legalOpen;
+const utilityOf = (tables, open, close) => tables * (close - open) * O.days * O.utilityPerTableHour;
 const turnsFor = (open, close, policy) => bandWeight(open, close) / O.avgStayHours * O.turnsScale * (policy ? policy.turns : 1);
 
 /* ---------- 状態 ---------- */
@@ -2290,17 +3137,18 @@ function project(legalOnly){
   const fcRoy = S.fc ? S.fc.count * D.expansion.fc.fcRevenue * D.expansion.fc.royalty : 0;
   const storeRev = main.rev + (b ? b.rev : 0), varCost = storeRev * (O.variableRate + FX().varRate);
   const rent = S.rent + (br ? br.rent : 0), staff = main.staff + (b ? b.staff : 0);
-  const other = O.otherFixed * (b ? 2 : 1) + O.ads[S.ad].cost + FX().opsCost;
+  const utility = utilityOf(S.tables + (b ? br.tables : 0), S.open, S.close);
+  const other = O.otherFixed * (b ? 2 : 1) + O.ads[S.ad].cost + FX().opsCost + utility;
   const op = storeRev - varCost + fcRoy - rent - staff - other;
   const interest = S.debt * F.rate / 12;
-  return { demand: main.demand, occ: main.occ, guests: main.guests, lostSeat: main.lostSeat, svc: main.svc, rev: storeRev + fcRoy, storeRev, fcRoy, branchRev: b ? b.rev : 0, varCost, rent, staff, other, op, interest, net: op - interest };
+  return { demand: main.demand, occ: main.occ, guests: main.guests, lostSeat: main.lostSeat, svc: main.svc, rev: storeRev + fcRoy, storeRev, fcRoy, branchRev: b ? b.rev : 0, varCost, rent, staff, other, utility, ads: O.ads[S.ad].cost, facOps: FX().opsCost, op, interest, net: op - interest };
 }
 /* リスクの源：営業スタイル（黒・グレー）、深夜営業、無許可 */
 function riskSources(){
   if (!isOpen()) return [];
   const out = [], st = styleNow();
   if (st.tier !== "clean") out.push({ id: st.id, short: st.name, tier: st.tier, arrest: st.arrest, growth: st.arrestGrowth, order: st.order, prov: st.provisionIds, style: st });
-  if (S.close > O.legalClose){ const a = byId(D.illegal, "latenight"); out.push({ id: "latenight", short: a.short, tier: "black", arrest: a.arrest, growth: 0, order: a.order, prov: a.provisionIds }); }
+  if (isLate(S.open, S.close)){ const a = byId(D.illegal, "latenight"); out.push({ id: "latenight", short: a.short, tier: "black", arrest: a.arrest, growth: 0, order: a.order, prov: a.provisionIds }); }
   if (!S.licensed && S.unlicensed){ const a = byId(D.illegal, "unlicensed"); out.push({ id: "unlicensed", short: a.short, tier: "black", arrest: a.arrest, growth: 0, order: a.order, prov: a.provisionIds }); }
   return out;
 }
@@ -2429,7 +3277,7 @@ function order(acts){
   const cost = Math.max(R.orderCostMin, Math.max(0, project(true).op) * R.orderCostMonths);
   S.cash -= cost; S.ind.trust = clamp(S.ind.trust + R.orderTrust, 0, 100); S.rumor = R.orderRumorMonths;
   for (const a of acts){
-    if (a.id === "latenight") S.close = O.legalClose;
+    if (a.id === "latenight"){ S.close = Math.min(S.close, O.legalClose); S.open = Math.max(S.open, O.legalOpen); }
     else if (a.style) S.stopUntil[a.id] = S.month + R.orderStopMonths;
   }
   logEv("order", { acts: acts.map((a) => a.id), cost: Math.round(cost) });
@@ -3187,13 +4035,14 @@ function wireFac(arr, onChange){
 }
 /* 営業時間ゲージ：1本の帯に、開店と閉店のつまみ */
 function gaugeHTML(){
-  const ticks = []; for (let h = O.openMin; h <= O.closeMax; h += 2) ticks.push(h);
+  const ticks = []; for (let h = O.openMin + 1; h <= O.closeMax; h += 2) ticks.push(h);
   return `<div class="gauge" id="gauge" role="group" aria-label="営業時間">
     <div class="track">${O.bands.map((b) => `<div class="band" data-from="${b.from}" data-to="${b.to}" style="opacity:${(b.w * 0.09).toFixed(2)}"></div>`).join("")}</div>
-    <div class="range"></div><div class="legal"><span>法定の線 ${hhLong(O.legalClose)}</span></div>
+    <div class="range"></div><div class="legal"><span>法定の線 ${hhLong(O.legalClose)}</span></div><div class="legal lo"><span>${O.legalOpen}時</span></div>
     <button class="h" data-h="open" aria-label="開店時刻">開</button><button class="h" data-h="close" aria-label="閉店時刻">閉</button>
     <span class="lbl" data-l="open"></span><span class="lbl" data-l="close"></span>
-    ${ticks.map((h) => `<span class="tick" data-t="${h}">${h % 24}</span>`).join("")}</div>`;
+    ${ticks.map((h) => `<span class="tick" data-t="${h}">${h % 24}</span>`).join("")}</div>
+    <p class="muted" style="font-size:12px">${O.openMin}:00〜翌4:59まで選べる。標準は${O.standardHours[0]}時〜${O.standardHours[1] % 24 === 0 ? "24" : O.standardHours[1]}時。延ばすと売上も人件費・光熱費も増える。</p>`;
 }
 function wireGauge(cfg, onChange){
   const g = $("gauge"), span = O.closeMax - O.openMin;
@@ -3201,9 +4050,9 @@ function wireGauge(cfg, onChange){
   const place = () => {
     g.querySelectorAll(".band").forEach((b) => { const f = Math.max(+b.dataset.from, O.openMin), t = Math.min(+b.dataset.to, O.closeMax); b.style.left = x(f); b.style.width = `calc(${x(t)} - ${x(f)})`; });
     g.querySelectorAll(".tick").forEach((t) => t.style.left = x(+t.dataset.t));
-    g.querySelector(".legal").style.left = x(O.legalClose);
+    g.querySelector(".legal").style.left = x(O.legalClose); g.querySelector(".legal.lo").style.left = x(O.legalOpen);
     const rg = g.querySelector(".range"); rg.style.left = x(cfg.open); rg.style.width = `calc(${x(cfg.close)} - ${x(cfg.open)})`;
-    rg.style.borderColor = cfg.close > O.legalClose ? "var(--danger)" : "var(--good)";
+    rg.style.borderColor = isLate(cfg.open, cfg.close) ? "var(--danger)" : "var(--good)";
     g.querySelector('[data-h="open"]').style.left = x(cfg.open); g.querySelector('[data-h="close"]').style.left = x(cfg.close);
     const lo = g.querySelector('[data-l="open"]'), lc = g.querySelector('[data-l="close"]');
     lo.style.left = x(cfg.open); lo.textContent = hhLong(cfg.open); lc.style.left = x(cfg.close); lc.textContent = hhLong(cfg.close);
@@ -3221,12 +4070,43 @@ function wireGauge(cfg, onChange){
   place();
 }
 function hoursNote(cfg){
-  const late = cfg.close > O.legalClose;
-  return `<p class="${late ? "warn" : "muted"}" style="font-size:12.5px">${hhLong(cfg.open)}〜${hhLong(cfg.close)}（${cfg.close - cfg.open}時間）。帯の濃さ＝その時間帯の客入り。赤い点線が法定の営業時間の線（${hhLong(O.legalClose)}）。${late ? "越えているので「深夜営業」（黒）になる。" : ""}<br><span class="muted">条例で延長できる地域があるが、ゲームでは${hhLong(O.legalClose)}を線にする。</span></p>`;
+  const late = isLate(cfg.open, cfg.close);
+  return `<p class="${late ? "warn" : "muted"}" style="font-size:12.5px">${hhLong(cfg.open)}〜${hhLong(cfg.close)}（${cfg.close - cfg.open}時間）。帯の濃さ＝その時間帯の客入り。赤い点線が法定の営業時間の線（${hhLong(O.legalClose)}）。${late ? `0時〜${O.legalOpen}時にかかっているので「深夜営業」（黒）になる。` : ""}<br><span class="muted">条例で延長できる地域があるが、ゲームでは${hhLong(O.legalClose)}を線にする。</span></p>`;
+}
+
+/* ---------- 料金と経費の表 ---------- */
+const pctSign = (price) => { const x = Math.round((price - 1) * 100); return x === 0 ? "どおり" : x > 0 ? `より${x}%高い` : `より${-x}%安い`; };
+function priceNote(loc, styleId, price){
+  const st = byId(STYLES, styleId), std = loc.spend * st.effect.spend * 10000;
+  return `${esc(st.name)}の標準の客単価 <b class="num">${Math.round(std).toLocaleString("ja-JP")}円</b>（指数 ${Math.round(st.effect.spend * 100)}・預入のみ＝100）<br>設定：標準${pctSign(price)} → <b class="num">${Math.round(std * price).toLocaleString("ja-JP")}円</b><span class="muted">（高くすると客は減る）</span>`;
+}
+/* 経費の表。rows＝[名前, 金額, 説明] */
+function costTableHTML(rows, rev){
+  const total = rows.reduce((a, r) => a + r[1], 0);
+  return `<table class="t"><tr><th style="text-align:left">経費（月）</th><th>金額</th><th style="text-align:left">決まり方</th></tr>
+    ${rows.map((r) => `<tr><td style="text-align:left">${r[0]}</td><td style="white-space:nowrap">${yen(r[1])}</td><td style="text-align:left;font-size:11.5px" class="muted">${r[2]}</td></tr>`).join("")}
+    <tr class="total"><td style="text-align:left">経費の合計</td><td style="white-space:nowrap">${yen(total)}</td><td></td></tr>
+    ${rev != null ? `<tr><td style="text-align:left">売上の見込み</td><td style="white-space:nowrap">${yen(rev)}</td><td></td></tr><tr class="total"><td style="text-align:left">差し引き</td><td style="white-space:nowrap" class="${rev - total < 0 ? "negc" : ""}">${yen(rev - total)}</td><td></td></tr>` : ""}</table>`;
+}
+/* 営業中：いまの店に設定案を当てはめて、1か月を見積もる */
+function costTableNow(cfg){
+  const keep = { open: S.open, close: S.close, price: S.price, style: S.style, fac: S.fac };
+  S.open = cfg.open; S.close = cfg.close; S.price = cfg.price; S.style = byId(STYLES, cfg.style); S.fac = cfg.fac;
+  let p; try { p = project(); } finally { Object.assign(S, keep); }
+  const h = cfg.close - cfg.open;
+  return costTableHTML([
+    ["家賃", p.rent, "広さで決まる"],
+    ["人件費", p.staff, `スタッフの給与 × 営業${h}時間 ÷ 標準${O.baseHours}時間`],
+    ["光熱費", p.utility, `卓 × 営業${h}時間 × ${O.days}日`],
+    ["原価・決済", p.varCost, `売上の${Math.round((O.variableRate + FX(cfg.fac).varRate) * 100)}%`],
+    ["設備・企画の維持費", p.facOps, cfg.fac.length ? cfg.fac.map((id) => byId(FAC, id).name).join("・") : "なし"],
+    ["広告", p.ads, `Lv${S.ad}`],
+    ["その他の固定費", O.otherFixed * (S.branch ? 2 : 1), "通信・事務・保険など"],
+  ], S.openedAt == null ? null : p.rev) + (S.openedAt == null ? `<p class="muted" style="font-size:12px">開業前なので売上の見込みは出さない。</p>` : "");
 }
 
 /* ---------- 開始〜開業 ---------- */
-const CFG = { fac: [], style: "deposit", loc: "metro", tables: 5, open: 14, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality", contact: "ban" };
+const CFG = { fac: [], style: "deposit", loc: "metro", tables: 5, open: 17, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality", contact: "ban" };
 const stepsBar = (n) => `<div class="steps">${["営業スタイル", "物件", "店づくり"].map((s, i) => `<span class="${i === n ? "on" : ""}">${i + 1}. ${s}</span>`).join("<span>›</span>")}</div>`;
 let titleTimer = null;
 function openTitle(){
@@ -3294,7 +4174,8 @@ function buildCalc(loc){
   const left = M.fund - b.invest - fc - (lic ? D.license.fee : 0);
   const seats = CFG.tables * 9, turns = turnsFor(CFG.open, CFG.close, policy);
   const staff = loc.staffPerTable * hiring.staffMult * CFG.tables * (CFG.close - CFG.open) / O.baseHours;
-  const fixed = b.rent + staff + O.otherFixed + fx.opsCost;
+  const utility = utilityOf(CFG.tables, CFG.open, CFG.close);
+  const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utility;
   const segSpend = SEG.list.reduce((a, g) => a + D.mixStart[g.id] * g.spend, 0);
   const perOcc = (seats - fx.seatsLoss) * turns * O.days * loc.spend * CFG.price * style.effect.spend * (1 - O.variableRate - fx.varRate) * fx.spend * segSpend;
   const be = perOcc ? fixed / perOcc : 1;
@@ -3305,8 +4186,16 @@ function buildCalc(loc){
       ${fc ? `<tr><td>設備・企画（${CFG.fac.map((id) => byId(FAC, id).name).join("・")}）</td><td>${yen(fc)}</td></tr>` : ""}
       ${lic ? `<tr><td>許可の申請費</td><td>${yen(D.license.fee)}</td></tr>` : ""}
       <tr class="total"><td>初期投資</td><td>${yen(b.invest + fc + (lic ? D.license.fee : 0))}</td></tr><tr><td>残りの手元資金</td><td class="${left < 1500 ? "negc" : ""}">${yen(left)}</td></tr></table>
-    <div class="grid2"><span>家賃</span><span>${yen(b.rent)}/月</span><span>人件費</span><span>${yen(staff)}/月</span>${fx.opsCost ? `<span>設備・企画の維持費</span><span>${yen(fx.opsCost)}/月</span>` : ""}
-      <span>損益分岐の満席率</span><span>${be > 1 ? "100%超" : pct(be, 0)}</span>
+    <h2 style="font-size:14px">月の経費（成熟時の見込み）</h2>
+    ${(() => { const h = CFG.close - CFG.open, rev = perOcc / (1 - O.variableRate - fx.varRate) * expOcc; return costTableHTML([
+      ["家賃", b.rent, `${b.area}坪 × 坪${loc.tsuboRent}万円`],
+      ["人件費", staff, `${CFG.tables}卓 × 営業${h}時間（標準${O.baseHours}時間）`],
+      ["光熱費", utility, `${CFG.tables}卓 × ${h}時間 × ${O.days}日`],
+      ["原価・決済", rev * (O.variableRate + fx.varRate), `売上の${Math.round((O.variableRate + fx.varRate) * 100)}%`],
+      ["設備・企画の維持費", fx.opsCost, CFG.fac.length ? CFG.fac.map((id) => byId(FAC, id).name).join("・") : "なし"],
+      ["その他の固定費", O.otherFixed, "通信・事務・保険など"],
+    ], rev); })()}
+    <div class="grid2"><span>損益分岐の満席率</span><span>${be > 1 ? "100%超" : pct(be, 0)}</span>
       <span>成熟時の満席率の見込み</span><span>${pct(expOcc, 0)}（±${Math.round(loc.demandSd * 100)}%）</span>
       <span>1日の客の見込み</span><span>${Math.round(seats * expOcc * turns)}人</span></div>
     <p class="muted" style="font-size:12px">開業直後の客は見込みの${Math.round(O.rampStart * 100)}%から始まり、${O.rampMonths}か月かけて増える。</p>`;
@@ -3319,8 +4208,8 @@ function openBuild(){
     <h2>営業時間</h2>${gaugeHTML()}<div id="hoursNote"></div>
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML(O.legalCloseProvisionIds)}</details>
     <h2>料金</h2>
-    <div class="slider"><span>安く</span><input type="range" id="priceR" min="${O.price.min * 100}" max="${O.price.max * 100}" step="5" value="${Math.round(CFG.price * 100)}"><span>高く</span></div>
-    <p class="muted" id="priceNote" style="font-size:12.5px"></p>
+    <div class="slider"><span>安く</span><input type="range" id="priceR" min="${Math.round((O.price.min - 1) * 100)}" max="${Math.round((O.price.max - 1) * 100)}" step="5" value="${Math.round((CFG.price - 1) * 100)}"><span>高く</span></div>
+    <p id="priceNote" style="font-size:12.5px"></p>
     <h2>設備・企画（いくつでも）</h2>${facGroup(CFG.fac)}
     <h2>スタッフの採用</h2>${optGroup(ST.hiring, CFG.hiring, "hiring", (h) => `${esc(h.desc)}<br>人件費 ×${h.staffMult}`)}
     <h2>教育方針</h2>${optGroup(ST.policy, CFG.policy, "policy", (p) => esc(p.desc))}
@@ -3335,13 +4224,13 @@ function openBuild(){
     const b = build(loc, CFG.tables);
     $("tblOut").textContent = CFG.tables; $("areaNote").textContent = `面積 ${b.area}坪 ・ 家賃 ${yen(b.rent)}/月 ・ ${CFG.tables * 9}席`;
     $("hoursNote").innerHTML = hoursNote(CFG);
-    $("priceNote").textContent = `客単価 ${Math.round(loc.spend * CFG.price * 10000).toLocaleString("ja-JP")}円（高くすると客は減る）`;
+    $("priceNote").innerHTML = priceNote(loc, CFG.style, CFG.price);
     $("calc").innerHTML = buildCalc(loc);
     drawPreview($("preview"), CFG.tables);
   };
   card.querySelectorAll("[data-s]").forEach((x) => x.onclick = () => { CFG.tables = clamp(CFG.tables + +x.dataset.s, L.minTables, L.maxTables); refresh(); });
   wireGauge(CFG, refresh);
-  $("priceR").oninput = (e) => { CFG.price = +e.target.value / 100; refresh(); };
+  $("priceR").oninput = (e) => { CFG.price = 1 + +e.target.value / 100; refresh(); };
   wireGroups(CFG, refresh);
   wireFac(CFG.fac, refresh);
   card.querySelectorAll('input[name="lic"]').forEach((x) => x.onchange = () => { CFG.unlicensed = x.value === "1"; refresh(); });
@@ -3398,8 +4287,9 @@ function openSettings(){
     ${stopped(S.style.id) ? `<p class="warn">${R.labels.order}により、あと${S.stopUntil[S.style.id] - S.month}か月は「預入のみ」で営業する。</p>` : ""}
     <h2>営業時間</h2>${gaugeHTML()}<div id="hoursNote"></div>
     <h2>料金</h2>
-    <div class="slider"><span>安く</span><input type="range" id="priceR" min="${O.price.min * 100}" max="${O.price.max * 100}" step="5" value="${Math.round(cfg.price * 100)}"><span>高く</span></div>
-    <p class="muted" id="priceNote" style="font-size:12.5px"></p>
+    <div class="slider"><span>安く</span><input type="range" id="priceR" min="${Math.round((O.price.min - 1) * 100)}" max="${Math.round((O.price.max - 1) * 100)}" step="5" value="${Math.round((cfg.price - 1) * 100)}"><span>高く</span></div>
+    <p id="priceNote" style="font-size:12.5px"></p>
+    <h2>月の経費の見込み（この設定で）</h2><div id="costBox"></div>
     <h2>設備・企画（新しく入れると設置費。やめても戻らない）</h2>${facGroup(cfg.fac)}
     <h2>教育方針</h2>${optGroup(ST.policy, cfg.policy, "policy", (p) => esc(p.desc))}
     <h2>スタッフと常連の連絡先交換</h2>${optGroup(ST.contact, cfg.contact, "contact", (c) => esc(c.desc))}
@@ -3407,18 +4297,18 @@ function openSettings(){
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set([...STYLES.flatMap((s) => s.provisionIds), ...D.illegal.flatMap((a) => a.provisionIds)])])}
       ${D.illegal.filter((a) => a.missingSource).map((a) => `<p class="muted">未収録：${esc(a.missingSource)}</p>`).join("")}<p class="muted">${esc(R.note)}</p></details>
     <div class="row"><button class="btn" id="cancelBtn">戻る</button><button class="btn primary" id="okBtn">これでいく</button></div>`);
-  const refresh = () => { $("hoursNote").innerHTML = hoursNote(cfg); $("priceNote").textContent = `客単価 ${Math.round(S.loc.spend * cfg.price * 10000).toLocaleString("ja-JP")}円`; };
+  const refresh = () => { $("hoursNote").innerHTML = hoursNote(cfg); $("priceNote").innerHTML = priceNote(S.loc, cfg.style, cfg.price); $("costBox").innerHTML = costTableNow(cfg); };
   wireGauge(cfg, refresh);
-  $("priceR").oninput = (e) => { cfg.price = +e.target.value / 100; refresh(); };
-  wireGroups(cfg);
-  wireFac(cfg.fac);
-  card.querySelectorAll(".stylelist .opt").forEach((b) => b.onclick = () => { cfg.style = b.dataset.v; card.querySelectorAll(".stylelist .opt").forEach((o) => o.setAttribute("aria-pressed", o === b)); });
+  $("priceR").oninput = (e) => { cfg.price = 1 + +e.target.value / 100; refresh(); };
+  wireGroups(cfg, refresh);
+  card.querySelectorAll(".stylelist .opt").forEach((b) => b.onclick = () => { cfg.style = b.dataset.v; card.querySelectorAll(".stylelist .opt").forEach((o) => o.setAttribute("aria-pressed", o === b)); refresh(); });
+  wireFac(cfg.fac, refresh);
   if ($("applyBtn")) $("applyBtn").onclick = () => { S.cash -= D.license.fee; S.licenseWait = D.license.waitMonths; note("許可を申請した。"); story("許可を申請した。"); $("applyBtn").replaceWith(document.createTextNode(`許可申請中（あと${S.licenseWait}か月）。`)); };
   $("cancelBtn").onclick = () => { hide(); S.paused = was; };
   $("okBtn").onclick = () => {
     const ch = [];
     if (cfg.open !== S.open || cfg.close !== S.close) ch.push(`営業時間 ${hhLong(cfg.open)}〜${hhLong(cfg.close)}`);
-    if (cfg.price !== S.price) ch.push(`料金 ×${cfg.price.toFixed(2)}`);
+    if (cfg.price !== S.price) ch.push(`料金 標準${pctSign(cfg.price)}`);
     if (cfg.style !== S.style.id) ch.push(`営業スタイル「${byId(STYLES, cfg.style).name}」`);
     if (cfg.policy !== S.policy.id) ch.push(`教育方針「${byId(ST.policy, cfg.policy).name}」`);
     if (cfg.contact !== S.contact.id) ch.push(`連絡先交換を${byId(ST.contact, cfg.contact).name}`);
@@ -3541,7 +4431,7 @@ const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n
 let C = {};
 function readColors(){ C = { ink: css("--ink"), bg: css("--bg"), wall: css("--wall"), wallD: css("--wall-dark"), sh: css("--shadow"), muted: css("--muted"), danger: css("--danger"), good: css("--good"), soft: css("--soft"), soft2: css("--soft2"), gray: css("--gray"), font: css("--font"), mono: css("--mono") }; }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
-const layoutFor = (n) => D.layouts[String(clamp(n, 3, 12))];
+const layoutFor = (n) => D.layouts[String(clamp(n, 1, 12))];
 /* 卓まわりの席：ディーラー1＋客9 */
 function seatPos(t, k){ const a = -Math.PI / 2 + 0.5 + k / 8 * (2 * Math.PI - 1.0); return { x: t[0] + Math.cos(a) * 1.55, y: t[1] + Math.sin(a) * 1.0 }; }
 const dealerPos = (t) => ({ x: t[0], y: t[1] - 1.0 });
@@ -3584,6 +4474,29 @@ function figureG(g, sx, sy, s, ph, moving, kind, sitting){
     g.fillStyle = "rgba(200,200,210,.55)"; g.strokeStyle = C.ink; g.lineWidth = 1.3 * s; g.beginPath(); g.roundRect(sx - 9 * s, top + 1 * s, 7 * s, 15 * s, 1.5 * s); g.fill(); g.stroke();
   }
 }
+/* 内装：卓が増えるほど豪華に（lux 0〜5。scripts/gen_layouts.py） */
+function wallDecoG(g, iso, lay, v, WH){
+  for (const o of lay.deco || []){
+    if (o.t === "poster"){ const z0 = WH * 0.35, z1 = WH * 0.8; polyG(g, [iso(o.x0, 0, z0), iso(o.x1, 0, z0), iso(o.x1, 0, z1), iso(o.x0, 0, z1)], C.bg, C.ink, 1.2); polyG(g, [iso(o.x0 + 0.25, 0, z0 + 4), iso(o.x1 - 0.25, 0, z0 + 4), iso((o.x0 + o.x1) / 2, 0, z1 - 4)], C.soft, C.ink, 0.8); }
+    if (o.t === "screen"){ const z0 = WH * 0.3, z1 = WH * 0.86; polyG(g, [iso(o.x0, 0, z0), iso(o.x1, 0, z0), iso(o.x1, 0, z1), iso(o.x0, 0, z1)], C.ink, C.ink, 1.4); const c = iso((o.x0 + o.x1) / 2, 0, (z0 + z1) / 2); g.fillStyle = C.bg; g.font = `700 ${Math.max(8, v.tw * 0.2)}px ${C.font}`; g.textAlign = "center"; g.fillText("LIVE", c[0], c[1] + 4); g.textAlign = "start"; }
+    if (o.t === "shelf"){ for (const z of [WH * 0.45, WH * 0.65]){ polyG(g, [iso(o.x0, 0, z), iso(o.x1, 0, z), iso(o.x1, 0.2, z), iso(o.x0, 0.2, z)], C.wallD, C.ink, 0.8); for (let x = o.x0 + 0.15; x < o.x1 - 0.1; x += 0.3){ const q = iso(x, 0.1, z); g.fillStyle = C.ink; g.fillRect(q[0] - 1.2, q[1] - v.tw * 0.18, 2.4, v.tw * 0.18); } } }
+    if (o.t === "molding"){ g.strokeStyle = C.gray; g.lineWidth = 1; for (const z of [WH * 0.92, WH * 0.2]){ let a = iso(0, 0, z), b = iso(lay.w, 0, z); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); a = iso(0, lay.d, z); b = iso(0, 0, z); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); } }
+  }
+}
+function stoolG(g, iso, x, y, v){ const top = iso(x, y, v.tw * 0.24), bot = iso(x, y); g.strokeStyle = C.ink; g.lineWidth = 1.2; g.beginPath(); g.moveTo(bot[0], bot[1]); g.lineTo(top[0], top[1]); g.stroke(); g.fillStyle = C.wallD; g.beginPath(); g.ellipse(top[0], top[1], v.tw * 0.12, v.tw * 0.06, 0, 0, Math.PI * 2); g.fill(); g.stroke(); }
+function propG(g, iso, o, v){
+  if (o.t === "plant"){ const b = iso(o.x, o.y), r = v.tw * 0.16; polyG(g, [[b[0] - r, b[1] - r], [b[0] + r, b[1] - r], [b[0] + r * 0.7, b[1]], [b[0] - r * 0.7, b[1]]], C.wallD, C.ink, 1); g.fillStyle = C.good; g.strokeStyle = C.ink; g.lineWidth = 1; for (const [dx, dy, rr] of [[0, -2.4, 0.8], [-0.7, -1.7, 0.6], [0.7, -1.8, 0.6]]){ g.beginPath(); g.arc(b[0] + dx * r, b[1] + dy * r, rr * r * 1.3, 0, Math.PI * 2); g.fill(); g.stroke(); } }
+  if (o.t === "sofa"){ const h = v.tw * 0.18, y0 = o.y - o.len / 2, y1 = o.y + o.len / 2, x0 = o.x - 0.35, x1 = o.x + 0.35; polyG(g, [iso(x0, y0, h), iso(x1, y0, h), iso(x1, y1, h), iso(x0, y1, h)], C.gray, C.ink, 1); polyG(g, [iso(x0, y1), iso(x1, y1), iso(x1, y1, h), iso(x0, y1, h)], C.wallD, C.ink, 1); polyG(g, [iso(x1, y0), iso(x1, y1), iso(x1, y1, h * 2), iso(x1, y0, h * 2)], C.gray, C.ink, 1); }
+  if (o.t === "statue"){ const b = iso(o.x, o.y), r = v.tw * 0.14; polyG(g, [[b[0] - r, b[1]], [b[0] + r, b[1]], [b[0] + r, b[1] - r * 1.4], [b[0] - r, b[1] - r * 1.4]], C.wallD, C.ink, 1); g.fillStyle = C.bg; g.strokeStyle = C.ink; g.beginPath(); g.ellipse(b[0], b[1] - r * 2.6, r * 0.6, r * 1.2, 0, 0, Math.PI * 2); g.fill(); g.stroke(); g.beginPath(); g.arc(b[0], b[1] - r * 4.2, r * 0.45, 0, Math.PI * 2); g.fill(); g.stroke(); }
+}
+function vipG(g, iso, r, v){ const h = v.tw * 0.45; g.globalAlpha = 0.55; polyG(g, [iso(r.x0, r.y0), iso(r.x0, r.y1), iso(r.x0, r.y1, h), iso(r.x0, r.y0, h)], C.bg, C.ink, 1.2); polyG(g, [iso(r.x0, r.y1), iso(r.x1, r.y1), iso(r.x1, r.y1, h), iso(r.x0, r.y1, h)], C.bg, C.ink, 1.2); g.globalAlpha = 1; const q = iso(r.x0, r.y1, h + 6); g.fillStyle = C.ink; g.font = `700 ${Math.max(9, v.tw * 0.22)}px ${C.font}`; g.fillText("VIP", q[0] + 4, q[1]); }
+function lightG(g, iso, o, v, WH, lit){
+  const top = iso(o.x, o.y, WH * 1.15), low = iso(o.x, o.y, WH * (o.t === "lamp" ? 0.95 : 0.85));
+  g.strokeStyle = C.gray; g.lineWidth = 1; g.beginPath(); g.moveTo(top[0], top[1]); g.lineTo(low[0], low[1]); g.stroke();
+  if (o.t === "lamp"){ const r = v.tw * 0.2; polyG(g, [[low[0] - r, low[1] + r * 0.6], [low[0] + r, low[1] + r * 0.6], [low[0] + r * 0.4, low[1]], [low[0] - r * 0.4, low[1]]], lit ? C.bg : C.soft, C.ink, 1); return; }
+  const r = v.tw * 0.5; g.strokeStyle = C.ink; g.lineWidth = 1.2; g.beginPath(); g.ellipse(low[0], low[1], r, r * 0.35, 0, 0, Math.PI * 2); g.stroke();
+  for (let k = 0; k < 8; k++){ const a = k / 8 * Math.PI * 2, x = low[0] + Math.cos(a) * r, y = low[1] + Math.sin(a) * r * 0.35; g.fillStyle = lit ? C.bg : C.soft; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 2.5, y + 7); g.lineTo(x + 2.5, y + 7); g.closePath(); g.fill(); g.stroke(); }
+}
 function tableG(g, iso, t, lit){
   const ring = (rx, ry, z) => { const a = []; for (let i = 0; i < 32; i++){ const q = i / 32 * Math.PI * 2; a.push(iso(t[0] + Math.cos(q) * rx, t[1] + Math.sin(q) * ry, z)); } return a; };
   const base = ring(1.15, 0.62, 0); polyG(g, base.map((p) => [p[0] + 4, p[1] + 3]), C.sh);
@@ -3596,10 +4509,15 @@ function drawShopG(g, v, st){
   const floor = [iso(0, 0), iso(lay.w, 0), iso(lay.w, lay.d), iso(0, lay.d)];
   polyG(g, floor.map((p) => [p[0] + 10, p[1] + 10]), C.sh);
   polyG(g, floor, st.lit ? C.bg : C.soft2, C.ink, 1.4);
+  const deco = lay.deco || [], has = (t) => deco.filter((x) => x.t === t);
+  if (has("checker").length) for (let x = 0; x < lay.w - 0.5; x++) for (let y = 0; y < lay.d - 0.5; y++) if ((x + y) % 2) polyG(g, [iso(x, y), iso(Math.min(lay.w, x + 1), y), iso(Math.min(lay.w, x + 1), Math.min(lay.d, y + 1)), iso(x, Math.min(lay.d, y + 1))], C.soft2);
+  for (const r of has("rug")){ polyG(g, [iso(r.x0, r.y0), iso(r.x1, r.y0), iso(r.x1, r.y1), iso(r.x0, r.y1)], st.lit ? C.soft2 : C.soft, C.gray, 1); polyG(g, [iso(r.x0 + 0.25, r.y0 + 0.25), iso(r.x1 - 0.25, r.y0 + 0.25), iso(r.x1 - 0.25, r.y1 - 0.25), iso(r.x0 + 0.25, r.y1 - 0.25)], null, C.gray, 0.6); }
+  for (const r of has("vip")) polyG(g, [iso(r.x0, r.y0), iso(r.x1, r.y0), iso(r.x1, r.y1), iso(r.x0, r.y1)], C.soft, C.ink, 1);
   g.strokeStyle = C.soft; g.lineWidth = 0.8;
   for (let x = 1; x < lay.w; x++){ const a = iso(x, 0), b = iso(x, lay.d); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
   for (let y = 1; y < lay.d; y++){ const a = iso(0, y), b = iso(lay.w, y); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
   wallG(g, iso, 0, 0, lay.w, 0, WH, C.wall); wallG(g, iso, 0, 0, 0, lay.d, WH, C.wallD);
+  wallDecoG(g, iso, lay, v, WH);
   // エレベーター（左の壁）
   const e = lay.elevator, open = clamp(st.elev || 0, 0, 1), eh = WH * 0.82, mid = (e.y0 + e.y1) / 2, half = (e.y1 - e.y0) / 2;
   polyG(g, [iso(0, e.y0), iso(0, e.y1), iso(0, e.y1, eh), iso(0, e.y0, eh)], C.wallD, C.ink, 1.2);
@@ -3613,6 +4531,9 @@ function drawShopG(g, v, st){
   // 奥から順に
   const items = [], s = v.tw / 44;
   for (const t of lay.tables) items.push({ d: t[0] + t[1], f: () => tableG(g, iso, t, st.lit) });
+  for (let x = b.x0 + 0.4; x < b.x1 - 0.2; x += 0.75) items.push({ d: x + 1.15, f: () => stoolG(g, iso, x, 1.15, v) });
+  for (const o of deco) if (["plant", "sofa", "statue"].includes(o.t)) items.push({ d: o.x + o.y + 0.2, f: () => propG(g, iso, o, v) });
+  for (const r of has("vip")) items.push({ d: r.x0 + r.y1 + 1.4, f: () => vipG(g, iso, r, v) });
   for (const p of st.people) items.push({ d: p.x + p.y + (p.sit ? 0.05 : 0.3), f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s, p.ph || 0, !!p.moving, p.kind, p.sit); } });
   for (const p of st.staff) items.push({ d: p.x + p.y + 0.3, f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s, p.ph || 0, !!p.moving, "staff", p.sit); } });
   const ev = lay.elevator;
@@ -3622,6 +4543,7 @@ function drawShopG(g, v, st){
   // 手前の低い壁
   const lowH = v.tw * 0.25;
   wallG(g, iso, 0, lay.d, lay.w, lay.d, lowH, C.wall); wallG(g, iso, lay.w, 0, lay.w, lay.d, lowH, C.wallD);
+  for (const o of deco) if (o.t === "lamp" || o.t === "chandelier") lightG(g, iso, o, v, WH, st.lit);
   return iso;
 }
 
@@ -3812,7 +4734,7 @@ function frame(now){
 }
 window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.state] = (a[p.state] || 0) + 1, a), {}), sample: people.slice(0, 3).map((p) => [p.x.toFixed(2), p.y.toFixed(2), p.tx && p.tx.toFixed(2), p.ty && p.ty.toFixed(2), p.state]), lit: shopLit(), want: targetSeated() });
 window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
-  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
+  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, preview: (c, n) => drawPreview(c, n), raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
 requestAnimationFrame(frame);

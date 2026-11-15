@@ -1,12 +1,13 @@
 const { chromium } = require('playwright');
 // 使い方: python3 server.py を起動してから node scripts/sim_autoplay.js [各条件の回数=16]
-// FAC_ONLY=1 で設備・企画だけ。条件コード R0000〜 を全条件で共通に使う（対になった比較）。
+// FAC_ONLY=1 で設備・企画だけ。ONLY=正規表現 で条件名を絞る（例 ONLY='token|deposit'）。条件コード R0000〜 を全条件で共通に使う（対になった比較）。
 const N = +process.argv[2] || 16;
 const configs = [];
 if (!process.env.FAC_ONLY) for (const style of ["cashout","token","prize","food","deposit"]) configs.push({ name: "style:"+style, cfg: { loc:"metro", tables:5, style } });
 configs.push({ name: "fac:none", cfg: { loc:"metro", tables:5, style:"deposit" } });
 for (const f of ["stream","lesson","tournament","bar","camera","vip"]) configs.push({ name: "fac:"+f, cfg: { loc:"metro", tables:5, style:"deposit", fac:[f] } });
 if (!process.env.FAC_ONLY) for (const loc of ["tokyo","regional","suburb"]) configs.push({ name: "loc:"+loc, cfg: { loc, tables:5, style:"deposit" } });
+if (process.env.ONLY) { const re = new RegExp(process.env.ONLY); for (let i = configs.length - 1; i >= 0; i--) if (!re.test(configs[i].name)) configs.splice(i, 1); }
 (async () => {
   const b = await chromium.launch(); const jobs = [];
   for (const c of configs) for (let i = 0; i < N; i++) jobs.push({ c, seed: "R" + String(i).padStart(4, "0") });
