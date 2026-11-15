@@ -117,6 +117,8 @@ button{font-family:inherit;color:inherit}
 .ov{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 86%,transparent);display:none;place-items:center;padding:16px;overflow:auto;z-index:10}
 .ov.show{display:grid}
 .card{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px 22px 18px;width:min(740px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:6px 8px 0 var(--shadow)}
+/* 長いカードでも、先へ進むボタンは常に見えるようにする */
+.card .row.stick{position:sticky;bottom:-18px;margin:12px -22px -18px;padding:10px 22px 14px;background:var(--panel);border-top:1.5px solid var(--line);z-index:2}
 .card h1{font-size:23px;font-weight:700;margin:0 0 6px}
 .card h2{font-size:13px;font-weight:700;margin:18px 0 8px;letter-spacing:.06em}
 .card p{margin:6px 0;font-size:14px;line-height:1.75}
@@ -2422,7 +2424,7 @@ function order(acts){
       <tr><td>店の値段（DCFの割引率）</td><td>+${Math.round(V.discountPerOrder * 100)}%</td></tr></table>
     <p class="muted" style="font-size:12px">${esc(R.note)}</p>
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set(acts.flatMap((a) => a.prov))])}</details>
-    <div class="row"><button class="btn primary" id="okBtn">営業を続ける</button></div>`, () => { $("okBtn").onclick = resume; }));
+    <div class="row stick"><button class="btn primary" id="okBtn">営業を続ける</button></div>`, () => { $("okBtn").onclick = resume; }));
 }
 
 /* ---------- 事件 ---------- */
@@ -2469,7 +2471,7 @@ function decide(ev, c){
   story(`${ev.title} → 「${c.label}」。${text}`);
   show(`<div class="kicker">${monthLabel(S.month)} ・ 結果</div><h1>${esc(c.label)}</h1><p>${esc(text)}</p>
     ${later ? `<p class="muted" style="font-size:12.5px">この判断は、後から効いてくるかもしれない。</p>` : ""}
-    <div class="row"><button class="btn primary" id="okBtn">営業に戻る</button></div>`, () => { $("okBtn").onclick = resume; });
+    <div class="row stick"><button class="btn primary" id="okBtn">営業に戻る</button></div>`, () => { $("okBtn").onclick = resume; });
   saveGame();
   if (TEST) autoClick();
 }
@@ -2581,9 +2583,10 @@ function annual(){
     <div class="grid2"><span>売上</span><span>${yen(S.year.rev)}</span><span>営業利益</span><span>${yen(S.year.op)}</span>
       <span>手元資金</span><span>${yen(S.cash)}</span><span>借入残高</span><span>${yen(S.debt)}</span>
       ${Object.entries(IND.names).map(([k, n]) => `<span>${n}</span><span>${Math.round(S.ind[k])}</span>`).join("")}</div>
-    <h2>中間評価</h2>${valuationReport(valuation(), { kicker: `${y}年目の中間評価` })}
+    <h2>中間評価：いま売ったら ${yen(storeValue())}</h2>
+    <details><summary>評価レポートを開く（DCF・類似取引・清算価値）</summary>${valuationReport(valuation(), { kicker: `${y}年目の中間評価` })}</details>
     <p style="font-size:13px">${fin.ok ? `借入できます（上限 ${yen(fin.limit)}）。ドックの「借入」から。` : `借入はまだできません：${esc(fin.why)}`}</p>
-    <div class="row"><button class="btn primary" id="okBtn">${y + 1}年目へ</button></div>`, () => { S.year = { rev: 0, op: 0 }; $("okBtn").onclick = resume; }));
+    <div class="row stick"><button class="btn primary" id="okBtn">${y + 1}年目へ</button></div>`, () => { S.year = { rev: 0, op: 0 }; $("okBtn").onclick = resume; }));
 }
 function offer(){
   story("大手から買収の打診が来た。ここから6か月が買収前調査。");
@@ -2591,7 +2594,7 @@ function offer(){
     <div class="kicker">${monthLabel(S.month)}</div><h1>大手から買収の打診</h1>
     <p>5年目の終わりに、あなたの店を買いたいという話が来た。ここから6か月かけて、買い手が店の中身を調べる（買収前調査）。</p>
     <p>黒の営業や違法営業が見つかれば、売却額は「ハコとしての価値」だけになる。グレーの営業が見つかれば、減額される。調査期間中の営業は、特に見つかりやすい。</p>
-    <div class="row"><button class="btn primary" id="okBtn">分かった</button></div>`, () => { $("okBtn").onclick = resume; }));
+    <div class="row stick"><button class="btn primary" id="okBtn">分かった</button></div>`, () => { $("okBtn").onclick = resume; }));
 }
 function ddCheck(){
   // 黒（換金・深夜営業・無許可）と、グレーを別々に判定する
@@ -2619,7 +2622,7 @@ function proposal(){
     <div class="kicker">60か月目</div><h1>${dd.kind === "none" ? "買収提案" : "買収前調査の結果"}</h1>
     ${dd.kind === "shell" ? `<p><b>${esc(V.shellMessage)}</b></p>` : dd.kind === "cut" ? `<p><b>${esc(v.note)}</b></p>` : `<p>買い手は、3つの方法で店の価値を出し、その中央の値で買いたいと言っている。</p>`}
     ${valuationReport(v, { kicker: "バリュエーション・レポート", bridge: true, open: true })}
-    <div class="row"><button class="btn primary" id="okBtn">結果発表へ</button></div>`, () => { $("okBtn").onclick = () => finish("complete"); }));
+    <div class="row stick"><button class="btn primary" id="okBtn">結果発表へ</button></div>`, () => { $("okBtn").onclick = () => finish("complete"); }));
 }
 
 /* ---------- 終了 ---------- */
@@ -2914,7 +2917,7 @@ $("ind").addEventListener("click", () => {
   const was = S.paused; S.paused = true;
   const desc = { fame: "店を知っている人の多さ。客数と、店の値段の成長率に効く。広告で上がる。", trust: "公平で説明が一貫している店だと思われているか。店の値段の割引率に効く。是正指摘で大きく下がる。", comfort: "初めての客がまた来たいと思うか。客数と成長率に効く。低いと入口で引き返す客が出る。", slack: "忙しさをさばく余裕。低いとトラブルが増え、居心地も下がる。採用方式・満席率・営業時間で決まり、教育で上がる。" };
   show(`<div class="kicker">店の状態</div><h1>4つの指標</h1>${Object.entries(IND.names).map(([k, n]) => `<p><b>${n} ${Math.round(S.ind[k])}</b><br><span style="font-size:13px">${desc[k]}</span></p>`).join("")}
-    <div class="row"><button class="btn primary" id="okBtn">閉じる</button></div>`, () => { $("okBtn").onclick = () => { hide(); S.paused = was; }; });
+    <div class="row stick"><button class="btn primary" id="okBtn">閉じる</button></div>`, () => { $("okBtn").onclick = () => { hide(); S.paused = was; }; });
 });
 
 
@@ -3048,7 +3051,7 @@ function openStores(){
       <h2>FC展開</h2>
       <p>加盟店 ${S.fc ? S.fc.count : 0}店。加盟金 ${yen(EXF.fee)}／店、ロイヤリティは加盟店の月商の${Math.round(EXF.royalty * 100)}%（1店 月${Math.round(EXF.fcRevenue * EXF.royalty)}万円ほど）。加盟店の不祥事は本部の信頼を下げる。</p>
       ${fwhy ? `<p class="muted">まだ募集できない：${esc(fwhy)}</p>` : `<label class="chk"><input type="checkbox" id="fcRec" ${S.fc.recruiting ? "checked" : ""}> <span>加盟店を募集する（知名度が高いほど集まる）</span></label>`}
-      <div class="row"><button class="btn primary" id="okBtn">閉じる</button></div>`);
+      <div class="row stick"><button class="btn primary" id="okBtn">閉じる</button></div>`);
     wireGroups(f, render);
     card.querySelectorAll("[data-s]").forEach((x) => x.onclick = () => { f.tables = clamp(f.tables + +x.dataset.s, EXB.minTables, EXB.maxTables); render(); });
     if ($("openBr")) $("openBr").onclick = () => {
