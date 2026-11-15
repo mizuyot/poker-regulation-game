@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "ポーカー店経営 5年",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "unit": "万円",
     "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
     "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。scripts/sim_v05.py・sim_buyout.py で検証した値に合わせている。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
@@ -1556,5 +1556,30 @@
       "opsCost": 0
     }
   ],
-  "conceptChangeCost": 150
+  "conceptChangeCost": 150,
+  "expansion": {
+    "note": "2号店とFC展開。数値は架空。",
+    "branch": {
+      "minMonth": 12,
+      "minTables": 3,
+      "maxTables": 8,
+      "waitMonths": 2
+    },
+    "fc": {
+      "minMonth": 24,
+      "trust": 60,
+      "fame": 55,
+      "fee": 300,
+      "royalty": 0.05,
+      "fcRevenue": 450,
+      "joinBase": 0.08,
+      "scandalP": 0.01,
+      "max": 20,
+      "scandalTexts": [
+        "加盟店で、客とのトラブルが報道された",
+        "加盟店が、本部の方針と違う景品を出していた",
+        "加盟店のスタッフが、SNSで客の個人情報を漏らした"
+      ]
+    }
+  }
 }

@@ -257,6 +257,7 @@ summary{cursor:pointer;color:var(--muted)}
     <button class="act" data-a="settings"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.5 7.5 0 0 0-1.7-1L14.9 3h-4l-.4 2.7a7.5 7.5 0 0 0-1.7 1l-2.5-1-2 3.5L6.4 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.9h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12.9 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></span><span class="k">4</span><span class="c">営業設定</span></button>
     <button class="act" data-a="edu"><span class="ic">育</span><span class="k">5</span><span class="c" id="eduC">教育</span></button>
     <button class="act" data-a="finance"><span class="ic">¥</span><span class="k">6</span><span class="c">借入</span></button>
+    <button class="act" data-a="stores"><span class="ic">店</span><span class="k">7</span><span class="c" id="storesC">出店・FC</span></button>
   </div>
 </div>
 
@@ -266,7 +267,7 @@ summary{cursor:pointer;color:var(--muted)}
 {
   "meta": {
     "title": "ポーカー店経営 5年",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "unit": "万円",
     "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
     "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。scripts/sim_v05.py・sim_buyout.py で検証した値に合わせている。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
@@ -1821,7 +1822,32 @@ summary{cursor:pointer;color:var(--muted)}
       "opsCost": 0
     }
   ],
-  "conceptChangeCost": 150
+  "conceptChangeCost": 150,
+  "expansion": {
+    "note": "2号店とFC展開。数値は架空。",
+    "branch": {
+      "minMonth": 12,
+      "minTables": 3,
+      "maxTables": 8,
+      "waitMonths": 2
+    },
+    "fc": {
+      "minMonth": 24,
+      "trust": 60,
+      "fame": 55,
+      "fee": 300,
+      "royalty": 0.05,
+      "fcRevenue": 450,
+      "joinBase": 0.08,
+      "scandalP": 0.01,
+      "max": 20,
+      "scandalTexts": [
+        "加盟店で、客とのトラブルが報道された",
+        "加盟店が、本部の方針と違う景品を出していた",
+        "加盟店のスタッフが、SNSで客の個人情報を漏らした"
+      ]
+    }
+  }
 }
     </script>
 <script type="application/json" id="provisions-data">
@@ -1951,23 +1977,33 @@ function demandMult(legalOnly){
 }
 function ramp(){ const t = S.openedAt == null ? 0 : S.month - S.openedAt; return Math.min(1, O.rampStart + (1 - O.rampStart) * t / O.rampMonths); }
 const hoursLen = () => S.close - S.open;
-function project(legalOnly){
-  // スタッフの余力が低いと、さばききれずに客を逃す（余力60以上で1.0、30で0.88、0で0.76）
-  const svc = clamp(0.76 + S.ind.slack / 250, 0.76, 1);
-  const seats = S.tables * 9, turns = turnsFor(S.open, S.close, S.policy);
+/* 1店舗ぶんの計算（本店と2号店で共用）。ブランド（指標・客層・コンセプト・営業スタイル・営業時間・料金）は共通 */
+function storeCalc(st, legalOnly){
+  const svc = clamp(0.76 + S.ind.slack / 250, 0.76, 1); // 余力が低いと、さばききれずに客を逃す
+  const seats = st.tables * 9, turns = turnsFor(S.open, S.close, S.policy);
   const hoursF = bandWeight(S.open, S.close) / BASE_W;
-  const demand = S.loc.demand * S.share * ramp() * demandMult(legalOnly) * hoursF;
-  const occ = seats ? Math.min(S.loc.occCap, demand / (seats * turns)) : 0;
+  const rampF = st.openedAt == null ? 0 : Math.min(1, O.rampStart + (1 - O.rampStart) * (S.month - st.openedAt) / O.rampMonths);
+  const demand = st.loc.demand * st.share * rampF * demandMult(legalOnly) * hoursF;
+  const occ = seats ? Math.min(st.loc.occCap, demand / (seats * turns)) : 0;
   const guests = seats * occ * turns * svc;
   const segSpend = SEG.list.reduce((a, g) => a + (S.mix[g.id] || 0) * g.spend, 0);
-  const spend = S.loc.spend * S.price * segSpend * S.concept.spend * (legalOnly ? 1 : styleNow().effect.spend);
+  const spend = st.loc.spend * S.price * segSpend * S.concept.spend * (legalOnly ? 1 : styleNow().effect.spend);
   let rev = guests * O.days * spend;
   if (S.rumor > 0) rev *= 1 - R.orderRumor;
   if (S.shock > 0) rev *= 1 - O.trouble.shock;
-  const staff = S.loc.staffPerTable * S.hiring.staffMult * S.tables * hoursLen() / O.baseHours;
-  const op = rev * (1 - O.variableRate) - S.rent - staff - O.otherFixed - O.ads[S.ad].cost - (S.concept.opsCost || 0);
+  const staff = st.loc.staffPerTable * S.hiring.staffMult * st.tables * hoursLen() / O.baseHours;
+  return { demand, occ, guests, rev, staff };
+}
+function project(legalOnly){
+  const main = storeCalc({ loc: S.loc, tables: S.tables, share: S.share, openedAt: S.openedAt }, legalOnly);
+  const br = S.branch, b = br && br.openedAt != null ? storeCalc(br, legalOnly) : null;
+  const fcRoy = S.fc ? S.fc.count * D.expansion.fc.fcRevenue * D.expansion.fc.royalty : 0;
+  const storeRev = main.rev + (b ? b.rev : 0), varCost = storeRev * O.variableRate;
+  const rent = S.rent + (br ? br.rent : 0), staff = main.staff + (b ? b.staff : 0);
+  const other = O.otherFixed * (b ? 2 : 1) + O.ads[S.ad].cost + (S.concept.opsCost || 0);
+  const op = storeRev - varCost + fcRoy - rent - staff - other;
   const interest = S.debt * F.rate / 12;
-  return { demand, occ, guests, rev, staff, op, interest, net: op - interest };
+  return { demand: main.demand, occ: main.occ, guests: main.guests, rev: storeRev + fcRoy, storeRev, fcRoy, branchRev: b ? b.rev : 0, varCost, rent, staff, other, op, interest, net: op - interest };
 }
 /* リスクの源：営業スタイル（黒・グレー）、深夜営業、無許可 */
 function riskSources(){
@@ -2000,15 +2036,17 @@ function dcfParts(){
   const tv = fcf * (1 + V.terminalGrowth) / (r - V.terminalGrowth), tvPv = tv / Math.pow(1 + r, V.years);
   return { fcfMonth, r, g, rows, tv, tvPv, ev: Math.max(0, pv + tvPv) };
 }
-const shellValue = () => S.deposit + S.fitout * L.fitoutResidual + S.tablesValue * L.tableResidual;
-const storeValue = () => Math.max(dcfParts().ev + S.deposit, shellValue());
+const shellValue = () => S.deposit + S.fitout * L.fitoutResidual + S.tablesValue * L.tableResidual + (S.branch ? S.branch.deposit + S.branch.fitout * L.fitoutResidual + S.branch.tablesValue * L.tableResidual : 0);
+const deposits = () => S.deposit + (S.branch ? S.branch.deposit : 0);
+const storeValue = () => Math.max(dcfParts().ev + deposits(), shellValue());
 
 /* ---------- 月次 ---------- */
 function monthTick(){
   const wasOpen = isOpen();
   let orderActs = null;
   if (wasOpen && S.openedAt == null){ S.openedAt = S.month; story(S.licensed ? "許可が下り、開業した。" : "許可を待たずに開業した。"); }
-  const p = wasOpen ? project() : { demand: 0, occ: 0, guests: 0, rev: 0, op: -S.rent, interest: 0, net: -S.rent };
+  const p = wasOpen ? project() : { demand: 0, occ: 0, guests: 0, rev: 0, op: -S.rent, interest: 0, net: -S.rent, rent: S.rent, varCost: 0, other: 0, staff: 0 };
+  expansionTick(wasOpen);
   S.cash += p.net; S.last = p;
   if (wasOpen){ S.ops.push(p.op); S.year.rev += p.rev; S.year.op += p.op; S.peakMonth = Math.max(S.peakMonth, p.net); }
   logEv("month", { net: Math.round(p.net), guests: Math.round(p.guests), occ: +p.occ.toFixed(3), style: styleNow().id });
@@ -2061,8 +2099,8 @@ function monthTick(){
 }
 /* 月ごとの記録（結果画面のシミュレーション表示に使う）。extra＝営業損益以外の出入り（トラブル・事件・増卓・教育・借入・是正対応費など） */
 function rec(p, wasOpen){
-  const other = wasOpen ? O.otherFixed + O.ads[S.ad].cost + (S.concept.opsCost || 0) : 0;
-  S.recs.push({ t: S.month - 1, open: wasOpen, guests: p.guests || 0, occ: p.occ || 0, rev: p.rev || 0, rent: S.rent, staff: wasOpen ? p.staff : 0, other,
+  const other = wasOpen ? p.other : 0;
+  S.recs.push({ t: S.month - 1, open: wasOpen, guests: p.guests || 0, occ: p.occ || 0, rev: p.rev || 0, rent: p.rent || S.rent, staff: wasOpen ? p.staff : 0, other,
     interest: p.interest || 0, net: p.net, extra: S.cash - S.prevCash - p.net, cash: S.cash, share: S.share, tables: S.tables });
   S.prevCash = S.cash;
 }
@@ -2169,9 +2207,9 @@ function dcfTable(d){
   return `<table class="t"><tr><th>年</th><th>予測FCF</th><th>今の価値</th></tr>
     ${d.rows.map((r) => `<tr><td>${r.y}年目</td><td>${yen(r.fcf)}</td><td>${yen(r.pv)}</td></tr>`).join("")}
     <tr><td>6年目以降（ターミナルバリュー ${yen(d.tv)}）</td><td></td><td>${yen(d.tvPv)}</td></tr>
-    <tr><td>敷金</td><td></td><td>${yen(S.deposit)}</td></tr>
-    <tr class="total"><td>店の値段</td><td></td><td>${yen(Math.max(d.ev + S.deposit, shellValue()))}</td></tr></table>
-    <p class="muted" style="font-size:12px">直近12か月の平均FCF ${yen(d.fcfMonth)}/月 ・ 割引率 r ${pct(d.r)} ・ 成長率 g ${pct(d.g)}${d.ev + S.deposit < shellValue() ? " ・ DCFがハコの価値を下回るため、ハコの価値で評価" : ""}</p>`;
+    <tr><td>敷金${S.branch ? "（2店）" : ""}</td><td></td><td>${yen(deposits())}</td></tr>
+    <tr class="total"><td>店の値段${S.fc && S.fc.count ? `（FC本部${S.fc.count}店ぶんのロイヤリティを含む）` : ""}</td><td></td><td>${yen(Math.max(d.ev + deposits(), shellValue()))}</td></tr></table>
+    <p class="muted" style="font-size:12px">直近12か月の平均FCF ${yen(d.fcfMonth)}/月 ・ 割引率 r ${pct(d.r)} ・ 成長率 g ${pct(d.g)}${d.ev + deposits() < shellValue() ? " ・ DCFがハコの価値を下回るため、ハコの価値で評価" : ""}</p>`;
 }
 function rDetail(){
   const i = S.ind;
@@ -2251,7 +2289,7 @@ function finish(kind){
   const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（DCF）";
   const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、満額にはならなかった。" : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。両方のランキングで失格。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
   show(`
-    <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓 ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
+    <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓${S.branch ? ` ・ 2号店 ${esc(S.branch.loc.name)}` : ""}${S.fc && S.fc.count ? ` ・ FC${S.fc.count}店` : ""} ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
     <div class="kicker" style="margin-top:12px">最終手取り額</div>
     <div class="big">${yen(amount)}<small class="${amount - M.fund >= 0 ? "pos" : "negc"}">元手${yen(M.fund)}から ${yen(amount - M.fund, true)}</small></div>
     ${kind === "complete" ? `<table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額${ddWord}</td><td>${yen(sale)}</td></tr>
@@ -2450,7 +2488,7 @@ const SAVE_KEY = "poker-shop-v07-save";
 function saveGame(){
   if (!S || S.over || TEST) return;
   try {
-    const o = { ...S, loc: S.loc.id, hiring: S.hiring.id, policy: S.policy.id, contact: S.contact.id, concept: S.concept.id, style: S.style.id, eventsSeen: [...S.eventsSeen], q: [], peakMonth: isFinite(S.peakMonth) ? S.peakMonth : null, savedAt: Date.now() };
+    const o = { ...S, loc: S.loc.id, hiring: S.hiring.id, policy: S.policy.id, contact: S.contact.id, concept: S.concept.id, style: S.style.id, branch: S.branch ? { ...S.branch, loc: S.branch.loc.id } : null, eventsSeen: [...S.eventsSeen], q: [], peakMonth: isFinite(S.peakMonth) ? S.peakMonth : null, savedAt: Date.now() };
     localStorage.setItem(SAVE_KEY, JSON.stringify(o));
   } catch {}
 }
@@ -2458,7 +2496,7 @@ function loadSave(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } 
 function clearSave(){ try { localStorage.removeItem(SAVE_KEY); } catch {} }
 function resumeGame(o){
   clearInterval(titleTimer); card.classList.remove("titlecard");
-  S = { ...o, loc: byId(D.locations, o.loc), hiring: byId(ST.hiring, o.hiring), policy: byId(ST.policy, o.policy), contact: byId(ST.contact, o.contact), concept: byId(CONCEPTS, o.concept || "social"), style: byId(STYLES, o.style),
+  S = { ...o, loc: byId(D.locations, o.loc), hiring: byId(ST.hiring, o.hiring), policy: byId(ST.policy, o.policy), contact: byId(ST.contact, o.contact), concept: byId(CONCEPTS, o.concept || "social"), style: byId(STYLES, o.style), branch: o.branch ? { ...o.branch, loc: byId(D.locations, o.branch.loc) } : null,
     eventsSeen: new Set(o.eventsSeen), q: [], peakMonth: o.peakMonth == null ? -Infinity : o.peakMonth, paused: false, over: null };
   hide(); resetScene();
   if (S.month >= M.months){ enqueue(proposal); S.q.shift()(); }
@@ -2472,6 +2510,72 @@ $("ind").addEventListener("click", () => {
   show(`<div class="kicker">店の状態</div><h1>4つの指標</h1>${Object.entries(IND.names).map(([k, n]) => `<p><b>${n} ${Math.round(S.ind[k])}</b><br><span style="font-size:13px">${desc[k]}</span></p>`).join("")}
     <div class="row"><button class="btn primary" id="okBtn">閉じる</button></div>`, () => { $("okBtn").onclick = () => { hide(); S.paused = was; }; });
 });
+
+/* ---------- 2号店とFC展開 ---------- */
+const EXB = D.expansion.branch, EXF = D.expansion.fc;
+function healthyNow(){ return !riskSources().length && !S.riskMonths.some((x) => x.t >= S.month - 6) && S.rumor <= 0 && S.ops.slice(-6).reduce((a, b) => a + b, 0) > 0; }
+function branchWhyNot(){
+  if (S.month < EXB.minMonth) return `開業から${EXB.minMonth}か月後から`;
+  if (!healthyNow()) return "健全営業で、直近6か月が黒字であること";
+  return "";
+}
+function fcWhyNot(){
+  if (!S.branch || S.branch.openedAt == null) return "2号店が営業していること";
+  if (S.month < EXF.minMonth) return `開業から${EXF.minMonth}か月後から`;
+  if (S.ind.trust < EXF.trust) return `信頼${EXF.trust}以上（いま${Math.round(S.ind.trust)}）`;
+  if (S.ind.fame < EXF.fame) return `知名度${EXF.fame}以上（いま${Math.round(S.ind.fame)}）`;
+  if (!healthyNow()) return "健全営業で、直近6か月が黒字であること";
+  return "";
+}
+function expansionTick(wasOpen){
+  if (!S.fc) S.fc = { recruiting: false, count: 0 };
+  const br = S.branch;
+  if (br && br.wait > 0){ br.wait--; if (br.wait === 0){ br.openedAt = S.month; note(`2号店（${br.loc.name}）が開業した。`, "good"); story(`2号店（${br.loc.name}・${br.tables}卓）が開業した。`); logEv("branch_open", {}); } }
+  if (!wasOpen) return;
+  if (S.fc.recruiting && !fcWhyNot() && S.fc.count < EXF.max && rand() < EXF.joinBase * S.ind.fame / 50){
+    S.fc.count++; S.cash += EXF.fee; note(`FC加盟店が1店増えた（加盟金 +${yen(EXF.fee)}）`, "good"); story(`FC加盟店が${S.fc.count}店になった。`); logEv("fc_join", { n: S.fc.count });
+  }
+  if (S.fc.count && rand() < EXF.scandalP * S.fc.count * (S.ind.trust < 50 ? 2 : 1)){
+    const t = EXF.scandalTexts[Math.floor(rand() * EXF.scandalTexts.length)];
+    S.ind.trust = clamp(S.ind.trust - 8, 0, 100); S.ind.fame = clamp(S.ind.fame - 3, 0, 100);
+    note(`${t}（信頼−8）`, "bad"); story(`${t}。本部の信頼が下がった。`); logEv("fc_scandal", {});
+  }
+}
+function openStores(){
+  const was = S.paused; S.paused = true;
+  const f = { loc: S.loc.id, tables: 4 };
+  const render = () => {
+    const br = S.branch, why = branchWhyNot(), fwhy = fcWhyNot();
+    const loc = byId(D.locations, f.loc), b = build(loc, f.tables), cost = b.invest + D.license.fee;
+    show(`<div class="kicker">出店・FC</div><h1>店を増やす</h1>
+      <h2>本店</h2><p>${esc(S.loc.name)} ・ ${S.tables}卓</p>
+      <h2>2号店</h2>
+      ${br ? `<p>${esc(br.loc.name)} ・ ${br.tables}卓 ・ ${br.openedAt == null ? `開業まであと${br.wait}か月` : `営業中（${S.month - br.openedAt}か月目）`}</p>
+        <p class="muted" style="font-size:12.5px">営業スタイル・コンセプト・営業時間・料金・指標は本店と共通。客数は2号店の立地で決まる。</p>`
+      : why ? `<p class="muted">まだ出せない：${esc(why)}</p>`
+      : `${optGroup(D.locations, f.loc, "loc", (l) => `家賃 坪${l.tsuboRent}万円・読みにくさ ±${Math.round(l.demandSd * 100)}%`)}
+        <div class="stepper" style="margin-top:10px"><button data-s="-1">−</button><output>${f.tables}</output><button data-s="1">＋</button><span class="muted" style="font-size:12px">卓（${EXB.minTables}〜${EXB.maxTables}）</span></div>
+        <table class="t"><tr><td>初期投資（敷金・内装・卓・準備・許可）</td><td>${yen(cost)}</td></tr><tr><td>家賃</td><td>${yen(b.rent)}/月</td></tr><tr><td>手元資金</td><td class="${S.cash < cost ? "negc" : ""}">${yen(S.cash)}</td></tr></table>
+        <p class="muted" style="font-size:12.5px">許可を待って${EXB.waitMonths}か月後に開業。その間も家賃はかかる。客は開業時の3割から増えていく。足りなければ先に借入（6）。</p>
+        <div class="row" style="justify-content:flex-start"><button class="btn primary" id="openBr" ${S.cash < cost ? "disabled" : ""}>この2号店を出す（${yen(cost)}）</button></div>`}
+      <h2>FC展開</h2>
+      <p>加盟店 ${S.fc ? S.fc.count : 0}店。加盟金 ${yen(EXF.fee)}／店、ロイヤリティは加盟店の月商の${Math.round(EXF.royalty * 100)}%（1店 月${Math.round(EXF.fcRevenue * EXF.royalty)}万円ほど）。加盟店の不祥事は本部の信頼を下げる。</p>
+      ${fwhy ? `<p class="muted">まだ募集できない：${esc(fwhy)}</p>` : `<label class="chk"><input type="checkbox" id="fcRec" ${S.fc.recruiting ? "checked" : ""}> <span>加盟店を募集する（知名度が高いほど集まる）</span></label>`}
+      <div class="row"><button class="btn primary" id="okBtn">閉じる</button></div>`);
+    wireGroups(f, render);
+    card.querySelectorAll("[data-s]").forEach((x) => x.onclick = () => { f.tables = clamp(f.tables + +x.dataset.s, EXB.minTables, EXB.maxTables); render(); });
+    if ($("openBr")) $("openBr").onclick = () => {
+      const share = Math.max(0.3, 1 + gauss() * loc.demandSd);
+      S.cash -= cost;
+      S.branch = { loc, tables: f.tables, share, openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost };
+      note(`2号店（${loc.name}・${f.tables}卓）の出店を決めた（${yen(-cost)}）`); story(`2号店を${loc.name}に${f.tables}卓で出すと決めた。初期投資 ${yen(cost)}。`); logEv("branch", { loc: loc.id, tables: f.tables });
+      render();
+    };
+    if ($("fcRec")) $("fcRec").onchange = (e) => { S.fc.recruiting = e.target.checked; note(e.target.checked ? "FC加盟店の募集を始めた" : "FC加盟店の募集を止めた"); story(e.target.checked ? "FC加盟店の募集を始めた。" : "FC加盟店の募集を止めた。"); };
+    $("okBtn").onclick = () => { hide(); S.paused = was; syncHUD(); };
+  };
+  render();
+}
 const RANK_KEY = "poker-shop-v07-rank";
 function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
 function saveRank(kind, amount){
@@ -2724,6 +2828,7 @@ function act(a){
   if (a === "edu"){ const e = O.education, k = S.hiring.eduMult; S.cash -= e.cost; S.ind.slack = clamp(S.ind.slack + e.slack * k, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort * k, 0, 100); S.eduCount = (S.eduCount || 0) + 1; note(`スタッフ教育（${yen(-e.cost)}）余力 +${Math.round(e.slack * k)}・居心地 +${Math.round(e.comfort * k)}`); logEv("edu", {}); }
   if (a === "settings") openSettings();
   if (a === "finance") openFinance();
+  if (a === "stores") openStores();
   syncHUD();
 }
 function openSettings(){
@@ -2792,7 +2897,7 @@ function openFinance(){
 $("dock").addEventListener("click", (e) => { const b = e.target.closest(".act"); if (b) act(b.dataset.a); });
 addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT" || e.target.classList.contains("h")) return;
-  const m = { "1": "ad", "2": "tableAdd", "3": "tableSub", "4": "settings", "5": "edu", "6": "finance" }[e.key];
+  const m = { "1": "ad", "2": "tableAdd", "3": "tableSub", "4": "settings", "5": "edu", "6": "finance", "7": "stores" }[e.key];
   if (m) act(m);
   if (e.key === " " && S && !S.over && !ov.classList.contains("show")) { e.preventDefault(); togglePause(); }
 });
@@ -2846,6 +2951,7 @@ function syncHUD(){
   const st = styleNow();
   $("styleV").innerHTML = `営業スタイル ${tierHTML(st)} ${esc(st.name)}`;
   $("mixV").innerHTML = `<span class="bar">${SEG.list.map((g) => `<i class="seg-${g.id}" style="width:${(S.mix[g.id] * 100).toFixed(1)}%" title="${g.name}"></i>`).join("")}</span><span class="lg">${SEG.list.map((g) => `${g.name} ${Math.round(S.mix[g.id] * 100)}%`).join("・")}</span>`;
+  $("storesC").textContent = S.branch || (S.fc && S.fc.count) ? `${1 + (S.branch ? 1 : 0)}店${S.fc && S.fc.count ? `＋FC${S.fc.count}` : ""}` : "出店・FC";
   $("debtV").textContent = S.debt > 0 ? `借入残高 ${yen(S.debt)}` : "";
   const rk = risks();
   $("riskV").textContent = rk.arrest > 0 || rk.order > 0 ? `今月 摘発 ${pct(rk.arrest)} ／ ${R.labels.order} ${pct(rk.order, 0)}` : "";
@@ -3003,7 +3109,7 @@ function updatePeople(dt, sp){
 /* 毎月のお金の流れ：売上（緑）が卓から手元資金へ、家賃・人件費など（赤）が手元資金から出ていく */
 function flowAnim(p, wasOpen){
   const box = $("flow"); if (!box) return;
-  const out = [["売上", p.rev || 0, "in"], ["原価・決済", (p.rev || 0) * O.variableRate, "out"], ["家賃", S.rent, "out"], ["人件費", wasOpen ? p.staff : 0, "out"], ["その他", wasOpen ? O.otherFixed + O.ads[S.ad].cost + (S.concept.opsCost || 0) + (p.interest || 0) : 0, "out"]];
+  const out = [["売上", p.rev || 0, "in"], ["原価・決済", p.varCost || 0, "out"], ["家賃", p.rent || S.rent, "out"], ["人件費", wasOpen ? p.staff : 0, "out"], ["その他", wasOpen ? p.other + (p.interest || 0) : 0, "out"]];
   const max = Math.max(1, ...out.map((r) => r[1]));
   box.querySelectorAll(".frow").forEach((row, i) => { const r = out[i]; if (!r) return; row.querySelector("i").style.width = (r[1] / max * 100).toFixed(1) + "%"; row.querySelector("b").textContent = (r[2] === "in" ? "+" : "−") + Math.round(r[1]).toLocaleString("ja-JP"); });
   const net = p.net; $("flowNet").textContent = (net >= 0 ? "+" : "−") + Math.round(Math.abs(net)).toLocaleString("ja-JP") + "万円"; $("flowNet").className = net >= 0 ? "pos" : "negc";
@@ -3089,7 +3195,8 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.state] = (a[p.state] || 0) + 1, a), {}), sample: people.slice(0, 3).map((p) => [p.x.toFixed(2), p.y.toFixed(2), p.tx && p.tx.toFixed(2), p.ty && p.ty.toFixed(2), p.state]), lit: shopLit(), want: targetSeated() });
-window.__shop = { state: () => S, cfg: CFG, start: (cfg) => startGame({ ...CFG, ...cfg }) };
+window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + gauss() * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
+  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
 requestAnimationFrame(frame);
