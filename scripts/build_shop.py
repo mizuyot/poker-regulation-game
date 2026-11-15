@@ -29,7 +29,7 @@ def embed(html: str, element_id: str, data: dict) -> str:
 
 def cited_ids(shop: dict) -> list[str]:
     ids: list[str] = []
-    groups = [shop["illegal"], [shop["license"]], [{"provisionIds": shop["operations"].get("legalCloseProvisionIds", [])}]]
+    groups = [shop["illegal"], shop["styles"]["list"], [shop["license"]], [{"provisionIds": shop["operations"].get("legalCloseProvisionIds", [])}]]
     for group in groups:
         for item in group:
             for pid in item.get("provisionIds", []):
@@ -77,6 +77,10 @@ def main() -> None:
         write({"id": "shop_risk", "kind": "risk", **shop["risk"]})
         write({"id": "shop_valuation", "kind": "valuation", **shop["valuation"], "note_fictional": fictional})
         write({"id": "shop_finance", "kind": "finance", **shop["finance"], "note_fictional": fictional})
+        for st in shop["styles"]["list"]:
+            write({"id": f"shop_style_{st['id']}", "kind": "business_style", **st,
+                   "provisions": prov_refs(st.get("provisionIds", [])), "note_fictional": shop["styles"]["note"]})
+        write({"id": "shop_staff", "kind": "staff_policy", **shop["staff"], "note_fictional": fictional})
         for ev in shop["events"]:
             write({"id": f"shop_event_{ev['id']}", "kind": "event", **ev, "note_fictional": "実在の事件の構造だけを取り出した架空の事件。"})
     print("wrote", OUTPUT)

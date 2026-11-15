@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "ポーカー店経営 5年",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "unit": "万円",
     "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
     "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。scripts/sim_v05.py・sim_buyout.py で検証した値に合わせている。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
@@ -196,35 +196,6 @@
     ]
   },
   "illegal": [
-    {
-      "id": "cashout",
-      "name": "換金（チップを現金に戻す）",
-      "short": "換金",
-      "effect": {
-        "spend": 5
-      },
-      "arrest": 0.02,
-      "arrestGrowth": 0.002,
-      "order": 0.15,
-      "provisionIds": [
-        "keiho185",
-        "keiho186"
-      ]
-    },
-    {
-      "id": "prize",
-      "name": "成績に応じた景品",
-      "short": "景品",
-      "effect": {
-        "demand": 1.5
-      },
-      "arrest": 0.003,
-      "arrestGrowth": 0,
-      "order": 0.08,
-      "provisionIds": [
-        "fueiho23-2"
-      ]
-    },
     {
       "id": "unlicensed",
       "name": "許可を待たずに開く",
@@ -761,6 +732,48 @@
           ]
         }
       ]
+    },
+    {
+      "id": "contact",
+      "title": "スタッフと常連の、店の外でのやり取り",
+      "when": {
+        "minMonth": 8,
+        "contact": "allow"
+      },
+      "omen": "スタッフが常連と個人的に連絡を取り合い、店の外で賭けに誘われていたことが分かった。",
+      "choices": [
+        {
+          "label": "連絡先の交換を禁止にする",
+          "effects": {
+            "trust": 4,
+            "demand": {
+              "mult": 0.95,
+              "months": 6
+            },
+            "contactBan": true
+          },
+          "text": "今後は個人的な連絡先の交換を禁止した。常連の一部は不満そうだ。"
+        },
+        {
+          "label": "当事者のスタッフを処分する",
+          "effects": {
+            "trust": 2,
+            "slack": -8
+          },
+          "text": "当事者を処分した。現場は人手が足りなくなった。"
+        },
+        {
+          "label": "店の外のことなので関与しない",
+          "later": {
+            "months": 3,
+            "text": "店の外の賭けが、店の名前とともに噂になった。",
+            "effects": {
+              "trust": -12,
+              "fame": 2
+            }
+          }
+        }
+      ]
     }
   ],
   "eventChance": 0.3,
@@ -775,5 +788,200 @@
     "近くで大型イベントがあり、客が流れた",
     "悪天候が続いた",
     "SNSで根拠のない悪評が出回った"
-  ]
+  ],
+  "styles": {
+    "note": "黒・グレー・健全は、このゲームでのリスクの区分。適法・違法の判定ではない。確率と効果は架空の値。",
+    "list": [
+      {
+        "id": "cashout",
+        "name": "換金あり",
+        "tier": "black",
+        "tierLabel": "黒",
+        "desc": "勝ったチップを現金に戻す。",
+        "effect": {
+          "demand": 1.0,
+          "spend": 5.0
+        },
+        "arrest": 0.02,
+        "arrestGrowth": 0.002,
+        "order": 0.15,
+        "dd": {
+          "q": 0.5,
+          "lateQ": 0.9,
+          "result": "shell"
+        },
+        "provisionIds": [
+          "keiho185",
+          "keiho186"
+        ]
+      },
+      {
+        "id": "token",
+        "name": "チケット・コインを発行",
+        "tier": "gray",
+        "tierLabel": "グレー",
+        "desc": "勝った人に、次回以降に使えるチケットやコインを渡す。",
+        "effect": {
+          "demand": 1.3,
+          "spend": 1.1
+        },
+        "arrest": 0.004,
+        "arrestGrowth": 0.0005,
+        "order": 0.08,
+        "dd": {
+          "q": 0.3,
+          "lateQ": 0.6,
+          "result": "cut",
+          "cut": 0.5
+        },
+        "provisionIds": [
+          "fueiho23-2"
+        ]
+      },
+      {
+        "id": "prize",
+        "name": "商品をあげる",
+        "tier": "gray",
+        "tierLabel": "グレー",
+        "desc": "成績に応じて商品を渡す。",
+        "effect": {
+          "demand": 1.35,
+          "spend": 0.95
+        },
+        "arrest": 0.003,
+        "arrestGrowth": 0,
+        "order": 0.07,
+        "dd": {
+          "q": 0.3,
+          "lateQ": 0.6,
+          "result": "cut",
+          "cut": 0.5
+        },
+        "provisionIds": [
+          "fueiho23-2"
+        ]
+      },
+      {
+        "id": "food",
+        "name": "店内飲食を割り引く",
+        "tier": "gray",
+        "tierLabel": "グレー",
+        "desc": "成績に応じて、店内の飲食を割り引く。",
+        "effect": {
+          "demand": 1.15,
+          "spend": 0.97
+        },
+        "arrest": 0.001,
+        "arrestGrowth": 0,
+        "order": 0.04,
+        "dd": {
+          "q": 0.2,
+          "lateQ": 0.4,
+          "result": "cut",
+          "cut": 0.7
+        },
+        "provisionIds": [
+          "fueiho23-2"
+        ]
+      },
+      {
+        "id": "deposit",
+        "name": "預入のみ",
+        "tier": "clean",
+        "tierLabel": "健全",
+        "desc": "チップは店に預けて次回に持ち越せるだけ。換金も景品もない。",
+        "effect": {
+          "demand": 1.0,
+          "spend": 1.0
+        },
+        "arrest": 0,
+        "arrestGrowth": 0,
+        "order": 0,
+        "dd": null,
+        "provisionIds": []
+      }
+    ]
+  },
+  "staff": {
+    "hiring": [
+      {
+        "id": "exp",
+        "name": "経験者を中心に採る",
+        "desc": "人件費は高いが、最初から回る。",
+        "staffMult": 1.2,
+        "start": {
+          "slack": 15,
+          "comfort": 5
+        },
+        "trouble": 0.8,
+        "eduMult": 1.0
+      },
+      {
+        "id": "rookie",
+        "name": "未経験から育てる",
+        "desc": "人件費は安い。最初は手が回らないが、教育がよく効く。",
+        "staffMult": 0.85,
+        "start": {
+          "slack": -10
+        },
+        "trouble": 1.1,
+        "eduMult": 1.6
+      },
+      {
+        "id": "lean",
+        "name": "少人数で回す",
+        "desc": "人件費は一番安い。いつも余裕がない。",
+        "staffMult": 0.75,
+        "start": {
+          "slack": -20
+        },
+        "trouble": 1.25,
+        "eduMult": 1.0
+      }
+    ],
+    "policy": [
+      {
+        "id": "manual",
+        "name": "ルールと手順を徹底",
+        "desc": "判断がぶれない。信頼が育つ。",
+        "trustTarget": 10,
+        "comfortTarget": 0,
+        "turns": 1.0
+      },
+      {
+        "id": "hospitality",
+        "name": "初心者へのおもてなし",
+        "desc": "初めての客が残りやすい。",
+        "trustTarget": 0,
+        "comfortTarget": 10,
+        "turns": 0.97
+      },
+      {
+        "id": "efficiency",
+        "name": "回転と効率",
+        "desc": "卓がよく回るが、居心地は下がる。",
+        "trustTarget": 0,
+        "comfortTarget": -8,
+        "turns": 1.08
+      }
+    ],
+    "contact": [
+      {
+        "id": "ban",
+        "name": "禁止する",
+        "desc": "スタッフと常連の個人的なやり取りを禁じる。常連化は少し遅い。",
+        "demand": 0.97,
+        "start": {
+          "trust": 5
+        }
+      },
+      {
+        "id": "allow",
+        "name": "禁止しない",
+        "desc": "常連が定着しやすい。私的なやり取りから問題が起きることがある。",
+        "demand": 1.06,
+        "start": {}
+      }
+    ]
+  }
 }
