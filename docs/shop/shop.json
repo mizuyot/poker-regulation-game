@@ -1500,7 +1500,7 @@
       "convert": 1.6,
       "tourney": 0.1,
       "comfortTarget": 12,
-      "slackTarget": -5,
+      "slackTarget": -2,
       "trustTarget": 0,
       "eventBias": {
         "whale": 2,
@@ -1511,14 +1511,14 @@
     {
       "id": "competitive",
       "name": "競技志向",
-      "desc": "大会と配信で客を呼ぶ。運営の公平さが問われ、大会・配信の運営費（月20万円）がかかる。",
+      "desc": "大会と配信で客を呼ぶ。運営の公平さが問われ、大会・配信の運営費（月10万円）がかかる。",
       "start": {
         "regular": 0.35,
         "newbie": 0.25,
         "tourney": 0.4
       },
       "demand": 1.0,
-      "spend": 0.97,
+      "spend": 1.0,
       "convert": 0.8,
       "tourney": 0.45,
       "comfortTarget": -8,
@@ -1530,7 +1530,7 @@
         "pro": 3,
         "tournament": 3
       },
-      "opsCost": 20
+      "opsCost": 10
     },
     {
       "id": "social",
@@ -1542,7 +1542,7 @@
         "tourney": 0.1
       },
       "demand": 1.0,
-      "spend": 1.03,
+      "spend": 1.0,
       "convert": 1.2,
       "tourney": 0.08,
       "comfortTarget": 6,

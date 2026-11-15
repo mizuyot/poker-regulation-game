@@ -1765,7 +1765,7 @@ summary{cursor:pointer;color:var(--muted)}
       "convert": 1.6,
       "tourney": 0.1,
       "comfortTarget": 12,
-      "slackTarget": -5,
+      "slackTarget": -2,
       "trustTarget": 0,
       "eventBias": {
         "whale": 2,
@@ -1776,14 +1776,14 @@ summary{cursor:pointer;color:var(--muted)}
     {
       "id": "competitive",
       "name": "競技志向",
-      "desc": "大会と配信で客を呼ぶ。運営の公平さが問われ、大会・配信の運営費（月20万円）がかかる。",
+      "desc": "大会と配信で客を呼ぶ。運営の公平さが問われ、大会・配信の運営費（月10万円）がかかる。",
       "start": {
         "regular": 0.35,
         "newbie": 0.25,
         "tourney": 0.4
       },
       "demand": 1.0,
-      "spend": 0.97,
+      "spend": 1.0,
       "convert": 0.8,
       "tourney": 0.45,
       "comfortTarget": -8,
@@ -1795,7 +1795,7 @@ summary{cursor:pointer;color:var(--muted)}
         "pro": 3,
         "tournament": 3
       },
-      "opsCost": 20
+      "opsCost": 10
     },
     {
       "id": "social",
@@ -1807,7 +1807,7 @@ summary{cursor:pointer;color:var(--muted)}
         "tourney": 0.1
       },
       "demand": 1.0,
-      "spend": 1.03,
+      "spend": 1.0,
       "convert": 1.2,
       "tourney": 0.08,
       "comfortTarget": 6,
@@ -3003,7 +3003,7 @@ function updatePeople(dt, sp){
 /* 毎月のお金の流れ：売上（緑）が卓から手元資金へ、家賃・人件費など（赤）が手元資金から出ていく */
 function flowAnim(p, wasOpen){
   const box = $("flow"); if (!box) return;
-  const out = [["売上", p.rev || 0, "in"], ["原価・決済", (p.rev || 0) * O.variableRate, "out"], ["家賃", S.rent, "out"], ["人件費", wasOpen ? p.staff : 0, "out"], ["その他", wasOpen ? O.otherFixed + O.ads[S.ad].cost + (p.interest || 0) : 0, "out"]];
+  const out = [["売上", p.rev || 0, "in"], ["原価・決済", (p.rev || 0) * O.variableRate, "out"], ["家賃", S.rent, "out"], ["人件費", wasOpen ? p.staff : 0, "out"], ["その他", wasOpen ? O.otherFixed + O.ads[S.ad].cost + (S.concept.opsCost || 0) + (p.interest || 0) : 0, "out"]];
   const max = Math.max(1, ...out.map((r) => r[1]));
   box.querySelectorAll(".frow").forEach((row, i) => { const r = out[i]; if (!r) return; row.querySelector("i").style.width = (r[1] / max * 100).toFixed(1) + "%"; row.querySelector("b").textContent = (r[2] === "in" ? "+" : "−") + Math.round(r[1]).toLocaleString("ja-JP"); });
   const net = p.net; $("flowNet").textContent = (net >= 0 ? "+" : "−") + Math.round(Math.abs(net)).toLocaleString("ja-JP") + "万円"; $("flowNet").className = net >= 0 ? "pos" : "negc";
