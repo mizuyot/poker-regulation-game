@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "ポーカー店経営 5年",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "unit": "万円",
     "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
     "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。scripts/sim_v05.py・sim_buyout.py で検証した値に合わせている。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
@@ -335,7 +335,11 @@
               "mult": 0.85,
               "months": 4
             },
-            "comfort": 10
+            "comfort": 10,
+            "mix": {
+              "regular": -0.05,
+              "newbie": 0.06
+            }
           },
           "text": "彼に出入りを断った。取り巻きも来なくなり、売上が落ちた。",
           "later": {
@@ -359,7 +363,10 @@
             "effects": {
               "comfort": -12,
               "trust": -8,
-              "fame": 5
+              "fame": 5,
+              "mix": {
+                "newbie": -0.1
+              }
             }
           }
         }
@@ -549,7 +556,11 @@
           "label": "大会を広げる",
           "effects": {
             "fame": 8,
-            "comfort": -8
+            "comfort": -8,
+            "mix": {
+              "tourney": 0.12,
+              "regular": -0.08
+            }
           },
           "text": "大会の回数を増やした。知名度は上がったが、普段の常連は減った。"
         },
@@ -557,7 +568,11 @@
           "label": "開催を減らす",
           "effects": {
             "fame": -3,
-            "comfort": 5
+            "comfort": 5,
+            "mix": {
+              "tourney": -0.08,
+              "regular": 0.05
+            }
           },
           "text": "大会を月1回に絞った。"
         },
@@ -567,7 +582,10 @@
             "cash": -30,
             "fame": 3,
             "comfort": 3,
-            "slack": -4
+            "slack": -4,
+            "mix": {
+              "tourney": 0.04
+            }
           },
           "text": "大会は週末の昼、通常営業は夜、と分けた。"
         }
@@ -1436,5 +1454,104 @@
         "x1": 14.6
       }
     }
-  }
+  },
+  "segments": {
+    "note": "客層。比率は毎月動く。数値は架空。",
+    "list": [
+      {
+        "id": "regular",
+        "name": "常連",
+        "spend": 1.0,
+        "desc": "店を支える客。多いほど客数が安定し、競合に強く、店の値段の成長率が上がる。"
+      },
+      {
+        "id": "newbie",
+        "name": "初心者",
+        "spend": 0.85,
+        "desc": "居心地が良いと常連に育つ。悪いと入口で引き返す。"
+      },
+      {
+        "id": "tourney",
+        "name": "大会客",
+        "spend": 1.3,
+        "desc": "大会目当て。単価は高いが、居心地への不満も出やすい。"
+      }
+    ],
+    "regularDemandBonus": 0.3,
+    "regularCompShield": 0.4,
+    "regularGrowth": 0.05,
+    "baseConvert": 0.08,
+    "baseChurn": 0.03,
+    "tourneyFameBonus": 0.1,
+    "tourneyAdjust": 0.15
+  },
+  "concepts": [
+    {
+      "id": "beginner",
+      "name": "初心者中心",
+      "desc": "教える手間はかかるが、初心者が常連に育つ。",
+      "start": {
+        "regular": 0.25,
+        "newbie": 0.6,
+        "tourney": 0.15
+      },
+      "demand": 1.0,
+      "spend": 0.95,
+      "convert": 1.6,
+      "tourney": 0.1,
+      "comfortTarget": 12,
+      "slackTarget": -5,
+      "trustTarget": 0,
+      "eventBias": {
+        "whale": 2,
+        "tournament": 0.5
+      }
+    },
+    {
+      "id": "competitive",
+      "name": "競技志向",
+      "desc": "大会と配信で客を呼ぶ。運営の公平さが問われる。",
+      "start": {
+        "regular": 0.35,
+        "newbie": 0.25,
+        "tourney": 0.4
+      },
+      "demand": 1.05,
+      "spend": 1.05,
+      "convert": 0.8,
+      "tourney": 0.45,
+      "comfortTarget": -8,
+      "slackTarget": -3,
+      "trustTarget": 3,
+      "eventBias": {
+        "cheat": 3,
+        "leak": 3,
+        "pro": 3,
+        "tournament": 3
+      }
+    },
+    {
+      "id": "social",
+      "name": "交流中心",
+      "desc": "接客とコミュニティで再来店を増やす。常連が厚い。",
+      "start": {
+        "regular": 0.55,
+        "newbie": 0.35,
+        "tourney": 0.1
+      },
+      "demand": 0.95,
+      "spend": 1.0,
+      "convert": 1.2,
+      "tourney": 0.08,
+      "comfortTarget": 6,
+      "slackTarget": 0,
+      "trustTarget": 4,
+      "eventBias": {
+        "contact": 3,
+        "whale": 2,
+        "neighbor": 2
+      }
+    }
+  ],
+  "conceptChangeCost": 150
 }
