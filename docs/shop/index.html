@@ -259,7 +259,7 @@ summary{cursor:pointer;color:var(--muted)}
     <button class="act" data-a="tableAdd"><span class="ic">＋</span><span class="k">2</span><span class="c" id="addC">増卓</span></button>
     <button class="act" data-a="tableSub"><span class="ic">－</span><span class="k">3</span><span class="c" id="subC">減卓</span></button>
     <button class="act" data-a="settings"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.5 7.5 0 0 0-1.7-1L14.9 3h-4l-.4 2.7a7.5 7.5 0 0 0-1.7 1l-2.5-1-2 3.5L6.4 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.9h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12.9 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></span><span class="k">4</span><span class="c">営業設定</span></button>
-    <button class="act" data-a="edu"><span class="ic">育</span><span class="k">5</span><span class="c" id="eduC">教育</span></button>
+    <button class="act" data-a="staff"><span class="ic">人</span><span class="k">5</span><span class="c" id="eduC">人材</span></button>
     <button class="act" data-a="finance"><span class="ic">¥</span><span class="k">6</span><span class="c">借入</span></button>
     <button class="act" data-a="stores"><span class="ic">店</span><span class="k">7</span><span class="c" id="storesC">出店・FC</span></button>
   </div>
@@ -1915,6 +1915,99 @@ summary{cursor:pointer;color:var(--muted)}
         "desc": "小さく、堅実に回した。目立たないが崩れない店。"
       }
     ]
+  },
+  "staffSystem": {
+    "note": "スタッフは架空の人物。名前はよくある名字から自動で付ける。",
+    "perTable": 4,
+    "leanPerTable": 3,
+    "hireCost": 10,
+    "raiseRate": 0.15,
+    "managerWageMult": 1.5,
+    "names": [
+      "佐藤",
+      "鈴木",
+      "高橋",
+      "田中",
+      "伊藤",
+      "渡辺",
+      "山本",
+      "中村",
+      "小林",
+      "加藤",
+      "吉田",
+      "山田",
+      "佐々木",
+      "山口",
+      "松本",
+      "井上",
+      "木村",
+      "林",
+      "斎藤",
+      "清水",
+      "山崎",
+      "森",
+      "池田",
+      "橋本",
+      "阿部",
+      "石川",
+      "前田",
+      "藤田",
+      "小川",
+      "後藤"
+    ],
+    "hiring": {
+      "exp": {
+        "skill": [
+          3,
+          5
+        ],
+        "wage": 1.08,
+        "growth": 0.02
+      },
+      "rookie": {
+        "skill": [
+          1,
+          2
+        ],
+        "wage": 0.92,
+        "growth": 0.06
+      },
+      "lean": {
+        "skill": [
+          2,
+          4
+        ],
+        "wage": 0.82,
+        "growth": 0.03
+      }
+    },
+    "quitBase": 0.004,
+    "phases": [
+      {
+        "id": "open",
+        "name": "開業期",
+        "until": 6,
+        "focus": "資金を守り、客を増やす"
+      },
+      {
+        "id": "grow",
+        "name": "成長期",
+        "until": 24,
+        "focus": "満席・人手・接客の質を立て直す"
+      },
+      {
+        "id": "mature",
+        "name": "成熟期",
+        "until": 54,
+        "focus": "店長を育て、任せても回る店にする"
+      },
+      {
+        "id": "exit",
+        "name": "売却前",
+        "until": 999,
+        "focus": "人に頼った人気を、引き継げる仕組みに変える"
+      }
+    ]
   }
 }
     </script>
@@ -2038,6 +2131,8 @@ function newState(cfg){
     year: { rev: 0, op: 0 }, recs: [], q: [], log: [], timeline: [], over: null, paused: false, speed: 1, ddNotified: false,
   };
   st.startCash = st.cash; st.prevCash = st.cash; st.invest = M.fund - st.cash;
+  st.autoHire = true;
+  { const n = Math.round(cfg.tables * (cfg.hiring === "lean" ? SS.leanPerTable : SS.perTable) * (cfg.close - cfg.open) / O.baseHours); const saved = S; S = st; st.staffList = Array.from({ length: n }, () => makeStaff(cfg.hiring, loc)); S = saved; }
   return st;
 }
 function logEv(type, data){ S.log.push({ t: S.month, type, ...data }); }
@@ -2061,7 +2156,9 @@ const hoursLen = () => S.close - S.open;
 /* 1店舗ぶんの計算（本店と2号店で共用）。ブランド（指標・客層・コンセプト・営業スタイル・営業時間・料金）は共通 */
 function storeCalc(st, legalOnly){
   const svc = clamp(0.76 + S.ind.slack / 250, 0.76, 1); // 余力が低いと、さばききれずに客を逃す
-  const seats = Math.max(9, st.tables * 9 - (st.main ? FX().seatsLoss : 0)), turns = turnsFor(S.open, S.close, S.policy);
+  // 本店：スタッフが足りなければその分の卓は開けられない。熟練するほど卓が速く回る
+  const ssx = st.main && S.staffList ? staffStats() : null, fill = ssx && ssx.need ? Math.min(1, ssx.count / ssx.need) : 1;
+  const seats = Math.max(9, (st.tables * 9 - (st.main ? FX().seatsLoss : 0)) * fill), turns = turnsFor(S.open, S.close, S.policy) * (ssx ? 1 + (ssx.skill - 3) * 0.04 : 1);
   const hoursF = bandWeight(S.open, S.close) / BASE_W;
   const rampF = st.openedAt == null ? 0 : Math.min(1, O.rampStart + (1 - O.rampStart) * (S.month - st.openedAt) / O.rampMonths);
   const demand = st.loc.demand * st.share * rampF * demandMult(legalOnly) * hoursF;
@@ -2074,7 +2171,7 @@ function storeCalc(st, legalOnly){
   let rev = guests * O.days * spend;
   if (S.rumor > 0) rev *= 1 - R.orderRumor;
   if (S.shock > 0) rev *= 1 - O.trouble.shock;
-  const staff = st.loc.staffPerTable * S.hiring.staffMult * st.tables * hoursLen() / O.baseHours;
+  const staff = st.main && S.staffList ? S.staffList.reduce((a, x) => a + x.wage, 0) * hoursLen() / O.baseHours : st.loc.staffPerTable * S.hiring.staffMult * st.tables * hoursLen() / O.baseHours;
   return { demand, occ, guests, rev, staff, lost, lostSeat: Math.max(0, demand - cap), svc };
 }
 function project(legalOnly){
@@ -2145,11 +2242,13 @@ function monthTick(){
   if (wasOpen){
     i.fame = clamp(i.fame + O.ads[S.ad].fame + FX().fameGain * 0.5 + (p.occ > 0.8 ? 0.5 : 0), 0, 100);
     // 採用方式（経験者＋10／未経験−5、教育で育つ／少人数−20）を毎月の余力の戻り先に入れる
-    const slackTarget = 85 + (S.hiring.slackTarget || 0) + FX().slackTarget + Math.min(10, (S.eduCount || 0) * (S.hiring.id === "rookie" ? 1.5 : 0.5)) - 70 * Math.max(0, p.occ - 0.5) / 0.4 - Math.max(0, hoursLen() - 10) * 3;
+    const ssx = staffStats(), fill = ssx.need ? ssx.count / ssx.need : 1;
+    const slackTarget = 85 + clamp((fill - 1) * 60, -30, 15) + (ssx.skill - 3) * 5 + (ssx.manager ? 5 : 0) + FX().slackTarget - 70 * Math.max(0, p.occ - 0.5) / 0.4 - Math.max(0, hoursLen() - 10) * 3;
     i.slack = clamp(i.slack + (slackTarget - i.slack) * 0.2, 0, 100);
-    i.comfort = clamp(i.comfort + ((50 + (i.slack - 50) * 0.4 + S.policy.comfortTarget + FX().comfortTarget - S.mix.tourney * 10) - i.comfort) * 0.1, 0, 100);
+    i.comfort = clamp(i.comfort + ((50 + (i.slack - 50) * 0.4 + S.policy.comfortTarget + FX().comfortTarget + (staffStats().host - 3) * 4 - S.mix.tourney * 10) - i.comfort) * 0.1, 0, 100);
     i.trust = clamp(i.trust + ((50 + S.policy.trustTarget + FX().trustTarget) - i.trust) * 0.04, 0, 100);
     updateMix();
+    staffMonthly();
   }
   S.tempDemand = S.tempDemand.filter((t) => --t.months > 0);
   if (S.rumor > 0) S.rumor--;
@@ -2192,7 +2291,7 @@ function rec(p, wasOpen){
 function normMix(){ const t = S.mix.regular + S.mix.newbie + S.mix.tourney; for (const k of ["regular", "newbie", "tourney"]) S.mix[k] /= t; }
 function updateMix(){
   const i = S.ind, m = S.mix;
-  const conv = SEG.baseConvert * FX().convert * (i.comfort / 50) * m.newbie;
+  const conv = SEG.baseConvert * FX().convert * (1 + (staffStats().teach - 3) * 0.15) * (i.comfort / 50) * m.newbie;
   const churn = SEG.baseChurn * (1 + Math.max(0, 50 - i.comfort) / 50 + Math.max(0, 50 - i.trust) / 50) * m.regular;
   m.regular += conv - churn; m.newbie += churn - conv;
   const tt = FX().tourney + (i.fame - 30) / 100 * SEG.tourneyFameBonus;
@@ -2648,6 +2747,87 @@ $("ind").addEventListener("click", () => {
     <div class="row"><button class="btn primary" id="okBtn">閉じる</button></div>`, () => { $("okBtn").onclick = () => { hide(); S.paused = was; }; });
 });
 
+
+/* ---------- スタッフ（個人）・成長の段階・店長 ---------- */
+const SS = D.staffSystem;
+function makeStaff(hiringId, locObj){
+  const h = SS.hiring[hiringId] || SS.hiring.exp, lo = h.skill[0], hi = h.skill[1];
+  const r = (a, b) => a + Math.floor(rand() * (b - a + 1));
+  const skill = r(lo, hi), teach = r(Math.max(1, lo - 1), hi), host = r(Math.max(1, lo - 1), hi);
+  const base = locObj.staffPerTable / SS.perTable;
+  return { id: Math.floor(rand() * 1e9).toString(36), name: SS.names[Math.floor(rand() * SS.names.length)], skill, teach, host,
+    wage: Math.round(base * h.wage * (0.95 + 0.025 * (skill + host - 6)) * 10) / 10, morale: 60, months: 0, manager: false, growth: h.growth };
+}
+function staffNeed(){ return S.tables * SS.perTable * hoursLen() / O.baseHours; }
+function staffStats(){
+  const st = S.staffList || [], n = st.length || 1, avg = (k) => st.reduce((a, x) => a + x[k], 0) / n;
+  return { count: st.length, need: staffNeed(), skill: avg("skill"), teach: avg("teach"), host: avg("host"), morale: avg("morale"), wage: st.reduce((a, x) => a + x.wage, 0), manager: st.find((x) => x.manager) };
+}
+function staffMonthly(){
+  const st = S.staffList; if (!st) return;
+  for (const x of st){
+    x.months++;
+    x.morale = clamp(x.morale + ((58 + (S.ind.slack - 50) * 0.5 + (x.manager ? 15 : 0)) - x.morale) * 0.15, 0, 100);
+    if (rand() < x.growth){ const k = ["skill", "teach", "host"][Math.floor(rand() * 3)]; if (x[k] < 5){ x[k]++; } }
+  }
+  // 退職：士気が低いほど辞めやすい。育ったエースは「退職相談」の事件になる
+  for (const x of [...st]){
+    const q = SS.quitBase + Math.max(0, 35 - x.morale) / 300;
+    if (rand() < q){
+      if (x.skill >= 4 && x.months >= 12 && !x.manager){ enqueue(() => quitTalk(x)); break; }
+      S.staffList = S.staffList.filter((y) => y !== x); note(`スタッフの${x.name}さんが辞めた`, "bad"); story(`スタッフの${x.name}さんが辞めた（勤続${x.months}か月）。`); logEv("quit", {});
+      if (S.autoHire){ const n = makeStaff("rookie", S.loc); S.staffList.push(n); S.cash -= SS.hireCost; }
+    }
+  }
+}
+function quitTalk(x){
+  pauseWith(() => show(`<div class="kicker">${monthLabel(S.month)} ・ 事件</div><h1>${esc(x.name)}さんから退職の相談</h1>
+    <p>勤続${x.months}か月、店で一番卓を回してきた${esc(x.name)}さん（進行${x.skill}・教える${x.teach}・接客${x.host}）から「辞めようと思っている」と相談があった。指名で来る常連も多い。</p>
+    <h2>どうする？</h2>
+    <button class="opt choice" data-k="raise"><b>給与を上げて引き留める</b><small>給与 +30%。士気が上がる</small></button>
+    <button class="opt choice" data-k="mgr"><b>店長に抜擢する</b><small>給与 ×${SS.managerWageMult}。任せても回る店に近づく</small></button>
+    <button class="opt choice" data-k="go"><b>送り出す</b><small>常連の一部が離れる</small></button>`, () => {
+    card.querySelectorAll(".choice").forEach((b) => b.onclick = () => {
+      const k = b.dataset.k;
+      if (k === "raise"){ x.wage = Math.round(x.wage * 1.3 * 10) / 10; x.morale = 80; story(`${x.name}さんを昇給で引き留めた。`); }
+      if (k === "mgr"){ (S.staffList.find((y) => y.manager) || {}).manager = false; x.manager = true; x.wage = Math.round(x.wage * SS.managerWageMult * 10) / 10; x.morale = 90; story(`${x.name}さんを店長に抜擢した。`); }
+      if (k === "go"){ S.staffList = S.staffList.filter((y) => y !== x); if (S.autoHire){ S.staffList.push(makeStaff("rookie", S.loc)); S.cash -= SS.hireCost; } S.mix.regular = Math.max(0.05, S.mix.regular - 0.04); normMix(); story(`${x.name}さんを送り出した。指名の常連の一部が離れた。`); }
+      logEv("quitTalk", { choice: k }); hide(); resume();
+    });
+  }));
+}
+function phaseNow(){
+  if (S.openedAt == null) return SS.phases[0];
+  const m = S.month - S.openedAt;
+  if (S.month >= R.ddStart) return SS.phases[3];
+  return SS.phases.find((p) => m < p.until) || SS.phases[2];
+}
+function openStaff(){
+  const was = S.paused; S.paused = true;
+  let cands = [makeStaff(S.hiring.id, S.loc), makeStaff("rookie", S.loc), makeStaff("exp", S.loc)];
+  const dots = (n) => `<span style="color:var(--gray);letter-spacing:-1px">${"●".repeat(n)}${"○".repeat(5 - n)}</span>`;
+  const render = () => {
+    const ss = staffStats();
+    show(`<div class="kicker">人材 ・ ${esc(phaseNow().name)}（${esc(phaseNow().focus)}）</div><h1>スタッフ ${ss.count}人</h1>
+      <p style="font-size:13px">必要な目安 ${Math.round(ss.need)}人（${S.tables}卓×${SS.perTable}人×営業${hoursLen()}時間）。給与の合計 ${yen(ss.wage * hoursLen() / O.baseHours)}/月。${ss.manager ? `店長：${esc(ss.manager.name)}さん` : `<span class="warn">店長がいない（売るとき「オーナー依存」で割り引かれる）</span>`}</p>
+      <div style="max-height:300px;overflow:auto;border:1px solid var(--soft);border-radius:10px"><table class="t" style="font-size:12px;margin:0">
+        <tr><th>名前</th><th>進行</th><th>教える</th><th>接客</th><th>給与</th><th>士気</th><th>勤続</th><th></th></tr>
+        ${S.staffList.map((x, i) => `<tr><td style="text-align:left">${esc(x.name)}${x.manager ? "（店長）" : ""}</td><td>${dots(x.skill)}</td><td>${dots(x.teach)}</td><td>${dots(x.host)}</td><td>${x.wage}</td><td class="${x.morale < 35 ? "negc" : ""}">${Math.round(x.morale)}</td><td>${x.months}か月</td>
+          <td><button class="btn" style="padding:2px 8px;font-size:11px" data-raise="${i}">昇給</button>${x.manager ? "" : ` <button class="btn" style="padding:2px 8px;font-size:11px" data-mgr="${i}">店長に</button>`}</td></tr>`).join("")}
+      </table></div>
+      <h2>採用（候補から1人。採用費 ${yen(SS.hireCost)}）</h2>
+      <div class="opts">${cands.map((c, i) => `<button class="opt" data-hire="${i}"><b>${esc(c.name)}さん</b><small>進行 ${dots(c.skill)}<br>教える ${dots(c.teach)}<br>接客 ${dots(c.host)}<br>給与 ${c.wage}万円/月</small></button>`).join("")}</div>
+      <label class="chk"><input type="checkbox" id="autoHire" ${S.autoHire ? "checked" : ""}> <span>辞めた人の穴を、未経験者で自動的に埋める（採用費 ${yen(SS.hireCost)}／人）</span></label>
+      <div class="row"><button class="btn" id="eduBtn">教育する（${yen(O.education.cost)}）</button><button class="btn primary" id="okBtn">閉じる</button></div>`);
+    card.querySelectorAll("[data-raise]").forEach((b) => b.onclick = () => { const x = S.staffList[+b.dataset.raise]; x.wage = Math.round(x.wage * (1 + SS.raiseRate) * 10) / 10; x.morale = clamp(x.morale + 20, 0, 100); render(); });
+    card.querySelectorAll("[data-mgr]").forEach((b) => b.onclick = () => { S.staffList.forEach((y) => { if (y.manager){ y.manager = false; } }); const x = S.staffList[+b.dataset.mgr]; x.manager = true; x.wage = Math.round(x.wage * SS.managerWageMult * 10) / 10; x.morale = 90; story(`${x.name}さんを店長にした。`); logEv("manager", {}); render(); });
+    card.querySelectorAll("[data-hire]").forEach((b) => b.onclick = () => { const c = cands[+b.dataset.hire]; S.staffList.push(c); S.cash -= SS.hireCost; cands = cands.map((x) => x === c ? makeStaff(["exp", "rookie", "lean"][Math.floor(rand() * 3)], S.loc) : x); logEv("hire", {}); render(); });
+    $("autoHire").onchange = (e) => { S.autoHire = e.target.checked; };
+    $("eduBtn").onclick = () => { act("edu"); render(); };
+    $("okBtn").onclick = () => { hide(); S.paused = was; syncHUD(); };
+  };
+  render();
+}
 /* ---------- 2号店とFC展開 ---------- */
 const EXB = D.expansion.branch, EXF = D.expansion.fc;
 function healthyNow(){ return !riskSources().length && !S.riskMonths.some((x) => x.t >= S.month - 6) && S.rumor <= 0 && S.ops.slice(-6).reduce((a, b) => a + b, 0) > 0; }
@@ -2974,10 +3154,11 @@ function act(a){
     S.tables--; const back = L.tablePrice * L.tableResidual; S.cash += back; S.tablesValue -= L.tablePrice;
     note(`減卓（${yen(back)}で売却。面積と家賃はそのまま）`); logEv("tables", { n: S.tables }); layoutRoom();
   }
-  if (a === "edu"){ const e = O.education, k = S.hiring.eduMult; S.cash -= e.cost; S.ind.slack = clamp(S.ind.slack + e.slack * k, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort * k, 0, 100); S.eduCount = (S.eduCount || 0) + 1; note(`スタッフ教育（${yen(-e.cost)}）余力 +${Math.round(e.slack * k)}・居心地 +${Math.round(e.comfort * k)}`); logEv("edu", {}); }
+  if (a === "edu"){ const e = O.education, k = S.hiring.eduMult; S.cash -= e.cost; for (let z = 0; z < 2 && S.staffList.length; z++){ const x = S.staffList[Math.floor(rand() * S.staffList.length)], kk = ["skill", "teach", "host"][Math.floor(rand() * 3)]; if (x[kk] < 5) x[kk]++; x.morale = clamp(x.morale + 5, 0, 100); } S.ind.slack = clamp(S.ind.slack + e.slack * k, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort * k, 0, 100); S.eduCount = (S.eduCount || 0) + 1; note(`スタッフ教育（${yen(-e.cost)}）余力 +${Math.round(e.slack * k)}・居心地 +${Math.round(e.comfort * k)}`); logEv("edu", {}); }
   if (a === "settings") openSettings();
   if (a === "finance") openFinance();
   if (a === "stores") openStores();
+  if (a === "staff") openStaff();
   syncHUD();
 }
 function openSettings(){
@@ -3050,7 +3231,7 @@ function openFinance(){
 $("dock").addEventListener("click", (e) => { const b = e.target.closest(".act"); if (b) act(b.dataset.a); });
 addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT" || e.target.classList.contains("h")) return;
-  const m = { "1": "ad", "2": "tableAdd", "3": "tableSub", "4": "settings", "5": "edu", "6": "finance", "7": "stores" }[e.key];
+  const m = { "1": "ad", "2": "tableAdd", "3": "tableSub", "4": "settings", "5": "staff", "6": "finance", "7": "stores" }[e.key];
   if (m) act(m);
   if (e.key === " " && S && !S.over && !ov.classList.contains("show")) { e.preventDefault(); togglePause(); }
 });
@@ -3086,7 +3267,7 @@ function syncTime(){
   let nx;
   if (!isOpen()) nx = `開業まであと${S.licenseWait}か月`;
   else if (S.month >= R.ddStart) nx = `買収前調査中 ・ 売却まであと${M.months - S.month}か月`;
-  else nx = `${lit ? "営業中" : "営業時間外"}（${hhLong(S.open)}〜${hhLong(S.close)}） ・ 次の決算まで${12 - (S.month % 12)}か月 ・ 売却まで${M.months - S.month}か月`;
+  else nx = `${phaseNow().name}：${phaseNow().focus} ・ ${lit ? "営業中" : "営業時間外"} ・ 次の決算まで${12 - (S.month % 12)}か月`;
   $("tNote").textContent = nx;
 }
 function syncHUD(){
@@ -3112,7 +3293,7 @@ function syncHUD(){
   document.querySelector('[data-a="ad"]').classList.toggle("on", S.ad > 0);
   $("addC").textContent = `増卓 ${Math.round(addTableCost())}万`;
   $("subC").textContent = `${S.tables}卓`;
-  $("eduC").textContent = `教育 ${O.education.cost}万`;
+  $("eduC").textContent = `人材 ${S.staffList ? S.staffList.length : 0}人`;
   let tag = "";
   if (!isOpen()) tag = `許可待ち あと${S.licenseWait}か月`;
   else if (S.month >= R.ddStart) tag = "買収前調査中";
