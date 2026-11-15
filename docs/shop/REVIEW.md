@@ -1,0 +1,55 @@
+# レビュー依頼：ポーカー店経営 5年（試作 v0.7）
+
+ブラウザで遊べる経営シミュレーションの試作です。設計・釣り合い・UI・表現のリスクについて、率直な指摘をください。
+
+## リンク
+
+| 何 | URL |
+|---|---|
+| 遊べるページ | https://raw.githack.com/mizuyot/poker-regulation-game/claude/poker-shop-management-game-8y6spm/docs/shop/index.html |
+| 遊べるページ（予備） | https://htmlpreview.github.io/?https://github.com/mizuyot/poker-regulation-game/blob/claude/poker-shop-management-game-8y6spm/docs/shop/index.html |
+| ソース（1ファイル） | https://github.com/mizuyot/poker-regulation-game/blob/claude/poker-shop-management-game-8y6spm/docs/shop/index.html |
+| ソース（生テキスト） | https://raw.githubusercontent.com/mizuyot/poker-regulation-game/claude/poker-shop-management-game-8y6spm/docs/shop/index.html |
+| 数値の正本 | https://github.com/mizuyot/poker-regulation-game/blob/claude/poker-shop-management-game-8y6spm/docs/shop/shop.json |
+| 設計メモ（v0.1〜v0.7の経緯と検証） | https://github.com/mizuyot/poker-regulation-game/blob/claude/poker-shop-management-game-8y6spm/docs/shop/DESIGN.md |
+| プルリクエスト（差分） | https://github.com/mizuyot/poker-regulation-game/pull/1 |
+
+ページを開けない場合は、ソース（生テキスト）を読んでレビューしてください。HTML・CSS・JSとデータがすべて1ファイルに入っています。
+
+## ゲームの概要
+
+- 5,000万円で、営業スタイル → 立地 → 店づくり（卓数・営業時間・料金・採用・教育方針・常連との連絡先交換）を決めて開業する
+- 1か月6秒で60か月経営し、最後に店を売る。スコアは最終手取り額（手元資金＋売却額−借入）
+- 売却額はDCF（直近12か月のFCF、割引率25%基本、成長率2%基本。評判の4指標と是正指摘で動く）
+- 営業スタイルは5段階。換金あり（黒）・チケット/コイン発行・商品・店内飲食割引（グレー）・預入のみ（健全）。黒・グレーは毎月「摘発」「是正指摘」の確率がある。60か月目の買収前調査で見つかると、黒はハコの価値だけ、グレーは減額
+- 立地は4つ（東京都心・大都市都心・地方都市中心・郊外）。都心ほど当たれば大きいが倒産しやすい
+- 事件カード（予兆→判断→結果→後日談）。評判は知名度・信頼・初心者の居心地・スタッフの余力の4指標
+- 結果画面に、初月からの推移、改善すべき点、SNS用の1枚画像
+
+## 見てほしい点
+
+1. **ゲームとして面白いか**：最初の判断（スタイル・立地・卓数）のあと、操作する理由が続くか。事件の判断に迷いがあるか
+2. **釣り合い**：健全が平均でも上振れでも一番、黒は瞬間収益だけ一番、という狙いが崩れる攻略がないか（終盤だけ違法、途中で切り替え、借入して増卓 など）
+3. **UI**：初見で分かるか。時間の帯・1日の時計・収支パネル・お金の粒のアニメーションは伝わるか。スマホ幅で使えるか
+4. **表現のリスク**：実在の規制を扱うゲームとして、判定・助言に見える表現、誤解を招く表現がないか（黒・グレー・健全、是正指摘、摘発エンド、条文の表示位置）
+5. **コード**：不具合、計算の誤り、壊れやすい作り
+
+## 前提と制約（意図してそうしているもの）
+
+- 確率・金額・立地の数値はすべてゲーム用の架空の値。実在の市場や運用の統計ではない
+- 条文の逐語は `docs/questions.json` の provisions（e-Gov などの一次ソースから取得）だけを使う。正本にない論点は「未収録」と表示する
+- 配色は原則白黒。黒の塗りつぶしは「違法」の表示だけに使う。緑＝健全・合法、赤＝警告・トラブル
+- ランキングとプレイログは遊んだ端末の中だけに保存し、送信しない
+- 法的助言ではない。リーガルレビューは未実施
+
+## 動作確認用
+
+- `?test=1` を付けると1か月0.02秒になり、事件や決算の画面を自動で進める。`&seed=7` で乱数を固定
+- ブラウザのコンソールで `__shop.start({loc:"metro", tables:5, style:"deposit"})` を呼ぶと、その設定ですぐ始まる
+- 釣り合いの検証用スクリプト：`scripts/sim_v05.py`・`sim_buyout.py`・`sim_endgame.py`・`sim_invest.py`
+
+## 既知の課題
+
+- 2号店・FC展開は設計のみで未実装
+- 店内飲食割引（グレー）は、リスクが最も低いのに平均ではチケット/コインより稼げない
+- 回転数・時間帯ごとの客入り・地方都市と郊外の坪単価は仮の値
