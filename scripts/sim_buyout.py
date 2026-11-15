@@ -7,6 +7,9 @@ python3 scripts/sim_buyout.py"""
 import random, statistics as st
 
 N = 60
+DD_MONTHS = 6     # v0.5: 買収交渉・調査は最後の6か月。この間の違法は
+DD_LATE_Q = 0.9   #       1か月ごとに90%で見つかる
+SHELL = 0.13  # ハコとしての価値 ÷ 健全なときの売却額（sim_v05.py 東京都心4卓の例）
 P = dict(m=5, pa=0.02, g=0.002, po=0.15, olen=2, fine=6, drop=0.5, recov=6, jump=4, tail=12, tailf=0.5)
 
 
@@ -27,9 +30,11 @@ def run(start, stop, cont, rng, R, C, buy_mult, q, window):
         if ol > 0:
             ol -= 1
             if ol == 0: rec = P['recov']
-    recent = sum(1 for t in months if t >= N - window)
-    found = rng.random() < 1 - (1 - q) ** recent
-    buy = 0 if found else buy_mult * R * (0.7 ** k)  # v0.4: 是正指摘1回ごとにDCFの割引率+10% → 企業価値は約0.7倍
+    recent = sum(1 for t in months if t >= N - window and t < N - DD_MONTHS)
+    late = sum(1 for t in months if t >= N - DD_MONTHS)
+    found = rng.random() < 1 - (1 - q) ** recent * (1 - DD_LATE_Q) ** late
+    full = buy_mult * R * (0.7 ** k)
+    buy = full * SHELL if found else full  # v0.5: 見つかったら「ハコとしての価値」（敷金＋内装・卓の残存）だけ  # v0.4: 是正指摘1回ごとにDCFの割引率+10% → 企業価値は約0.7倍
     return W + buy, ('dd_fail' if found else 'ok'), best_month
 
 
@@ -50,7 +55,7 @@ def worst(R, C, buy_mult, q, window, runs=2000, seed=1):
 
 
 if __name__ == '__main__':
-    for buy_mult, q, window in ((14, 0.4, 36), (14, 0.5, 60)):  # v0.4推奨: DCFで月商×14前後、調査は開業以来すべて・違法1か月ごとに50%
+    for buy_mult, q, window in ((14, 0.5, 60), (14, 0.6, 60)):  # v0.5推奨: q=0.5 + 最後6か月の調査期間
         print(f'買収額=月商×{buy_mult} 調査で見つかる率=1-(1-{q})^(直近{window}か月の違法月数)')
         for R, C, lab in ((2.0, 1.0, '売上:費用=2:1'), (1.3, 1.0, '薄利 1.3:1')):
             b = worst(R, C, buy_mult, q, window)
