@@ -29,7 +29,7 @@ def run(start, stop, cont, rng, R, C, buy_mult, q, window):
             if ol == 0: rec = P['recov']
     recent = sum(1 for t in months if t >= N - window)
     found = rng.random() < 1 - (1 - q) ** recent
-    buy = 0 if found else buy_mult * R * (0.5 ** k)  # 是正指摘の履歴は信頼を下げ、買収額を半減させる
+    buy = 0 if found else buy_mult * R * (0.7 ** k)  # v0.4: 是正指摘1回ごとにDCFの割引率+10% → 企業価値は約0.7倍
     return W + buy, ('dd_fail' if found else 'ok'), best_month
 
 
@@ -50,7 +50,7 @@ def worst(R, C, buy_mult, q, window, runs=2000, seed=1):
 
 
 if __name__ == '__main__':
-    for buy_mult, q, window in ((12, 0.3, 36), (15, 0.3, 36), (15, 0.4, 36), (18, 0.4, 36)):
+    for buy_mult, q, window in ((14, 0.4, 36), (14, 0.5, 60)):  # v0.4推奨: DCFで月商×14前後、調査は開業以来すべて・違法1か月ごとに50%
         print(f'買収額=月商×{buy_mult} 調査で見つかる率=1-(1-{q})^(直近{window}か月の違法月数)')
         for R, C, lab in ((2.0, 1.0, '売上:費用=2:1'), (1.3, 1.0, '薄利 1.3:1')):
             b = worst(R, C, buy_mult, q, window)
