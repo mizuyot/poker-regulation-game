@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "ポーカー店経営 5年",
-    "version": "0.9.0",
+    "version": "1.0.0",
     "unit": "万円",
     "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
     "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。scripts/sim_v05.py・sim_buyout.py で検証した値に合わせている。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
@@ -1485,78 +1485,6 @@
     "tourneyFameBonus": 0.1,
     "tourneyAdjust": 0.15
   },
-  "concepts": [
-    {
-      "id": "beginner",
-      "name": "初心者中心",
-      "desc": "教える手間はかかるが、初心者が常連に育つ。",
-      "start": {
-        "regular": 0.25,
-        "newbie": 0.6,
-        "tourney": 0.15
-      },
-      "demand": 1.0,
-      "spend": 1.0,
-      "convert": 1.6,
-      "tourney": 0.1,
-      "comfortTarget": 12,
-      "slackTarget": -2,
-      "trustTarget": 0,
-      "eventBias": {
-        "whale": 2,
-        "tournament": 0.5
-      },
-      "opsCost": 0
-    },
-    {
-      "id": "competitive",
-      "name": "競技志向",
-      "desc": "大会と配信で客を呼ぶ。運営の公平さが問われ、大会・配信の運営費（月10万円）がかかる。",
-      "start": {
-        "regular": 0.35,
-        "newbie": 0.25,
-        "tourney": 0.4
-      },
-      "demand": 1.0,
-      "spend": 1.0,
-      "convert": 0.8,
-      "tourney": 0.45,
-      "comfortTarget": -8,
-      "slackTarget": -3,
-      "trustTarget": 3,
-      "eventBias": {
-        "cheat": 3,
-        "leak": 3,
-        "pro": 3,
-        "tournament": 3
-      },
-      "opsCost": 10
-    },
-    {
-      "id": "social",
-      "name": "交流中心",
-      "desc": "接客とコミュニティで再来店を増やす。常連が厚い。",
-      "start": {
-        "regular": 0.55,
-        "newbie": 0.35,
-        "tourney": 0.1
-      },
-      "demand": 1.0,
-      "spend": 1.0,
-      "convert": 1.2,
-      "tourney": 0.08,
-      "comfortTarget": 6,
-      "slackTarget": 0,
-      "trustTarget": 4,
-      "eventBias": {
-        "contact": 3,
-        "whale": 2,
-        "neighbor": 2
-      },
-      "opsCost": 0
-    }
-  ],
-  "conceptChangeCost": 150,
   "expansion": {
     "note": "2号店とFC展開。数値は架空。",
     "branch": {
@@ -1581,5 +1509,141 @@
         "加盟店のスタッフが、SNSで客の個人情報を漏らした"
       ]
     }
+  },
+  "facilities": [
+    {
+      "id": "stream",
+      "name": "配信卓",
+      "desc": "配信で認知を広げ、大会客を呼ぶ。担当が要り、情報漏えいの事件が起きうる。",
+      "setup": 300,
+      "monthly": 15,
+      "fx": {
+        "fameGain": 1,
+        "tourney": 0.12,
+        "spend": 1.03,
+        "slackTarget": -3
+      },
+      "eventBias": {
+        "leak": 3,
+        "cheat": 2
+      }
+    },
+    {
+      "id": "lesson",
+      "name": "初心者講習スペース",
+      "desc": "初心者が常連に育ちやすい。講師代がかかり、卓を置ける席が4席減る。",
+      "setup": 150,
+      "monthly": 10,
+      "fx": {
+        "convert": 1.6,
+        "comfortTarget": 8,
+        "seatsLoss": 4
+      },
+      "eventBias": {
+        "whale": 2
+      }
+    },
+    {
+      "id": "tournament",
+      "name": "大型大会（月1回）",
+      "desc": "知名度と大会客が増える。通常営業の常連が座りにくくなり、準備でスタッフが疲れる。",
+      "setup": 50,
+      "monthly": 30,
+      "fx": {
+        "fameGain": 1.5,
+        "tourney": 0.2,
+        "demand": 1.08,
+        "comfortTarget": -6,
+        "slackTarget": -5
+      },
+      "eventBias": {
+        "tournament": 4,
+        "pro": 2
+      }
+    },
+    {
+      "id": "bar",
+      "name": "飲食の強化",
+      "desc": "単価と交流の魅力が上がる。原価と業務が増え、帰り道の苦情も出やすい。",
+      "setup": 250,
+      "monthly": 10,
+      "fx": {
+        "spend": 1.1,
+        "varRate": 0.04,
+        "comfortTarget": 4,
+        "slackTarget": -3
+      },
+      "eventBias": {
+        "neighbor": 2,
+        "contact": 2
+      }
+    },
+    {
+      "id": "camera",
+      "name": "監視カメラ",
+      "desc": "不正の疑いに強くなり、信頼が育つ。",
+      "setup": 80,
+      "monthly": 3,
+      "fx": {
+        "trustTarget": 6
+      },
+      "eventBias": {
+        "cheat": 0.5
+      }
+    },
+    {
+      "id": "vip",
+      "name": "高レート卓・VIPルーム",
+      "desc": "単価が上がる。初心者の居心地は下がり、黒・グレーの営業の摘発・是正指摘の確率が1.3倍になる。",
+      "setup": 300,
+      "monthly": 10,
+      "fx": {
+        "spend": 1.12,
+        "tourney": 0.05,
+        "comfortTarget": -4,
+        "riskMult": 1.3
+      }
+    }
+  ],
+  "mixStart": {
+    "regular": 0.3,
+    "newbie": 0.55,
+    "tourney": 0.15
+  },
+  "baseTourney": 0.1,
+  "shopTypes": {
+    "note": "店のタイプ診断。名前は架空で、実在の店とは関係ない。",
+    "list": [
+      {
+        "id": "thrill",
+        "name": "「熱狂の賭場」型",
+        "desc": "高い単価と熱気で稼いだ。危うさと隣り合わせの店。"
+      },
+      {
+        "id": "lounge",
+        "name": "「夜のラウンジ」型",
+        "desc": "夜と飲食で単価を上げた。交流の常連が店を支えた。"
+      },
+      {
+        "id": "arena",
+        "name": "「競技の名店」型",
+        "desc": "大会と強豪が集まった。公平さが信頼を生んだ。"
+      },
+      {
+        "id": "first",
+        "name": "「はじめての一卓」型",
+        "desc": "初心者を迎え、常連に育てた。時間をかけて伸びた店。"
+      },
+      {
+        "id": "hall",
+        "name": "「大箱」型",
+        "desc": "卓を並べ、数を回した。規模で稼いだ店。"
+      },
+      {
+        "id": "town",
+        "name": "「町の常設店」型",
+        "desc": "小さく、堅実に回した。目立たないが崩れない店。"
+      }
+    ]
   }
 }
