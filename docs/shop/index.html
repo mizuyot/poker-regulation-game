@@ -27,7 +27,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent}
-canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+#cv{position:fixed;inset:0;width:100vw;height:100vh;display:block}
 button{font-family:inherit;color:inherit}
 .num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
@@ -72,6 +72,16 @@ button{font-family:inherit;color:inherit}
 .hud .risk{font-size:12px;color:var(--danger);margin-top:2px}
 .pos{color:var(--good)} .negc{color:var(--danger)}
 
+.flow{position:fixed;right:16px;top:190px;width:250px;background:color-mix(in srgb,var(--bg) 88%,transparent);border:1.5px solid var(--soft);border-radius:12px;padding:8px 10px;font-size:12px;z-index:2}
+.fhead{font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.frow{display:grid;grid-template-columns:5.2em 1fr 3.6em;gap:6px;align-items:center;margin:3px 0}
+.frow b{font-family:var(--mono);font-weight:500;text-align:right}
+.frow .fb{height:9px;border-radius:4px;background:var(--soft2);overflow:hidden}
+.frow .fb i{display:block;height:100%;width:0;transition:width .6s ease-out}
+.frow.in .fb i{background:var(--good)} .frow.in b{color:var(--good)}
+.frow.out .fb i{background:var(--danger);opacity:.75} .frow.out b{color:var(--danger)}
+.fnet{border-top:1px solid var(--soft);margin-top:5px;padding-top:4px;text-align:right}
+.fnet b{font-family:var(--mono);font-size:14px}
 .toast{position:fixed;top:120px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:min(520px,calc(100vw - 32px));z-index:2}
 .toast div.bad{border-color:var(--danger);color:var(--danger)}
 .toast div.good{border-color:var(--good);color:var(--good)}
@@ -161,6 +171,7 @@ summary{cursor:pointer;color:var(--muted)}
 .steps{display:flex;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:4px}
 .steps span.on{color:var(--ink);font-weight:700}
 @media (max-width:900px){
+  .flow{top:auto;bottom:250px;left:12px;right:12px;width:auto;padding:5px 8px;font-size:11px}.frow{margin:1px 0}.fhead{display:none}
   .time{top:auto;bottom:150px;width:calc(100vw - 24px);min-width:0}
   .toast{top:100px}
 }
@@ -197,6 +208,15 @@ summary{cursor:pointer;color:var(--muted)}
   <div class="risk" id="riskV"></div>
 </div>
 
+<div class="flow" id="flow" aria-label="今月の収支">
+  <div class="fhead"><span id="flowMonth">今月</span>の収支（万円）</div>
+  <div class="frow in"><span>売上</span><span class="fb"><i></i></span><b>0</b></div>
+  <div class="frow out"><span>原価・決済</span><span class="fb"><i></i></span><b>0</b></div>
+  <div class="frow out"><span>家賃</span><span class="fb"><i></i></span><b>0</b></div>
+  <div class="frow out"><span>人件費</span><span class="fb"><i></i></span><b>0</b></div>
+  <div class="frow out"><span>その他</span><span class="fb"><i></i></span><b>0</b></div>
+  <div class="fnet">差し引き <b id="flowNet">—</b></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <div class="dockwrap">
@@ -233,7 +253,7 @@ summary{cursor:pointer;color:var(--muted)}
     "tablePrice": 50,
     "openingCost": 200,
     "lateTableMarkup": 1.3,
-    "minTables": 1,
+    "minTables": 3,
     "maxTables": 12,
     "tableResidual": 0.3,
     "fitoutResidual": 0.5
@@ -1200,6 +1220,448 @@ summary{cursor:pointer;color:var(--muted)}
         "start": {}
       }
     ]
+  },
+  "layouts": {
+    "3": {
+      "w": 11.4,
+      "d": 5.0,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ]
+      ],
+      "elevator": {
+        "y0": 2.7,
+        "y1": 4.1
+      },
+      "bar": {
+        "x0": 8.4,
+        "x1": 11.0
+      }
+    },
+    "4": {
+      "w": 7.8,
+      "d": 8.1,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          2.0,
+          5.1
+        ],
+        [
+          5.6,
+          5.1
+        ]
+      ],
+      "elevator": {
+        "y0": 5.8,
+        "y1": 7.2
+      },
+      "bar": {
+        "x0": 4.8,
+        "x1": 7.4
+      }
+    },
+    "5": {
+      "w": 11.4,
+      "d": 8.1,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          3.8,
+          5.1
+        ],
+        [
+          7.4,
+          5.1
+        ]
+      ],
+      "elevator": {
+        "y0": 5.8,
+        "y1": 7.2
+      },
+      "bar": {
+        "x0": 8.4,
+        "x1": 11.0
+      }
+    },
+    "6": {
+      "w": 11.4,
+      "d": 8.1,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          2.0,
+          5.1
+        ],
+        [
+          5.6,
+          5.1
+        ],
+        [
+          9.2,
+          5.1
+        ]
+      ],
+      "elevator": {
+        "y0": 5.8,
+        "y1": 7.2
+      },
+      "bar": {
+        "x0": 8.4,
+        "x1": 11.0
+      }
+    },
+    "7": {
+      "w": 15.0,
+      "d": 8.1,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          12.8,
+          2.0
+        ],
+        [
+          3.8,
+          5.1
+        ],
+        [
+          7.4,
+          5.1
+        ],
+        [
+          11.0,
+          5.1
+        ]
+      ],
+      "elevator": {
+        "y0": 5.8,
+        "y1": 7.2
+      },
+      "bar": {
+        "x0": 12.0,
+        "x1": 14.6
+      }
+    },
+    "8": {
+      "w": 15.0,
+      "d": 8.1,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          12.8,
+          2.0
+        ],
+        [
+          2.0,
+          5.1
+        ],
+        [
+          5.6,
+          5.1
+        ],
+        [
+          9.2,
+          5.1
+        ],
+        [
+          12.8,
+          5.1
+        ]
+      ],
+      "elevator": {
+        "y0": 5.8,
+        "y1": 7.2
+      },
+      "bar": {
+        "x0": 12.0,
+        "x1": 14.6
+      }
+    },
+    "9": {
+      "w": 11.4,
+      "d": 11.2,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          2.0,
+          5.1
+        ],
+        [
+          5.6,
+          5.1
+        ],
+        [
+          9.2,
+          5.1
+        ],
+        [
+          2.0,
+          8.2
+        ],
+        [
+          5.6,
+          8.2
+        ],
+        [
+          9.2,
+          8.2
+        ]
+      ],
+      "elevator": {
+        "y0": 8.9,
+        "y1": 10.3
+      },
+      "bar": {
+        "x0": 8.4,
+        "x1": 11.0
+      }
+    },
+    "10": {
+      "w": 15.0,
+      "d": 11.2,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          12.8,
+          2.0
+        ],
+        [
+          2.0,
+          5.1
+        ],
+        [
+          5.6,
+          5.1
+        ],
+        [
+          9.2,
+          5.1
+        ],
+        [
+          12.8,
+          5.1
+        ],
+        [
+          5.6,
+          8.2
+        ],
+        [
+          9.2,
+          8.2
+        ]
+      ],
+      "elevator": {
+        "y0": 8.9,
+        "y1": 10.3
+      },
+      "bar": {
+        "x0": 12.0,
+        "x1": 14.6
+      }
+    },
+    "11": {
+      "w": 15.0,
+      "d": 11.2,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          12.8,
+          2.0
+        ],
+        [
+          2.0,
+          5.1
+        ],
+        [
+          5.6,
+          5.1
+        ],
+        [
+          9.2,
+          5.1
+        ],
+        [
+          12.8,
+          5.1
+        ],
+        [
+          3.8,
+          8.2
+        ],
+        [
+          7.4,
+          8.2
+        ],
+        [
+          11.0,
+          8.2
+        ]
+      ],
+      "elevator": {
+        "y0": 8.9,
+        "y1": 10.3
+      },
+      "bar": {
+        "x0": 12.0,
+        "x1": 14.6
+      }
+    },
+    "12": {
+      "w": 15.0,
+      "d": 11.2,
+      "tables": [
+        [
+          2.0,
+          2.0
+        ],
+        [
+          5.6,
+          2.0
+        ],
+        [
+          9.2,
+          2.0
+        ],
+        [
+          12.8,
+          2.0
+        ],
+        [
+          2.0,
+          5.1
+        ],
+        [
+          5.6,
+          5.1
+        ],
+        [
+          9.2,
+          5.1
+        ],
+        [
+          12.8,
+          5.1
+        ],
+        [
+          2.0,
+          8.2
+        ],
+        [
+          5.6,
+          8.2
+        ],
+        [
+          9.2,
+          8.2
+        ],
+        [
+          12.8,
+          8.2
+        ]
+      ],
+      "elevator": {
+        "y0": 8.9,
+        "y1": 10.3
+      },
+      "bar": {
+        "x0": 12.0,
+        "x1": 14.6
+      }
+    }
   }
 }
     </script>
@@ -1418,6 +1880,7 @@ function monthTick(){
 
   S.month++;
   rec(p, wasOpen);
+  flowAnim(p, wasOpen);
   if (S.cash < M.bankruptAt){ story("資金が尽きた。"); return finish("bankrupt"); }
   if (orderActs) enqueue(() => order(orderActs));
   if (S.month >= M.months) enqueue(proposal);
@@ -1610,8 +2073,11 @@ function finish(kind){
     <h2>初月からの推移</h2>${simChart()}${simTable()}
     <h2>5年の物語</h2><div class="timeline">${S.timeline.map((x) => `<span class="num">${monthLabel(x.t)}</span>：${esc(x.text)}`).join("<br>") || "—"}</div>
     <h2>ランキング（この端末）</h2>${rankHTML(rank)}
+    <h2>SNS用の画像</h2><img id="shareImg" alt="結果の画像" style="width:100%;max-width:420px;display:block;margin:0 auto;border:1.5px solid var(--soft);border-radius:10px">
+    <p class="muted" style="font-size:12px;text-align:center">画像を長押し（パソコンは右クリック）で保存できる。</p>
     <div class="row"><button class="btn" id="dlBtn">プレイログを保存（JSONL）</button><button class="btn primary" id="againBtn">もう一度</button></div>
     <div class="foot">ログとランキングはこの端末に保存されるだけで、送信されない。${esc(M.disclaimer)}</div>`);
+  makeShareImage(kind, amount, rank).then((url) => { const im = $("shareImg"); if (im) im.src = url; });
   $("dlBtn").onclick = exportLog; $("againBtn").onclick = () => { S = null; resetScene(); openTitle(); };
 }
 
@@ -1713,6 +2179,44 @@ function diagnoseHTML(kind){
   items.sort((a, b) => b[0] - a[0]);
   if (!items.length) return `<p>大きな問題はなかった。</p>`;
   return `<ol style="padding-left:1.3em;margin:4px 0">${items.slice(0, 5).map(([, t, d]) => `<li style="margin:6px 0"><b>${esc(t)}</b><br><span style="font-size:13px">${esc(d)}</span></li>`).join("")}</ol>`;
+}
+
+/* ---------- SNS用の1枚画像（1080×1350） ---------- */
+async function makeShareImage(kind, amount, rank){
+  try { await Promise.all(["700 40px 'Zen Kaku Gothic New'", "500 40px 'IBM Plex Mono'"].map((f) => document.fonts.load(f))); } catch {}
+  const w = 1080, h = 1350, c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d");
+  const ink = "#111", muted = "#6b6b6b", good = "#2e6b45", bad = "#b3261e", gray = "#9a9a9a", F = "'Zen Kaku Gothic New', sans-serif", MONO = "'IBM Plex Mono', monospace";
+  g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
+  g.strokeStyle = ink; g.lineWidth = 6; g.beginPath(); g.roundRect(28, 28, w - 56, h - 56, 36); g.stroke();
+  g.fillStyle = ink; g.font = `700 44px ${F}`; g.fillText("ポーカー店経営 5年", 80, 120);
+  g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText("5,000万円でポーカー店をつくり、5年後に売る", 80, 168);
+  const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : "5年経営して売却", arrest: "摘発エンド（失格）", bankrupt: "資金が尽きた" }[kind];
+  g.fillStyle = kind === "complete" ? ink : bad; g.font = `700 38px ${F}`; g.fillText(title, 80, 262);
+  g.fillStyle = muted; g.font = `500 30px ${F}`; g.fillText("最終手取り額", 80, 330);
+  { const txt = yen(amount); let fs = 120; g.font = `500 ${fs}px ${MONO}, ${F}`; while (g.measureText(txt).width > w - 160 && fs > 60){ fs -= 4; g.font = `500 ${fs}px ${MONO}, ${F}`; } g.fillStyle = ink; g.fillText(txt, 76, 450); }
+  const diff = amount - M.fund; g.fillStyle = diff >= 0 ? good : bad; g.font = `700 38px ${F}`; g.fillText(`元手5,000万円から ${yen(diff, true)}`, 80, 514);
+  // 順位
+  const fpos = rank.final.findIndex((x) => x.mine) + 1, ppos = rank.peak.findIndex((x) => x.mine) + 1;
+  g.fillStyle = ink; g.font = `700 52px ${F}`; g.fillText(kind === "arrest" ? "ランキング：失格" : fpos ? `ランキング ${fpos}位` : "ランキング 圏外", 80, 620);
+  g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText(`最終手取り額（この端末の上位10件）${ppos ? ` ・ 瞬間収益 ${ppos}位` : ""}`, 80, 664);
+  // 店の情報
+  const tier = S.style.tier, sw = { black: ink, gray, clean: good }[tier];
+  g.fillStyle = sw; g.beginPath(); g.roundRect(80, 712, 30, 30, 6); g.fill();
+  g.fillStyle = ink; g.font = `500 32px ${F}`; g.fillText(`${S.loc.name} ・ ${S.tables}卓 ・ ${S.style.name} ・ ${S.month}か月`, 126, 738);
+  // 手元資金の推移
+  const R0 = S.recs, x0 = 80, x1 = w - 80, y0 = 800, y1 = 1090;
+  g.fillStyle = muted; g.font = `500 26px ${F}`; g.fillText("手元資金の推移", x0, y0 - 14);
+  if (R0.length){
+    const vals = [S.startCash, ...R0.map((r) => r.cash)], mx = Math.max(...vals, 1000), mn = Math.min(0, ...vals);
+    const X = (i) => x0 + i / Math.max(1, vals.length - 1) * (x1 - x0), Y = (v) => y1 - (v - mn) / (mx - mn) * (y1 - y0 - 10);
+    g.strokeStyle = bad; g.setLineDash([10, 8]); g.lineWidth = 2; g.beginPath(); g.moveTo(x0, Y(0)); g.lineTo(x1, Y(0)); g.stroke(); g.setLineDash([]);
+    g.strokeStyle = ink; g.lineWidth = 5; g.beginPath(); vals.forEach((v, i) => i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v))); g.stroke();
+    const lv = vals.at(-1); g.fillStyle = lv < 0 ? bad : ink; g.beginPath(); g.arc(X(vals.length - 1), Y(lv), 9, 0, Math.PI * 2); g.fill();
+    g.fillStyle = muted; g.font = `500 22px ${F}`; g.fillText("開業", x0, y1 + 34); g.textAlign = "right"; g.fillText(`${R0.length}か月`, x1, y1 + 34); g.textAlign = "left";
+  }
+  g.fillStyle = ink; g.font = `700 36px ${F}`; g.fillText("あなたは5年で、いくら残せる？", 80, 1206);
+  g.fillStyle = muted; g.font = `500 22px ${F}`; g.fillText("数値はすべてゲーム用の架空の値です。適法性の判断・法的助言ではありません。", 80, 1256);
+  return c.toDataURL("image/png");
 }
 const RANK_KEY = "poker-shop-v07-rank";
 function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
@@ -1885,6 +2389,7 @@ function openBuild(){
     <label class="chk"><input type="radio" name="lic" value="0" ${CFG.unlicensed ? "" : "checked"}> <span>許可を待って開く（申請費 ${yen(D.license.fee)}・${D.license.waitMonths}か月待ち。その間も家賃はかかる）</span></label>
     <label class="chk"><input type="radio" name="lic" value="1" ${CFG.unlicensed ? "checked" : ""}> <span class="warn">許可を待たずにすぐ開く（黒：無許可）</span></label>
     <h2>初期投資と見込み</h2><div id="calc"></div>
+    <h2>店舗イメージ</h2><canvas id="preview" style="width:100%;height:320px;display:block;border:1.5px solid var(--soft);border-radius:12px"></canvas>
     <div class="row"><button class="btn" id="backBtn">戻る</button><button class="btn primary" id="goBtn">この店で開業する</button></div>`);
   const refresh = () => {
     const b = build(loc, CFG.tables);
@@ -1892,6 +2397,7 @@ function openBuild(){
     $("hoursNote").innerHTML = hoursNote(CFG);
     $("priceNote").textContent = `客単価 ${Math.round(loc.spend * CFG.price * 10000).toLocaleString("ja-JP")}円（高くすると客は減る）`;
     $("calc").innerHTML = buildCalc(loc);
+    drawPreview($("preview"), CFG.tables);
   };
   card.querySelectorAll("[data-s]").forEach((x) => x.onclick = () => { CFG.tables = clamp(CFG.tables + +x.dataset.s, L.minTables, L.maxTables); refresh(); });
   wireGauge(CFG, refresh);
@@ -2013,7 +2519,8 @@ function buildTimeBar(){
   lab.push(`<span style="left:${(R.ddStart + 0.5) / M.months * 100}%;top:9px;color:var(--danger)">調査</span>`);
   $("tlabels").innerHTML = lab.join("");
 }
-function dayHour(){ return 10 + ((S ? S.monthT : 0) % 1) * 24; }
+// 1か月の6秒を、店の1日（開店1時間前〜閉店1時間後）として回す
+function dayHour(){ const f = (S ? S.monthT : 0) % 1; return S ? (S.open - 1) + f * (S.close - S.open + 2) : 10; }
 function shopLit(){ if (!S || !isOpen()) return false; const h = dayHour(); return h >= S.open && h < S.close; }
 function syncTime(){
   if (!S){ $("tYear").textContent = "開業前"; $("tMonth").textContent = ""; $("tClock").textContent = "--:--"; $("tNote").textContent = ""; return; }
@@ -2065,154 +2572,213 @@ function syncHUD(){
   $("tag").textContent = tag;
 }
 
-/* ---------- 見下ろし画面（四角い部屋・アイソメ） ---------- */
+/* ---------- 店内（アイソメ）：エレベーターで入る店。道路は描かない ---------- */
 const cv = $("cv"), cx = cv.getContext("2d");
-let W = 0, H = 0, TW = 40;
+let W = 0, H = 0;
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let C = {};
-function readColors(){ C = { ink: css("--ink"), bg: css("--bg"), wall: css("--wall"), wallD: css("--wall-dark"), sh: css("--shadow"), muted: css("--muted"), danger: css("--danger"), soft: css("--soft"), soft2: css("--soft2"), gray: css("--gray"), font: css("--font"), mono: css("--mono") }; }
+function readColors(){ C = { ink: css("--ink"), bg: css("--bg"), wall: css("--wall"), wallD: css("--wall-dark"), sh: css("--shadow"), muted: css("--muted"), danger: css("--danger"), good: css("--good"), soft: css("--soft"), soft2: css("--soft2"), gray: css("--gray"), font: css("--font"), mono: css("--mono") }; }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
-let room = { w: 8, d: 7, tables: [], door: { x: 1.5 } }, OX = 0, OY = 0;
+const layoutFor = (n) => D.layouts[String(clamp(n, 3, 12))];
+/* 卓まわりの席：ディーラー1＋客9 */
+function seatPos(t, k){ const a = -Math.PI / 2 + 0.5 + k / 8 * (2 * Math.PI - 1.0); return { x: t[0] + Math.cos(a) * 1.55, y: t[1] + Math.sin(a) * 1.0 }; }
+const dealerPos = (t) => ({ x: t[0], y: t[1] - 1.0 });
+/* 画面にあわせた投影 */
+function makeView(lay, w, h, top, bottom){
+  const wallH = 1.25, span = lay.w + lay.d;
+  const tw = clamp(Math.min(w * 0.92 / (span / 2), (h - top - bottom) / (span / 4 + wallH * 0.55)), 18, 120);
+  const ox = w / 2 - (lay.w - lay.d) * tw / 4;
+  const mid = top + (h - top - bottom) / 2, oy = mid - ((span) * tw / 4 - wallH * tw * 0.5) / 2 + tw * 0.15;
+  return { tw, ox, oy, wh: wallH * tw * 0.5 };
+}
+function isoOf(v){ return (x, y, z = 0) => [v.ox + (x - y) * v.tw / 2, v.oy + (x + y) * v.tw / 4 - z]; }
+function polyG(g, pts, fill, stroke, lw){ g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); if (fill){ g.fillStyle = fill; g.fill(); } if (stroke){ g.strokeStyle = stroke; g.lineWidth = lw || 1; g.stroke(); } }
+function wallG(g, iso, x0, y0, x1, y1, h, face){
+  polyG(g, [iso(x0, y0), iso(x1, y1), iso(x1, y1, h), iso(x0, y0, h)], face, C.ink, 1.2);
+  g.beginPath(); const a = iso(x0, y0, h), b = iso(x1, y1, h); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.strokeStyle = C.ink; g.lineWidth = 2.6; g.stroke();
+}
+/* 人：頭＋肩幅のある胴。guest＝灰の塗り（常連）／newbie＝白抜き（初めての客）／staff＝白抜きに帯／police＝白抜きに帽子 */
+function figureG(g, sx, sy, s, ph, moving, kind, sitting){
+  g.fillStyle = C.sh; g.beginPath(); g.ellipse(sx + 4 * s, sy + 1.5 * s, 7.5 * s, 2.8 * s, 0, 0, Math.PI * 2); g.fill();
+  const bob = moving ? Math.abs(Math.sin(ph)) * 1.4 * s : 0, sw = moving ? Math.sin(ph) * 2.2 * s : 0;
+  const outline = kind !== "guest";
+  g.lineWidth = 1.5 * s; g.strokeStyle = C.ink; g.fillStyle = outline ? C.bg : C.gray;
+  if (moving){ g.beginPath(); g.moveTo(sx - 2 * s, sy - 7 * s - bob); g.lineTo(sx - 2 * s + sw, sy); g.moveTo(sx + 2 * s, sy - 7 * s - bob); g.lineTo(sx + 2 * s - sw, sy); g.lineWidth = 2.6 * s; g.lineCap = "round"; g.stroke(); g.lineWidth = 1.5 * s; }
+  const lift = sitting ? 4 * s : 0, top = sy - 22 * s - bob + lift, base = sy - 6 * s - bob + lift;
+  g.beginPath(); g.moveTo(sx - 7 * s, top + 3 * s); g.quadraticCurveTo(sx - 7.5 * s, top, sx - 4 * s, top); g.lineTo(sx + 4 * s, top); g.quadraticCurveTo(sx + 7.5 * s, top, sx + 7 * s, top + 3 * s);
+  g.lineTo(sx + 4 * s, base); g.quadraticCurveTo(sx, base + 2.5 * s, sx - 4 * s, base); g.closePath(); g.fill(); g.stroke();
+  if (kind === "staff"){ g.fillStyle = C.ink; g.fillRect(sx - 4.5 * s, top + 6 * s, 9 * s, 2.2 * s); }
+  g.fillStyle = outline ? C.bg : C.gray; g.beginPath(); g.arc(sx, top - 5 * s, 4.6 * s, 0, Math.PI * 2); g.fill(); g.stroke();
+  if (kind === "police"){ g.fillStyle = C.ink; g.fillRect(sx - 5.5 * s, top - 11 * s, 11 * s, 3 * s); }
+}
+function tableG(g, iso, t, lit){
+  const ring = (rx, ry, z) => { const a = []; for (let i = 0; i < 32; i++){ const q = i / 32 * Math.PI * 2; a.push(iso(t[0] + Math.cos(q) * rx, t[1] + Math.sin(q) * ry, z)); } return a; };
+  const base = ring(1.15, 0.62, 0); polyG(g, base.map((p) => [p[0] + 4, p[1] + 3]), C.sh);
+  polyG(g, base, C.wallD, C.ink, 1); polyG(g, ring(1.15, 0.62, 7), C.bg, C.ink, 1.6);
+  polyG(g, ring(0.92, 0.45, 7), lit ? C.soft2 : C.soft, C.ink, 1);
+}
+/* 店を描く。st＝{ lay, lit, people, staff, police, bubbles, pops, elev } */
+function drawShopG(g, v, st){
+  const iso = isoOf(v), lay = st.lay, WH = v.wh * 2;
+  const floor = [iso(0, 0), iso(lay.w, 0), iso(lay.w, lay.d), iso(0, lay.d)];
+  polyG(g, floor.map((p) => [p[0] + 10, p[1] + 10]), C.sh);
+  polyG(g, floor, st.lit ? C.bg : C.soft2, C.ink, 1.4);
+  g.strokeStyle = C.soft; g.lineWidth = 0.8;
+  for (let x = 1; x < lay.w; x++){ const a = iso(x, 0), b = iso(x, lay.d); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+  for (let y = 1; y < lay.d; y++){ const a = iso(0, y), b = iso(lay.w, y); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+  wallG(g, iso, 0, 0, lay.w, 0, WH, C.wall); wallG(g, iso, 0, 0, 0, lay.d, WH, C.wallD);
+  // エレベーター（左の壁）
+  const e = lay.elevator, open = clamp(st.elev || 0, 0, 1), eh = WH * 0.82, mid = (e.y0 + e.y1) / 2, half = (e.y1 - e.y0) / 2;
+  polyG(g, [iso(0, e.y0), iso(0, e.y1), iso(0, e.y1, eh), iso(0, e.y0, eh)], C.wallD, C.ink, 1.2);
+  polyG(g, [iso(0, e.y0), iso(0, mid - half * open), iso(0, mid - half * open, eh), iso(0, e.y0, eh)], C.soft, C.ink, 1);
+  polyG(g, [iso(0, mid + half * open), iso(0, e.y1), iso(0, e.y1, eh), iso(0, mid + half * open, eh)], C.soft, C.ink, 1);
+  const lb = iso(0, mid, eh + 12); g.fillStyle = C.muted; g.font = `500 ${Math.max(9, v.tw * 0.22)}px ${C.font}`; g.textAlign = "center"; g.fillText("EV", lb[0], lb[1]); g.textAlign = "start";
+  // バーカウンター（奥の壁）
+  const b = lay.bar, bz = v.tw * 0.32;
+  polyG(g, [iso(b.x0, 0.25, bz), iso(b.x1, 0.25, bz), iso(b.x1, 0.85, bz), iso(b.x0, 0.85, bz)], C.wallD, C.ink, 1);
+  polyG(g, [iso(b.x0, 0.85), iso(b.x1, 0.85), iso(b.x1, 0.85, bz), iso(b.x0, 0.85, bz)], C.wall, C.ink, 1);
+  // 奥から順に
+  const items = [], s = v.tw / 44;
+  for (const t of lay.tables) items.push({ d: t[0] + t[1], f: () => tableG(g, iso, t, st.lit) });
+  for (const p of st.people) items.push({ d: p.x + p.y + (p.sit ? 0.05 : 0.3), f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s, p.ph || 0, !!p.moving, p.kind, p.sit); } });
+  for (const p of st.staff) items.push({ d: p.x + p.y + 0.3, f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s, p.ph || 0, !!p.moving, "staff", p.sit); } });
+  for (const p of st.police || []) items.push({ d: p.x + p.y + 0.3, f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s * 1.1, p.ph || 0, true, "police"); } });
+  items.sort((a, z) => a.d - z.d).forEach((it) => it.f());
+  // 手前の低い壁
+  const lowH = v.tw * 0.25;
+  wallG(g, iso, 0, lay.d, lay.w, lay.d, lowH, C.wall); wallG(g, iso, lay.w, 0, lay.w, lay.d, lowH, C.wallD);
+  return iso;
+}
+
+/* ---------- 本編の店 ---------- */
+let VIEW = null, people = [], staffBots = [], pops = [], police = [], bubbles = [], coins = [], elev = 0, elevT = 0, spawnT = 0;
 function resize(){ const dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); layoutRoom(); }
 addEventListener("resize", resize);
 function layoutRoom(){
-  const n = S ? S.tables : 5, cols = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(n * 1.4)))), rows = Math.ceil(n / cols);
-  room.w = cols * 3.2 + 1.2; room.d = rows * 2.8 + 2.6;
-  room.tables = [];
-  for (let i = 0; i < n; i++){ const c = i % cols, r = Math.floor(i / cols); room.tables.push({ x: 1.6 + c * 3.2 + 0.6, y: 1.5 + r * 2.8 }); }
-  room.door = { x: 1.2, y: room.d };
-  const span = room.w + room.d + 14;
-  TW = clamp(Math.min(W / span * 1.7, H / (span * 0.5) * 1.15), 22, 72);
-  OX = W / 2 - (room.w - room.d) * TW / 4; OY = H * 0.5 - (room.w + room.d) * TW / 8 + 10;
+  const lay = layoutFor(S ? S.tables : 5), narrow = W < 900;
+  VIEW = makeView(lay, narrow ? W : W - 520, H, narrow ? 120 : 110, narrow ? 300 : 150);
+  if (!narrow) VIEW.ox += 240;
+  // 席の割り当てを作り直す
+  people = people.filter((p) => !p.sit && p.state !== "toSeat");
+  staffBots = [];
 }
-const iso = (x, y, z = 0) => [OX + (x - y) * TW / 2, OY + (x + y) * TW / 4 - z];
-function poly(pts, fill, stroke, lw){ cx.beginPath(); pts.forEach((p, i) => i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1])); cx.closePath(); if (fill){ cx.fillStyle = fill; cx.fill(); } if (stroke){ cx.strokeStyle = stroke; cx.lineWidth = lw || 1; cx.stroke(); } }
-function wall(x0, y0, x1, y1, h, face){
-  poly([iso(x0, y0), iso(x1, y1), iso(x1, y1, h), iso(x0, y0, h)], face, C.ink, 1.2);
-  cx.beginPath(); const a = iso(x0, y0, h), b = iso(x1, y1, h); cx.moveTo(a[0], a[1]); cx.lineTo(b[0], b[1]); cx.strokeStyle = C.ink; cx.lineWidth = 2.4; cx.stroke();
+function resetScene(){ people = []; pops = []; police = []; bubbles = []; coins = []; staffBots = []; readColors(); layoutRoom(); }
+const ELEV = () => { const e = layoutFor(S ? S.tables : 5).elevator; return { x: 0.45, y: (e.y0 + e.y1) / 2 }; };
+function freeSeats(){
+  const lay = layoutFor(S.tables), taken = new Set(people.filter((p) => p.seatKey).map((p) => p.seatKey)), out = [];
+  lay.tables.forEach((t, ti) => { for (let k = 0; k < 9; k++){ const key = ti + ":" + k; if (!taken.has(key)) out.push({ key, ...seatPos(t, k) }); } });
+  return out;
 }
-/* 人のシルエット：頭＋肩幅のある胴（ピクトグラム調）。kind: guest / newbie / staff / police */
-function figure(sx, sy, s, ph, moving, kind){
-  cx.fillStyle = C.sh; cx.beginPath(); cx.ellipse(sx + 4 * s, sy + 1.5 * s, 7.5 * s, 2.8 * s, 0, 0, Math.PI * 2); cx.fill();
-  const bob = moving ? Math.abs(Math.sin(ph)) * 1.4 * s : 0, sw = moving ? Math.sin(ph) * 2.2 * s : 0;
-  const outline = kind === "newbie" || kind === "police";
-  cx.lineWidth = 1.5 * s; cx.strokeStyle = C.ink; cx.fillStyle = outline ? C.bg : C.ink;
-  if (moving){ cx.beginPath(); cx.moveTo(sx - 2 * s, sy - 7 * s - bob); cx.lineTo(sx - 2 * s + sw, sy); cx.moveTo(sx + 2 * s, sy - 7 * s - bob); cx.lineTo(sx + 2 * s - sw, sy); cx.lineWidth = 2.6 * s; cx.lineCap = "round"; cx.stroke(); cx.lineWidth = 1.5 * s; }
-  const top = sy - 22 * s - bob, base = sy - 6 * s - bob;
-  cx.beginPath(); cx.moveTo(sx - 7 * s, top + 3 * s); cx.quadraticCurveTo(sx - 7.5 * s, top, sx - 4 * s, top); cx.lineTo(sx + 4 * s, top); cx.quadraticCurveTo(sx + 7.5 * s, top, sx + 7 * s, top + 3 * s);
-  cx.lineTo(sx + 4 * s, base); cx.quadraticCurveTo(sx, base + 2.5 * s, sx - 4 * s, base); cx.closePath(); cx.fill(); if (outline) cx.stroke();
-  if (kind === "staff"){ cx.fillStyle = C.bg; cx.fillRect(sx - 4.5 * s, top + 6 * s, 9 * s, 2.2 * s); }
-  cx.fillStyle = outline ? C.bg : C.ink; cx.beginPath(); cx.arc(sx, top - 5 * s, 4.6 * s, 0, Math.PI * 2); cx.fill(); if (outline) cx.stroke();
-  if (kind === "police"){ cx.fillStyle = C.ink; cx.fillRect(sx - 5.5 * s, top - 11 * s, 11 * s, 3 * s); }
+function spawnPolice(){ const e = ELEV(); police.push({ x: e.x, y: e.y, tx: e.x + 2.5, ty: e.y - 0.5, ph: 0, t: 0 }); elevT = 1.2; }
+function step(p, dt, speed){ const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy); if (d < 0.06){ p.moving = false; return true; } const k = Math.min(d, (p.sp || 2) * dt * speed); p.x += dx / d * k; p.y += dy / d * k; p.ph = (p.ph || 0) + dt * 9 * speed; p.moving = true; return false; }
+/* 満席率と人数を連動：座っている客の数＝席数×満席率（営業時間外は0） */
+function targetSeated(){ if (!S || !shopLit()) return 0; return Math.round(S.tables * 9 * clamp(S.last.occ || 0, 0, 1)); }
+function updatePeople(dt, sp){
+  const e = ELEV(), seated = people.filter((p) => p.seatKey && p.state !== "leave"), want = targetSeated();
+  spawnT -= dt * sp;
+  if (spawnT <= 0){
+    if (seated.length < want){
+      const free = freeSeats(); if (free.length){
+        const f = free[Math.floor(Math.random() * free.length)], newbie = Math.random() < 0.3;
+        const turnBack = newbie && Math.random() < (60 - S.ind.comfort) / 120;
+        people.push({ x: e.x + (Math.random() - 0.5) * 0.4, y: e.y + (Math.random() - 0.5) * 0.6, tx: turnBack ? e.x + 1.4 : f.x, ty: turnBack ? e.y : f.y, seatKey: turnBack ? null : f.key, kind: newbie ? "newbie" : "guest", state: turnBack ? "peek" : "toSeat", sp: 4.5 });
+        elevT = 1.0; spawnT = 0.35 / Math.max(1, (want - seated.length) / 3);
+      }
+    } else if (seated.length > want){
+      const p = seated[Math.floor(Math.random() * seated.length)]; p.state = "leave"; p.sit = false; p.tx = e.x; p.ty = e.y; p.sp = 4.5; spawnT = 0.35 / Math.max(1, (seated.length - want) / 3);
+    }
+  }
+  for (const p of people){
+    if (p.state === "toSeat"){ if (step(p, dt, sp)){ p.state = "sit"; p.sit = true; if (Math.random() < 0.34) pops.push({ x: p.x, y: p.y, t: 0, v: Math.round(S.loc.spend * S.price * styleNow().effect.spend * 10000) }); } }
+    else if (p.state === "peek"){ if (step(p, dt, sp)){ p.state = "leave"; p.tx = e.x; p.ty = e.y; bubbles.push({ x: p.x, y: p.y, z: 44, t: 0, text: "…" }); } }
+    else if (p.state === "leave"){ if (step(p, dt, sp)){ p.dead = true; p.seatKey = null; elevT = 1.0; } }
+  }
+  people = people.filter((p) => !p.dead);
+  // ディーラー（各卓1人）と、フロアスタッフ
+  const lay = layoutFor(S.tables);
+  if (!staffBots.length) lay.tables.forEach((t) => staffBots.push({ ...dealerPos(t), dealer: true, sit: true }));
+  const floorN = shopLit() ? Math.max(1, Math.round(S.tables / 3 * (S.hiring.id === "lean" ? 0.6 : 1))) : 0, floors = staffBots.filter((s) => !s.dealer);
+  if (floors.length < floorN) staffBots.push({ x: lay.bar.x0 + 1, y: 1.3, tx: 3, ty: 3, sp: 1.6 });
+  if (floors.length > floorN) staffBots.splice(staffBots.indexOf(floors.at(-1)), 1);
+  const hurry = 1 + (100 - S.ind.slack) / 45;
+  for (const s of staffBots){ if (s.dealer) continue; if (step(s, dt, sp * hurry)){ const t = lay.tables[Math.floor(Math.random() * lay.tables.length)]; s.tx = t[0] + (Math.random() - 0.5) * 3; s.ty = t[1] + 1.5; } }
+  // 口論（信頼・居心地が低いと卓で「!」）
+  const tension = shopLit() ? Math.max(0, 45 - Math.min(S.ind.trust, S.ind.comfort)) / 45 : 0;
+  if (Math.random() < dt * tension * 0.8 * sp){ const t = lay.tables[Math.floor(Math.random() * lay.tables.length)]; bubbles.push({ x: t[0], y: t[1], z: 40, t: 0 }); }
 }
-function tableShape(t, lit){
-  const pts = [], pts2 = [];
-  for (let i = 0; i < 28; i++){ const a = i / 28 * Math.PI * 2; pts.push(iso(t.x + Math.cos(a) * 1.15, t.y + Math.sin(a) * 0.62, 7)); pts2.push(iso(t.x + Math.cos(a) * 1.15, t.y + Math.sin(a) * 0.62, 0)); }
-  const sh = pts2.map((p) => [p[0] + 4, p[1] + 3]); poly(sh, C.sh);
-  poly(pts2, C.ink); poly(pts, lit ? C.ink : C.gray, C.bg, 1.2);
-  const inner = []; for (let i = 0; i < 28; i++){ const a = i / 28 * Math.PI * 2; inner.push(iso(t.x + Math.cos(a) * 0.85, t.y + Math.sin(a) * 0.4, 7)); }
-  poly(inner, null, C.bg, 1);
+/* 毎月のお金の流れ：売上（緑）が卓から手元資金へ、家賃・人件費など（赤）が手元資金から出ていく */
+function flowAnim(p, wasOpen){
+  const box = $("flow"); if (!box) return;
+  const out = [["売上", p.rev || 0, "in"], ["原価・決済", (p.rev || 0) * O.variableRate, "out"], ["家賃", S.rent, "out"], ["人件費", wasOpen ? p.staff : 0, "out"], ["その他", wasOpen ? O.otherFixed + O.ads[S.ad].cost + (p.interest || 0) : 0, "out"]];
+  const max = Math.max(1, ...out.map((r) => r[1]));
+  box.querySelectorAll(".frow").forEach((row, i) => { const r = out[i]; if (!r) return; row.querySelector("i").style.width = (r[1] / max * 100).toFixed(1) + "%"; row.querySelector("b").textContent = (r[2] === "in" ? "+" : "−") + Math.round(r[1]).toLocaleString("ja-JP"); });
+  const net = p.net; $("flowNet").textContent = (net >= 0 ? "+" : "−") + Math.round(Math.abs(net)).toLocaleString("ja-JP") + "万円"; $("flowNet").className = net >= 0 ? "pos" : "negc";
+  $("flowMonth").textContent = monthLabel(S.month - 1);
+  if (TEST) return;
+  const m = $("money").getBoundingClientRect(), mx = m.left + m.width * 0.25, my = m.top + m.height / 2;
+  const lay = layoutFor(S.tables), iso = isoOf(VIEW);
+  const nIn = Math.min(14, Math.round((p.rev || 0) / 40));
+  for (let i = 0; i < nIn; i++){ const t = lay.tables[i % lay.tables.length], q = iso(t[0], t[1], 10); coins.push({ x0: q[0], y0: q[1], x1: mx, y1: my, t: -i * 0.06, c: "good" }); }
+  box.querySelectorAll(".frow.out").forEach((row, i) => {
+    const amt = out[i + 1][1], n = Math.min(8, Math.round(amt / 40)), rr = row.querySelector("i").getBoundingClientRect();
+    for (let k = 0; k < n; k++) coins.push({ x0: mx, y0: my, x1: rr.left + rr.width, y1: rr.top + rr.height / 2, t: -0.5 - (i * 4 + k) * 0.05, c: "danger" });
+  });
 }
-let people = [], pops = [], police = [], bubbles = [], staffBots = [];
-function resetScene(){ people = []; pops = []; police = []; bubbles = []; staffBots = []; layoutRoom(); readColors(); }
-const STREET_Y = () => room.d + 2.6;
-function spawnPasser(){ const dir = Math.random() < 0.5 ? 1 : -1, y = STREET_Y() + (Math.random() - 0.5) * 1.6; people.push({ x: dir > 0 ? -12 : room.w + 12, y, tx: dir > 0 ? room.w + 12 : -12, ty: y, kind: "guest", ph: Math.random() * 6, sp: 1.6 + Math.random(), state: "pass" }); }
-function spawnGuest(){
-  const dir = Math.random() < 0.5 ? 1 : -1, y = STREET_Y();
-  const newbie = Math.random() < 0.35, turnBack = newbie && S && Math.random() < (60 - S.ind.comfort) / 100;
-  const t = room.tables[Math.floor(Math.random() * room.tables.length)] || { x: 2, y: 2 }, a = Math.random() * Math.PI * 2;
-  people.push({ x: dir > 0 ? -12 : room.w + 12, y, kind: newbie ? "newbie" : "guest", ph: Math.random() * 6, sp: 1.8 + Math.random() * 0.8, state: "toDoor", turnBack,
-    seat: { x: t.x + Math.cos(a) * 1.45, y: t.y + Math.sin(a) * 0.95 }, tx: room.door.x, ty: room.d + 0.6 });
-}
-function spawnPolice(){ police.push({ x: -10, y: STREET_Y(), tx: room.door.x, ty: room.d + 0.8, ph: 0, t: 0 }); }
-function stepToward(p, dt, speed){ const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy); if (d < 0.08) return true; const s = Math.min(d, p.sp * dt * speed); p.x += dx / d * s; p.y += dy / d * s; p.ph += dt * 9 * speed; return false; }
 function draw(dt){
   cx.fillStyle = C.bg; cx.fillRect(0, 0, W, H);
   const running = S && !S.paused && !S.over, sp = S ? S.speed : 1, lit = shopLit();
-  // 通り（立地の格で太さが変わる）
-  const sy = STREET_Y(), half = 1.1 + (S ? S.loc.tsuboRent : 1.5) * 0.25;
-  poly([iso(-30, sy - half), iso(room.w + 30, sy - half), iso(room.w + 30, sy + half), iso(-30, sy + half)], C.soft2);
-  for (const e of [sy - half, sy + half]){ const a = iso(-30, e), b = iso(room.w + 30, e); cx.beginPath(); cx.moveTo(a[0], a[1]); cx.lineTo(b[0], b[1]); cx.strokeStyle = C.ink; cx.lineWidth = 1.3; cx.stroke(); }
-  if (S){ const p = iso(-6, sy + half + 0.7); cx.save(); cx.translate(p[0], p[1]); cx.rotate(Math.atan2(TW / 4, TW / 2)); cx.fillStyle = C.muted; cx.font = `500 12px ${C.font}`; cx.fillText(`${S.loc.name}の通り`, 0, 0); cx.restore(); }
-  // 競合店（通りの向かい）
-  if (S) for (let i = 0; i < S.competitors; i++){
-    const bx = (i % 2 ? room.w + 2 + Math.floor(i / 2) * 4 : -5 - Math.floor(i / 2) * 4), by = sy + half + 1, w = 2.6, d = 2, h = TW * 0.9;
-    poly([iso(bx, by, h), iso(bx + w, by, h), iso(bx + w, by + d, h), iso(bx, by + d, h)], C.wallD, C.ink, 1);
-    poly([iso(bx, by + d), iso(bx + w, by + d), iso(bx + w, by + d, h), iso(bx, by + d, h)], C.wall, C.ink, 1);
-    poly([iso(bx + w, by), iso(bx + w, by + d), iso(bx + w, by + d, h), iso(bx + w, by, h)], C.soft, C.ink, 1);
-    const p = iso(bx + w / 2, by + d / 2, h); cx.fillStyle = C.muted; cx.font = `500 10px ${C.font}`; cx.textAlign = "center"; cx.fillText("競合", p[0], p[1] + 4); cx.textAlign = "start";
-  }
-  // 床と奥の壁
-  const WH = TW * 1.1;
-  const floor = [iso(0, 0), iso(room.w, 0), iso(room.w, room.d), iso(0, room.d)];
-  poly(floor.map((p) => [p[0] + 8, p[1] + 8]), C.sh);
-  poly(floor, lit ? C.bg : C.soft2, C.ink, 1.2);
-  cx.strokeStyle = C.soft; cx.lineWidth = 0.8;
-  for (let x = 1; x < room.w; x++){ const a = iso(x, 0), b = iso(x, room.d); cx.beginPath(); cx.moveTo(a[0], a[1]); cx.lineTo(b[0], b[1]); cx.stroke(); }
-  for (let y = 1; y < room.d; y++){ const a = iso(0, y), b = iso(room.w, y); cx.beginPath(); cx.moveTo(a[0], a[1]); cx.lineTo(b[0], b[1]); cx.stroke(); }
-  wall(0, 0, room.w, 0, WH, C.wall); wall(0, 0, 0, room.d, WH, C.wallD);
-  // バーカウンター（奥の壁沿い）
-  poly([iso(room.w - 2.6, 0.2, 14), iso(room.w - 0.3, 0.2, 14), iso(room.w - 0.3, 0.8, 14), iso(room.w - 2.6, 0.8, 14)], C.ink);
-  poly([iso(room.w - 2.6, 0.8), iso(room.w - 0.3, 0.8), iso(room.w - 0.3, 0.8, 14), iso(room.w - 2.6, 0.8, 14)], C.wallD, C.ink, 1);
-  // 人と卓を奥から順に描く
-  if (running && isOpen()){
-    if (lit){ const rate = (S.last.guests || S.tables * 5) / Math.max(4, hoursLen()) / 2.2; if (Math.random() < dt * rate * sp) spawnGuest(); }
-    if (Math.random() < dt * (0.25 + S.loc.tsuboRent * 0.12) * Math.sqrt(sp)) spawnPasser();
-    const tension = lit ? Math.max(0, 45 - Math.min(S.ind.trust, S.ind.comfort)) / 45 : 0;
-    if (room.tables.length && Math.random() < dt * tension * 0.8 * sp){ const t = room.tables[Math.floor(Math.random() * room.tables.length)]; bubbles.push({ x: t.x, y: t.y, z: 34, t: 0 }); }
-  }
-  if (S && isOpen()){
-    const want = lit ? Math.max(1, Math.round(S.tables * 0.6 * (S.hiring.id === "lean" ? 0.6 : 1))) : 0;
-    while (staffBots.length < want) staffBots.push({ x: room.w - 1.5, y: 1.2, tx: 2, ty: 2, ph: 0, sp: 1.4 });
-    staffBots.length = Math.min(staffBots.length, want);
-  } else staffBots.length = 0;
-  const hurry = S ? 1 + (100 - S.ind.slack) / 45 : 1;
-  for (const s of staffBots){ if (running && stepToward(s, dt, sp * hurry)){ const t = room.tables[Math.floor(Math.random() * room.tables.length)] || { x: 2, y: 2 }; s.tx = t.x + (Math.random() - 0.5) * 2.6; s.ty = t.y + 0.9; } }
-  for (const p of people){
-    if (!running) continue;
-    if (p.state === "pass"){ if (stepToward(p, dt, sp)) p.dead = true; }
-    else if (p.state === "toDoor"){ if (stepToward(p, dt, sp)){ if (p.turnBack){ p.state = "pass"; p.tx = Math.random() < 0.5 ? -12 : room.w + 12; p.ty = STREET_Y(); bubbles.push({ x: p.x, y: p.y, z: 40, t: 0, text: "…" }); } else { p.state = "toSeat"; p.tx = p.seat.x; p.ty = p.seat.y; } } }
-    else if (p.state === "toSeat"){ if (stepToward(p, dt, sp)){ p.state = "sit"; p.t = 0; pops.push({ x: p.x, y: p.y, t: 0, v: Math.round(S.loc.spend * S.price * styleNow().effect.spend * 10000) }); } }
-    else if (p.state === "sit"){ p.t += dt * sp; if (p.t > 6 || !lit){ p.state = "leave"; p.tx = room.door.x; p.ty = room.d + 0.6; } }
-    else if (p.state === "leave"){ if (stepToward(p, dt, sp)){ p.state = "pass"; p.tx = Math.random() < 0.5 ? -12 : room.w + 12; p.ty = STREET_Y(); } }
-  }
-  people = people.filter((p) => !p.dead).slice(-180);
-  const items = [];
-  for (const t of room.tables) items.push({ d: t.x + t.y, f: () => tableShape(t, lit) });
-  for (const p of people){ if (p.state === "pass" && p.y < room.d) continue; items.push({ d: p.x + p.y + 0.3, f: () => { const q = iso(p.x, p.y); figure(q[0], q[1], TW / 44, p.ph, p.state !== "sit", p.kind); } }); }
-  for (const s of staffBots) items.push({ d: s.x + s.y + 0.3, f: () => { const q = iso(s.x, s.y); figure(q[0], q[1], TW / 44, s.ph, true, "staff"); } });
-  for (const q of police){ if (stepToward(q, 1 / 60, 1.6)) q.t += 1 / 60; items.push({ d: q.x + q.y + 0.3, f: () => { const z = iso(q.x, q.y); figure(z[0], z[1], TW / 40, q.ph, q.t === 0, "police"); } }); }
+  if (running && isOpen()) updatePeople(dt, sp);
+  else if (S && !isOpen()) { people = []; staffBots = []; }
+  if (elevT > 0){ elevT -= dt; elev = Math.min(1, elev + dt * 4); } else elev = Math.max(0, elev - dt * 3);
+  for (const q of police){ q.sp = 1.6; if (step(q, dt, 1)) q.t += dt; }
   police = police.filter((q) => q.t < 3);
-  const inside = items.filter((it) => it.d < room.w + room.d), outside = items.filter((it) => it.d >= room.w + room.d);
-  inside.sort((a, b) => a.d - b.d).forEach((it) => it.f());
-  // 手前の低い壁（入口は左手前）
-  const lowH = TW * 0.28;
-  wall(room.door.x + 1.4, room.d, room.w, room.d, lowH, C.wall); wall(0, room.d, room.door.x - 0.9, room.d, lowH, C.wall); wall(room.w, 0, room.w, room.d, lowH, C.wallD);
-  outside.sort((a, b) => a.d - b.d).forEach((it) => it.f());
+  const lay = layoutFor(S ? S.tables : 5);
+  const iso = drawShopG(cx, VIEW, { lay, lit: S ? lit : true, people, staff: S && isOpen() ? staffBots : [], police, elev });
   // 状態ピル
   if (S){
-    const label = !isOpen() ? `許可待ち あと${S.licenseWait}か月` : !lit ? `営業時間外（${hhLong(S.open)}から）` : `${S.tables}卓 ・ 満席率 ${Math.round((S.last.occ || 0) * 100)}%`;
-    const p = iso(room.w / 2, 0, WH + 26); cx.font = `700 14px ${C.font}`; const tw = cx.measureText(label).width + 26;
+    const seats = S.tables * 9, seated = people.filter((p) => p.sit).length;
+    const label = !isOpen() ? `許可待ち あと${S.licenseWait}か月` : !lit ? `営業時間外（${hhLong(S.open)}から）` : `${S.tables}卓 ・ ${seated}/${seats}席 ・ 満席率 ${Math.round((S.last.occ || 0) * 100)}%`;
+    const p = iso(lay.w / 2, 0, VIEW.wh * 2 + 24); cx.font = `700 14px ${C.font}`; const tw = cx.measureText(label).width + 26;
     cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath(); cx.roundRect(p[0] - tw / 2, p[1] - 15, tw, 30, 9); cx.fill(); cx.stroke();
     cx.fillStyle = C.ink; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(label, p[0], p[1] + 1); cx.textAlign = "start"; cx.textBaseline = "alphabetic";
     const rk = risks();
-    if (rk.arrest + rk.order > 0){ const q = iso(room.w / 2, 0, WH + 50); cx.font = `500 12px ${C.font}`; cx.fillStyle = C.danger; cx.textAlign = "center"; cx.fillText(`摘発 ${pct(rk.arrest)} ・ ${R.labels.order} ${pct(rk.order, 0)}（今月）`, q[0], q[1]); cx.textAlign = "start"; }
+    if (rk.arrest + rk.order > 0){ const q = iso(lay.w / 2, 0, VIEW.wh * 2 + 48); cx.font = `500 12px ${C.font}`; cx.fillStyle = C.danger; cx.textAlign = "center"; cx.fillText(`摘発 ${pct(rk.arrest)} ・ ${R.labels.order} ${pct(rk.order, 0)}（今月）`, q[0], q[1]); cx.textAlign = "start"; }
   }
   for (const b of bubbles){
     b.t += dt; const a = Math.max(0, 1 - b.t / 1.5); cx.globalAlpha = a; const q = iso(b.x, b.y, b.z + b.t * 10);
-    cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(q[0], q[1], 10, 0, Math.PI * 2); cx.fill(); cx.stroke();
+    cx.fillStyle = C.bg; cx.strokeStyle = b.text ? C.ink : C.danger; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(q[0], q[1], 10, 0, Math.PI * 2); cx.fill(); cx.stroke();
     cx.fillStyle = b.text ? C.ink : C.danger; cx.font = `700 13px ${C.font}`; cx.textAlign = "center"; cx.fillText(b.text || "!", q[0], q[1] + 5); cx.textAlign = "start"; cx.globalAlpha = 1;
   }
   bubbles = bubbles.filter((b) => b.t < 1.5);
   for (const p of pops){
-    p.t += dt; const a = Math.max(0, 1 - p.t / 1.6); if (!a) continue;
+    p.t += dt; const a = Math.max(0, 1 - p.t / 1.4); if (!a) continue;
     cx.globalAlpha = a; const txt = `+${p.v.toLocaleString("ja-JP")}円`, q = iso(p.x, p.y, 44 + p.t * 18);
-    cx.font = `500 12px ${C.mono}`; const w = cx.measureText(txt).width + 28;
-    cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 1.5; cx.beginPath(); cx.roundRect(q[0] - w / 2, q[1] - 11, w, 22, 7); cx.fill(); cx.stroke();
-    cx.beginPath(); cx.arc(q[0] - w / 2 + 11, q[1], 3.5, 0, Math.PI * 2); cx.lineWidth = 2.4; cx.stroke();
-    cx.fillStyle = C.ink; cx.fillText(txt, q[0] - w / 2 + 19, q[1] + 4); cx.globalAlpha = 1;
+    cx.font = `500 12px ${C.mono}`; const w = cx.measureText(txt).width + 14;
+    cx.fillStyle = C.bg; cx.strokeStyle = C.good; cx.lineWidth = 1.5; cx.beginPath(); cx.roundRect(q[0] - w / 2, q[1] - 11, w, 22, 7); cx.fill(); cx.stroke();
+    cx.fillStyle = C.good; cx.fillText(txt, q[0] - w / 2 + 7, q[1] + 4); cx.globalAlpha = 1;
   }
-  pops = pops.filter((p) => p.t < 1.6);
+  pops = pops.filter((p) => p.t < 1.4).slice(-30);
+  // お金の粒
+  for (const c of coins){
+    c.t += dt * 1.1; if (c.t < 0) continue; const k = Math.min(1, c.t), e = k * k * (3 - 2 * k);
+    const x = c.x0 + (c.x1 - c.x0) * e, y = c.y0 + (c.y1 - c.y0) * e - Math.sin(k * Math.PI) * 60;
+    cx.globalAlpha = 1 - Math.max(0, k - 0.85) / 0.15; cx.fillStyle = C[c.c]; cx.strokeStyle = C.bg; cx.lineWidth = 1.5;
+    cx.beginPath(); cx.arc(x, y, 5, 0, Math.PI * 2); cx.fill(); cx.stroke(); cx.globalAlpha = 1;
+  }
+  coins = coins.filter((c) => c.t < 1);
+}
+/* 店舗イメージ図（開業前の確認用）。卓数ごとのレイアウトをそのまま描く */
+function drawPreview(canvas, n){
+  const dpr = Math.min(2, devicePixelRatio || 1), w = canvas.clientWidth || 640, h = canvas.clientHeight || 300;
+  canvas.width = w * dpr; canvas.height = h * dpr; const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = C.bg; g.fillRect(0, 0, w, h);
+  const lay = layoutFor(n), v = makeView(lay, w, h, 34, 8);
+  let seed = n * 97; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  const ppl = [], stf = [];
+  lay.tables.forEach((t) => { stf.push({ ...dealerPos(t), sit: true }); for (let k = 0; k < 9; k++) if (rnd() < 0.62){ const s = seatPos(t, k); ppl.push({ ...s, sit: true, kind: rnd() < 0.25 ? "newbie" : "guest" }); } });
+  stf.push({ x: lay.bar.x0 + 1, y: 1.4 });
+  drawShopG(g, v, { lay, lit: true, people: ppl, staff: stf, elev: 0.6 });
+  g.fillStyle = C.muted; g.font = `500 12px ${C.font}`; g.fillText(`店舗イメージ ・ ${n}卓（${n * 9}席）・ エレベーターで入店`, 8, 18);
 }
 
 /* ---------- ループ ---------- */
@@ -2228,6 +2794,7 @@ function frame(now){
   hudT += dt; if (hudT > 0.1){ hudT = 0; syncHUD(); }
   requestAnimationFrame(frame);
 }
+window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.state] = (a[p.state] || 0) + 1, a), {}), sample: people.slice(0, 3).map((p) => [p.x.toFixed(2), p.y.toFixed(2), p.tx && p.tx.toFixed(2), p.ty && p.ty.toFixed(2), p.state]), lit: shopLit(), want: targetSeated() });
 window.__shop = { state: () => S, cfg: CFG, start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
