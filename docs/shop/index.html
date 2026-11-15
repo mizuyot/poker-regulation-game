@@ -94,6 +94,11 @@ button{font-family:inherit;color:inherit}
 .choke:empty{display:none}
 .choke b{color:var(--danger)}
 .why .up{color:var(--good)} .why .dn{color:var(--danger)}
+.alert{position:fixed;inset:0;pointer-events:none;z-index:4;display:none;border:6px solid var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);animation:alertFlash .5s steps(2) infinite}
+.alert.show{display:block}.alert.soft{animation:none;background:none;border-width:4px}
+.alert .ban{position:absolute;top:22%;left:50%;transform:translateX(-50%);background:var(--danger);color:#fff;border-radius:12px;padding:10px 22px;text-align:center;box-shadow:4px 6px 0 var(--shadow);min-width:min(420px,calc(100vw - 32px))}
+.alert .ban b{display:block;font-size:22px;letter-spacing:.06em}.alert .ban span{display:block;font-size:13px;margin-top:2px}
+@keyframes alertFlash{0%{border-color:var(--danger)}100%{border-color:transparent}}
 .toast{position:fixed;top:120px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:min(520px,calc(100vw - 32px));z-index:2}
 .toast div.bad{border-color:var(--danger);color:var(--danger)}
 .toast div.good{border-color:var(--good);color:var(--good)}
@@ -207,7 +212,19 @@ summary{cursor:pointer;color:var(--muted)}
   .toast{top:100px}
 }
 @media (max-width:720px){
-  .toast{top:190px}
+  /* スマホ：重ねずに縦に積む（上の情報 → 店 → 時間 → 収支）。ドックだけ下に固定 */
+  html,body{height:auto;overflow-x:hidden;overflow-y:auto}
+  body{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"tl hud" "cv cv" "time time" "flow flow";align-content:start;padding-bottom:150px}
+  .tl{position:static;grid-area:tl;margin:10px 0 0 10px}
+  .hud{position:static;grid-area:hud;justify-self:end;margin:10px 10px 0 0;max-width:calc(100vw - 150px)}
+  .hud .tiny{white-space:normal}
+  #cv{position:static;grid-area:cv;width:100vw;height:clamp(250px,72vw,440px)}
+  .time{position:static;grid-area:time;transform:none;width:auto;min-width:0;margin:0 12px}
+  .flow{position:static;grid-area:flow;width:auto;margin:10px 12px 0;padding:8px 10px;font-size:12px}
+  .dockwrap{left:0;right:0;bottom:0;transform:none;max-width:none;background:var(--bg);border-top:1.5px solid var(--soft);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .dockwrap .dock{border:0;padding:4px 2px 0;gap:0;justify-content:space-between;width:100%;overflow:visible}
+  .dockwrap .act{min-width:0;flex:1}.dockwrap .act .c{font-size:10px}.dockwrap .act .ic{width:38px;height:38px;box-shadow:2px 3px 0 var(--shadow)}.dockwrap .act .k{display:none}
+  .toast{top:auto;bottom:118px}
   .money{font-size:24px}.hud{top:10px;right:10px}.tl{top:10px;left:10px}
   .ind{grid-template-columns:repeat(4,auto auto);gap:2px 4px;font-size:11px;padding:4px 6px;cursor:pointer}.ind .bar{display:none}.ind .full{display:none}.ind .short{display:inline}.ind .v{color:var(--ink)}
   .act .ic{width:42px;height:42px;font-size:16px}.act{min-width:46px}.act .k{top:28px}.dock{gap:6px;padding:10px 8px 6px}
@@ -267,6 +284,7 @@ summary{cursor:pointer;color:var(--muted)}
   </div>
 </div>
 
+<div class="alert" id="alertBox" role="alert"><div class="ban"><b id="alertT"></b><span id="alertS"></span></div></div>
 <div class="ov" id="ov"><div class="card" id="card"></div></div>
 
 <script type="application/json" id="shop-data">
@@ -520,7 +538,9 @@ summary{cursor:pointer;color:var(--muted)}
     "note": "是正指摘・摘発エンド・確率はゲーム上の不利益イベントで、現実の法的手続きの順序や確率ではない。",
     "ddArrestIfLate": 0.5,
     "ddArrestText": "買収前調査の期間中に違法営業が見つかり、買い手が手を引いただけでは済まなかった（ゲーム上の処理）。",
-    "orderJumpGray": 1.5
+    "orderJumpGray": 1.5,
+    "heatWarn": 0.03,
+    "raidNote": "立ち入りの人数（摘発＝機動隊20人、是正指摘＝5人と命令書）は演出。実際の捜査・行政手続の人数や手順を表すものではない。"
   },
   "valuation": {
     "discountBase": 0.25,
@@ -2326,7 +2346,9 @@ function monthTick(){
   if (wasOpen){
     const rk = risks();
     for (const a of rk.active){ S.used[a.id] = (S.used[a.id] || 0) + 1; S.lastUsed[a.id] = S.month; S.riskMonths.push({ t: S.month, id: a.id, tier: a.tier }); }
-    if (hr("arrest") < rk.arrest){ logEv("arrest", {}); story("摘発された。"); spawnPolice(); S.month++; rec(p, wasOpen); return finish("arrest"); }
+    if (hr("arrest") < rk.arrest){ logEv("arrest", {}); story("摘発された。"); S.month++; rec(p, wasOpen); return stageRaid("arrest", () => finish("arrest")); }
+    // 予兆：摘発の確率が高い月は、赤いアラートで先に知らせる（6か月に1回まで）
+    if (rk.arrest >= R.heatWarn && S.month - (S.heatWarnAt ?? -99) >= 6){ S.heatWarnAt = S.month; story("店の前に、見慣れない車が何日も停まっている。"); note("捜査の気配：店の前に見慣れない車が停まっている", "bad"); if (!TEST) showAlert("捜査の気配", `今月の摘発の確率 ${pct(rk.arrest)}。このまま続けると、ある日踏み込まれる`, true, 4); }
     if (rk.active.length && hr("order") < rk.order) orderActs = rk.active;
   }
   const i = S.ind;
@@ -2412,8 +2434,7 @@ function order(acts){
   }
   logEv("order", { acts: acts.map((a) => a.id), cost: Math.round(cost) });
   story(`${R.labels.order}を受けた（${acts.map((a) => a.short).join("・")}）。${R.labels.orderCost} ${yen(cost)}。`);
-  spawnPolice();
-  pauseWith(() => show(`
+  stageRaid("order", () => pauseWith(() => show(`
     <div class="kicker">${monthLabel(S.month - 1)}</div><h1>${esc(R.labels.order)}</h1>
     <p>${acts.map((a) => esc(a.short)).join("、")}について指摘を受けた。</p>
     <table class="t"><tr><td>${esc(R.labels.orderCost)}</td><td>${yen(cost)}</td></tr>
@@ -2424,7 +2445,7 @@ function order(acts){
       <tr><td>店の値段（DCFの割引率）</td><td>+${Math.round(V.discountPerOrder * 100)}%</td></tr></table>
     <p class="muted" style="font-size:12px">${esc(R.note)}</p>
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set(acts.flatMap((a) => a.prov))])}</details>
-    <div class="row stick"><button class="btn primary" id="okBtn">営業を続ける</button></div>`, () => { $("okBtn").onclick = resume; }));
+    <div class="row stick"><button class="btn primary" id="okBtn">営業を続ける</button></div>`, () => { $("okBtn").onclick = resume; })));
 }
 
 /* ---------- 事件 ---------- */
@@ -2613,7 +2634,7 @@ function ddCheck(){
 }
 function proposal(){
   const dd = ddCheck();
-  if (dd.kind === "shell" && dd.late > 0 && hr("dd", 9) < R.ddArrestIfLate){ logEv("arrest", { dd: true }); story(R.ddArrestText); spawnPolice(); return finish("arrest"); }
+  if (dd.kind === "shell" && dd.late > 0 && hr("dd", 9) < R.ddArrestIfLate){ logEv("arrest", { dd: true }); story(R.ddArrestText); return stageRaid("arrest", () => finish("arrest")); }
   const v = valuation(dd), sale = v.adopted;
   logEv("proposal", { dd: dd.kind, sale: Math.round(sale), dcf: Math.round(v.dcf.point), comps: Math.round(v.comps.point), liq: Math.round(v.liq.point) });
   story(dd.kind === "shell" ? "買収前調査で、黒の営業が見つかった。" : dd.kind === "cut" ? `買収前調査で、グレーの営業（${dd.name}）が見つかり減額された。` : "買収提案がまとまった。");
@@ -3342,7 +3363,7 @@ function startGame(cfg){
 const addTableCost = () => S.tables < S.capacity ? L.tablePrice : lateTableCost();
 const lateTableCost = () => L.tablePrice + L.tsuboPerTable * S.loc.fitoutPerTsubo * L.lateTableMarkup + L.tsuboPerTable * S.loc.tsuboRent * L.depositMonths;
 function act(a){
-  if (!S || S.over || ov.classList.contains("show")) return;
+  if (!S || S.over || raid || ov.classList.contains("show")) return;
   if (a === "ad"){ S.ad = (S.ad + 1) % O.ads.length; note(S.ad ? `広告 Lv${S.ad}（${yen(O.ads[S.ad].cost)}/月）` : "広告を止めた"); logEv("ad", { level: S.ad }); }
   if (a === "tableAdd"){
     if (S.tables >= L.maxTables) return note("これ以上は置けない");
@@ -3443,7 +3464,7 @@ addEventListener("keydown", (e) => {
   if (m) act(m);
   if (e.key === " " && S && !S.over && !ov.classList.contains("show")) { e.preventDefault(); togglePause(); }
 });
-function togglePause(){ if (!S || S.over) return; S.paused = !S.paused; $("pauseBtn").textContent = S.paused ? "▶" : "II"; }
+function togglePause(){ if (!S || S.over || raid) return; S.paused = !S.paused; $("pauseBtn").textContent = S.paused ? "▶" : "II"; }
 $("pauseBtn").onclick = togglePause;
 $("speedBtn").onclick = () => { if (!S) return; S.speed = S.speed === 1 ? 2 : S.speed === 2 ? 4 : 1; $("speedBtn").textContent = "×" + S.speed; };
 
@@ -3551,7 +3572,17 @@ function figureG(g, sx, sy, s, ph, moving, kind, sitting){
   if (kind === "staff"){ g.fillStyle = C.ink; g.fillRect(sx - 4.5 * s, top + 6 * s, 9 * s, 2.2 * s); }
   if (kind === "tourney"){ g.fillStyle = C.bg; g.strokeStyle = C.ink; g.lineWidth = 1 * s; g.fillRect(sx - 3.5 * s, top + 4 * s, 7 * s, 5.5 * s); g.strokeRect(sx - 3.5 * s, top + 4 * s, 7 * s, 5.5 * s); }
   g.fillStyle = outline ? C.bg : C.gray; g.beginPath(); g.arc(sx, top - 5 * s, 4.6 * s, 0, Math.PI * 2); g.fill(); g.stroke();
-  if (kind === "police"){ g.fillStyle = C.ink; g.fillRect(sx - 5.5 * s, top - 11 * s, 11 * s, 3 * s); }
+  if (kind === "police" || kind === "policeDoc"){ g.fillStyle = C.ink; g.fillRect(sx - 5.5 * s, top - 11 * s, 11 * s, 3 * s); }
+  if (kind === "policeDoc"){ // 命令書を掲げる
+    g.fillStyle = C.bg; g.strokeStyle = C.danger; g.lineWidth = 1.4 * s; g.fillRect(sx + 6 * s, top - 6 * s, 9 * s, 12 * s); g.strokeRect(sx + 6 * s, top - 6 * s, 9 * s, 12 * s);
+    g.beginPath(); for (let k = 0; k < 3; k++){ g.moveTo(sx + 8 * s, top - 2 * s + k * 3 * s); g.lineTo(sx + 13 * s, top - 2 * s + k * 3 * s); } g.stroke();
+  }
+  if (kind === "riot"){ // 機動隊：黒い防護服・ヘルメット・盾
+    g.fillStyle = C.ink; g.beginPath(); g.moveTo(sx - 7 * s, top + 3 * s); g.lineTo(sx + 7 * s, top + 3 * s); g.lineTo(sx + 4 * s, base); g.lineTo(sx - 4 * s, base); g.closePath(); g.fill();
+    g.beginPath(); g.arc(sx, top - 5 * s, 5.4 * s, Math.PI, 0); g.lineTo(sx + 5.4 * s, top - 3 * s); g.lineTo(sx - 5.4 * s, top - 3 * s); g.closePath(); g.fill();
+    g.strokeStyle = C.bg; g.lineWidth = 1.2 * s; g.beginPath(); g.moveTo(sx - 4 * s, top - 5 * s); g.lineTo(sx + 4 * s, top - 5 * s); g.stroke();
+    g.fillStyle = "rgba(200,200,210,.55)"; g.strokeStyle = C.ink; g.lineWidth = 1.3 * s; g.beginPath(); g.roundRect(sx - 9 * s, top + 1 * s, 7 * s, 15 * s, 1.5 * s); g.fill(); g.stroke();
+  }
 }
 function tableG(g, iso, t, lit){
   const ring = (rx, ry, z) => { const a = []; for (let i = 0; i < 32; i++){ const q = i / 32 * Math.PI * 2; a.push(iso(t[0] + Math.cos(q) * rx, t[1] + Math.sin(q) * ry, z)); } return a; };
@@ -3586,7 +3617,7 @@ function drawShopG(g, v, st){
   for (const p of st.staff) items.push({ d: p.x + p.y + 0.3, f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s, p.ph || 0, !!p.moving, "staff", p.sit); } });
   const ev = lay.elevator;
   for (let k = 0; k < (st.queue || 0); k++) items.push({ d: 0.9 + ev.y0 - 0.5 - k * 0.42 + 0.3, f: () => { const q = iso(0.9 + (k % 2) * 0.35, ev.y0 - 0.5 - k * 0.42); figureG(g, q[0], q[1], s, 0, false, k % 3 === 0 ? "newbie" : "guest"); } });
-  for (const p of st.police || []) items.push({ d: p.x + p.y + 0.3, f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s * 1.1, p.ph || 0, true, "police"); } });
+  for (const p of st.police || []) if (!(p.delay > 0)) items.push({ d: p.x + p.y + 0.3, f: () => { const q = iso(p.x, p.y); figureG(g, q[0], q[1], s * 1.1, p.ph || 0, p.moving !== false, p.kind || "police"); } });
   items.sort((a, z) => a.d - z.d).forEach((it) => it.f());
   // 手前の低い壁
   const lowH = v.tw * 0.25;
@@ -3596,22 +3627,59 @@ function drawShopG(g, v, st){
 
 /* ---------- 本編の店 ---------- */
 let VIEW = null, people = [], staffBots = [], pops = [], police = [], bubbles = [], coins = [], elev = 0, elevT = 0, spawnT = 0;
-function resize(){ const dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); layoutRoom(); }
+const PHONE = matchMedia("(max-width:720px)");
+function resize(){ const dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = PHONE.matches ? (cv.clientHeight || 300) : innerHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); layoutRoom(); }
 addEventListener("resize", resize);
 function layoutRoom(){
   const lay = layoutFor(S ? S.tables : 5), narrow = W < 900;
-  VIEW = makeView(lay, narrow ? W : W - 520, H, narrow ? 120 : 110, narrow ? 300 : 150);
+  VIEW = PHONE.matches ? makeView(lay, W, H, 62, 8) : makeView(lay, narrow ? W : W - 520, H, narrow ? 120 : 110, narrow ? 300 : 150);
   if (!narrow) VIEW.ox += 240;
   // 席の割り当てを作り直す
   people = people.filter((p) => !p.sit && p.state !== "toSeat");
   staffBots = [];
 }
-function resetScene(){ people = []; pops = []; police = []; bubbles = []; coins = []; staffBots = []; readColors(); layoutRoom(); }
+function resetScene(){ raid = null; hideAlert(); people = []; pops = []; police = []; bubbles = []; coins = []; staffBots = []; readColors(); layoutRoom(); }
 const ELEV = () => { const e = layoutFor(S ? S.tables : 5).elevator; return { x: 0.45, y: (e.y0 + e.y1) / 2 }; };
 function freeSeats(){
   const lay = layoutFor(S.tables), taken = new Set(people.filter((p) => p.seatKey).map((p) => p.seatKey)), out = [];
   lay.tables.forEach((t, ti) => { for (let k = 0; k < 9; k++){ const key = ti + ":" + k; if (!taken.has(key)) out.push({ key, ...seatPos(t, k) }); } });
   return out;
+}
+/* 立ち入りの演出：赤いアラート → 警察が踏み込む → 結果のカード
+   摘発＝機動隊20人（黒い防護服・盾）、是正指摘＝5人（1人が命令書を持つ）。TESTでは演出を飛ばす */
+let raid = null, alertTimer = 0;
+function showAlert(title, sub, soft, secs){
+  $("alertT").textContent = title; $("alertS").textContent = sub || "";
+  const a = $("alertBox"); a.classList.add("show"); a.classList.toggle("soft", !!soft);
+  clearTimeout(alertTimer); if (secs) alertTimer = setTimeout(hideAlert, secs * 1000);
+}
+function hideAlert(){ $("alertBox").classList.remove("show"); }
+function stageRaid(kind, then){
+  if (TEST || !VIEW){ return then(); }
+  if (raid) return; // 演出中に重ねない
+  S.paused = true; hide();
+  const arrest = kind === "arrest", n = arrest ? 20 : 5, lay = layoutFor(S.tables), e = ELEV();
+  people.forEach((p) => { p.state = p.sit ? p.state : "leave"; });
+  police = [];
+  for (let i = 0; i < n; i++){
+    let tx, ty;
+    if (arrest){ const t = lay.tables[i % lay.tables.length], a = (i / n) * Math.PI * 2 * 3.3; tx = t[0] + Math.cos(a) * 1.55; ty = t[1] + Math.sin(a) * 1.0; }
+    else { tx = e.x + 1.1 + (i % 3) * 0.55; ty = e.y - 0.6 + Math.floor(i / 3) * 0.7; }
+    tx = clamp(tx, 0.4, lay.w - 0.4); ty = clamp(ty, 0.4, lay.d - 0.4);
+    police.push({ x: e.x, y: e.y, tx, ty, ph: 0, t: 0, delay: i * (arrest ? 0.13 : 0.3), sp: arrest ? 3.2 : 1.5, stay: true, kind: arrest ? "riot" : i === 0 ? "policeDoc" : "police" });
+  }
+  elevT = arrest ? 4.5 : 3.2;
+  if (arrest) showAlert("警察の立ち入り", "機動隊が踏み込んできた。営業はここで終わる（ゲーム上の処理）");
+  else showAlert(`立ち入り：${R.labels.order}`, "5人の係官が命令書を持ってきた（ゲーム上の処理）");
+  raid = { kind, t: 0, dur: arrest ? 4.8 : 3.6, then };
+}
+function raidTick(dt){
+  if (!raid) return;
+  raid.t += dt;
+  if (raid.t < raid.dur) return;
+  const f = raid.then, kind = raid.kind; raid = null; hideAlert();
+  if (kind !== "arrest"){ const e = ELEV(); police.forEach((q, i) => { q.stay = false; q.t = 0; q.delay = 2.5 + i * 0.25; q.tx = e.x; q.ty = e.y; }); }
+  f();
 }
 function spawnPolice(){ const e = ELEV(); police.push({ x: e.x, y: e.y, tx: e.x + 2.5, ty: e.y - 0.5, ph: 0, t: 0 }); elevT = 1.2; }
 function step(p, dt, speed){ const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy); if (d < 0.06){ p.moving = false; return true; } const k = Math.min(d, (p.sp || 2) * dt * speed); p.x += dx / d * k; p.y += dy / d * k; p.ph = (p.ph || 0) + dt * 9 * speed; p.moving = true; return false; }
@@ -3661,13 +3729,13 @@ function flowAnim(p, wasOpen){
   const net = p.net; $("flowNet").textContent = (net >= 0 ? "+" : "−") + Math.round(Math.abs(net)).toLocaleString("ja-JP") + "万円"; $("flowNet").className = net >= 0 ? "pos" : "negc";
   $("flowMonth").textContent = monthLabel(S.month - 1);
   if (TEST) return;
-  const m = $("money").getBoundingClientRect(), mx = m.left + m.width * 0.25, my = m.top + m.height / 2;
+  const cr = cv.getBoundingClientRect(), m = $("money").getBoundingClientRect(), mx = m.left - cr.left + m.width * 0.25, my = m.top - cr.top + m.height / 2;
   const lay = layoutFor(S.tables), iso = isoOf(VIEW);
   const nIn = Math.min(14, Math.round((p.rev || 0) / 40));
   for (let i = 0; i < nIn; i++){ const t = lay.tables[i % lay.tables.length], q = iso(t[0], t[1], 10); coins.push({ x0: q[0], y0: q[1], x1: mx, y1: my, t: -i * 0.06, c: "good" }); }
   box.querySelectorAll(".frow.out").forEach((row, i) => {
     const amt = out[i + 1][1], n = Math.min(8, Math.round(amt / 40)), rr = row.querySelector("i").getBoundingClientRect();
-    for (let k = 0; k < n; k++) coins.push({ x0: mx, y0: my, x1: rr.left + rr.width, y1: rr.top + rr.height / 2, t: -0.5 - (i * 4 + k) * 0.05, c: "danger" });
+    for (let k = 0; k < n; k++) coins.push({ x0: mx, y0: my, x1: rr.left - cr.left + rr.width, y1: rr.top - cr.top + rr.height / 2, t: -0.5 - (i * 4 + k) * 0.05, c: "danger" });
   });
 }
 function draw(dt){
@@ -3676,8 +3744,9 @@ function draw(dt){
   if (running && isOpen()) updatePeople(dt, sp);
   else if (S && !isOpen()) { people = []; staffBots = []; }
   if (elevT > 0){ elevT -= dt; elev = Math.min(1, elev + dt * 4); } else elev = Math.max(0, elev - dt * 3);
-  for (const q of police){ q.sp = 1.6; if (step(q, dt, 1)) q.t += dt; }
-  police = police.filter((q) => q.t < 3);
+  for (const q of police){ if (q.delay > 0){ q.delay -= dt; continue; } q.sp = q.sp || 1.6; q.moving = true; if (step(q, dt, 1)){ q.moving = false; q.t += dt; } }
+  police = police.filter((q) => q.stay || q.t < 3);
+  raidTick(dt);
   const lay = layoutFor(S ? S.tables : 5);
   const queue = S && lit && S.choke && S.choke.includes("seat") ? Math.min(8, Math.max(2, Math.round((S.last.lostSeat || 0) / 3))) : 0;
   const iso = drawShopG(cx, VIEW, { lay, lit: S ? lit : true, people, staff: S && isOpen() ? staffBots : [], police, elev, queue });
@@ -3689,7 +3758,7 @@ function draw(dt){
     cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath(); cx.roundRect(p[0] - tw / 2, p[1] - 15, tw, 30, 9); cx.fill(); cx.stroke();
     cx.fillStyle = C.ink; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(label, p[0], p[1] + 1); cx.textAlign = "start"; cx.textBaseline = "alphabetic";
     const rk = risks();
-    if (rk.arrest + rk.order > 0){ const q = iso(lay.w / 2, 0, VIEW.wh * 2 + 48); cx.font = `500 12px ${C.font}`; cx.fillStyle = C.danger; cx.textAlign = "center"; cx.fillText(`摘発 ${pct(rk.arrest)} ・ ${R.labels.order} ${pct(rk.order, 0)}（今月）`, q[0], q[1]); cx.textAlign = "start"; }
+    if (rk.arrest + rk.order > 0 && !PHONE.matches){ const q = iso(lay.w / 2, 0, VIEW.wh * 2 + 48); cx.font = `500 12px ${C.font}`; cx.fillStyle = C.danger; cx.textAlign = "center"; cx.fillText(`摘発 ${pct(rk.arrest)} ・ ${R.labels.order} ${pct(rk.order, 0)}（今月）`, q[0], q[1]); cx.textAlign = "start"; }
   }
   for (const b of bubbles){
     b.t += dt; const a = Math.max(0, 1 - b.t / 1.5); cx.globalAlpha = a; const q = iso(b.x, b.y, b.z + b.t * 10);
@@ -3743,7 +3812,7 @@ function frame(now){
 }
 window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.state] = (a[p.state] || 0) + 1, a), {}), sample: people.slice(0, 3).map((p) => [p.x.toFixed(2), p.y.toFixed(2), p.tx && p.tx.toFixed(2), p.ty && p.ty.toFixed(2), p.state]), lit: shopLit(), want: targetSeated() });
 window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
-  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, start: (cfg) => startGame({ ...CFG, ...cfg }) };
+  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
 requestAnimationFrame(frame);
