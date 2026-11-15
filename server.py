@@ -2,6 +2,8 @@
 """Serve the game and append anonymous answer logs as JSONL.
 
 Stored fields only: session_id, question_id, selected, is_match, timestamp.
+Shop game scores (opt-in, /api/shop/score): name, kind, amount, peak, loc, tables,
+tier, type, seed, version, timestamp.
 Does not persist IP, User-Agent, Referer, or any other request metadata.
 """
 
@@ -14,7 +16,7 @@ import uuid
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent
 DOCS = ROOT / "docs"
@@ -31,6 +33,66 @@ QUESTION_IDS = set()
 QUESTION_ORDER = []
 CHOICES_BY_QUESTION = {}
 ANSWERS_LOCK = threading.Lock()
+SCORES_PATH = DATA_DIR / "shop_scores.jsonl"
+SCORES_LOCK = threading.Lock()
+SEED_RE = re.compile(r"^[0-9A-Z]{4,6}$")
+CONTROL_RE = re.compile(r"[\x00-\x1f\x7f<>]")
+
+
+def clean_text(value, limit):
+    if not isinstance(value, str):
+        return ""
+    return CONTROL_RE.sub("", value).strip()[:limit]
+
+
+def validate_score(raw):
+    kind = raw.get("kind")
+    if kind not in ("complete", "bankrupt"):
+        raise ValueError("invalid_kind")  # 摘発エンドは失格なので登録しない
+    seed = raw.get("seed")
+    if not isinstance(seed, str) or not SEED_RE.match(seed):
+        raise ValueError("invalid_seed")
+    tier = raw.get("tier")
+    if tier not in ("black", "gray", "clean"):
+        raise ValueError("invalid_tier")
+    nums = {}
+    for key, lo, hi in (("amount", -1_000_000, 10_000_000), ("peak", -1_000_000, 10_000_000), ("tables", 1, 200)):
+        value = raw.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not lo <= value <= hi:
+            raise ValueError("invalid_" + key)
+        nums[key] = int(round(value))
+    return {
+        "name": clean_text(raw.get("name"), 12),
+        "kind": kind,
+        **nums,
+        "loc": clean_text(raw.get("loc"), 20),
+        "tier": tier,
+        "type": clean_text(raw.get("type"), 20),
+        "seed": seed,
+        "version": clean_text(raw.get("version"), 12),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
+def read_scores():
+    with SCORES_LOCK:
+        lines = SCORES_PATH.read_text(encoding="utf-8").splitlines() if SCORES_PATH.exists() else []
+    out = []
+    for line in lines:
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def ranking(seed, limit=10):
+    scores = read_scores()
+    done = [x for x in scores if x.get("kind") == "complete"]
+    final = sorted(done, key=lambda x: -x.get("amount", 0))[:limit]
+    peak = sorted(scores, key=lambda x: -x.get("peak", 0))[:limit]
+    same = sorted([x for x in done if x.get("seed") == seed], key=lambda x: -x.get("amount", 0))[:limit]
+    return {"ok": True, "count": len(scores), "final": final, "peak": peak, "seed": same}
 
 
 def load_questions():
@@ -136,6 +198,10 @@ class Handler(SimpleHTTPRequestHandler):
                 "application/json; charset=utf-8",
             )
             return
+        if path == "/api/shop/ranking":
+            seed = (parse_qs(parsed.query).get("seed") or [""])[0].upper()
+            self._send(200, json.dumps(ranking(seed), ensure_ascii=False), "application/json; charset=utf-8")
+            return
         if path == "/api/answers":
             self._json_error(405, "method_not_allowed")
             return
@@ -165,6 +231,9 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/shop/score":
+            self._post_score()
+            return
         if parsed.path != "/api/answers":
             self._json_error(404, "not_found")
             return
@@ -217,13 +286,37 @@ class Handler(SimpleHTTPRequestHandler):
                 handle.write(json.dumps(record, ensure_ascii=False) + "\n")
         self._send(200, json.dumps({"ok": True}), "application/json; charset=utf-8")
 
+    def _post_score(self):
+        length = int(self.headers.get("Content-Length") or "0")
+        if length <= 0 or length > 2048:
+            self._json_error(400, "invalid_length")
+            return
+        try:
+            raw = json.loads(self.rfile.read(length).decode("utf-8"))
+            if not isinstance(raw, dict):
+                raise ValueError("invalid_json")
+            record = validate_score(raw)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self._json_error(400, "invalid_json")
+            return
+        except ValueError as exc:
+            self._json_error(400, str(exc))
+            return
+        DATA_DIR.mkdir(exist_ok=True)
+        with SCORES_LOCK:
+            with SCORES_PATH.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        self._send(200, json.dumps({"ok": True}), "application/json; charset=utf-8")
+
 
 def main():
     DATA_DIR.mkdir(exist_ok=True)
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print("合法ポーカー大会設計ゲーム", flush=True)
     print("http://%s:%s" % (HOST, PORT), flush=True)
+    print("ポーカー店経営: http://%s:%s/shop/" % (HOST, PORT), flush=True)
     print("回答ログ: %s" % ANSWERS_PATH, flush=True)
+    print("店のスコア: %s" % SCORES_PATH, flush=True)
     print("停止: Ctrl+C", flush=True)
     try:
         server.serve_forever()

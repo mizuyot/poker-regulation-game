@@ -81,6 +81,15 @@ def main() -> None:
             write({"id": f"shop_style_{st['id']}", "kind": "business_style", **st,
                    "provisions": prov_refs(st.get("provisionIds", [])), "note_fictional": shop["styles"]["note"]})
         write({"id": "shop_staff", "kind": "staff_policy", **shop["staff"], "note_fictional": fictional})
+        for fac in shop.get("facilities", []):
+            write({"id": f"shop_facility_{fac['id']}", "kind": "facility", **fac, "note_fictional": fictional})
+        for t in shop.get("shopTypes", {}).get("list", []):
+            write({"id": f"shop_type_{t['id']}", "kind": "shop_type", **t, "note_fictional": "架空の店のタイプ。実在の店舗を指さない。"})
+        if "comps" in shop:
+            write({"id": "shop_comps", "kind": "comparable_deals", **shop["comps"], "note_fictional": "架空の取引事例。実在の取引ではない。"})
+        if "liquidation" in shop:
+            write({"id": "shop_liquidation", "kind": "liquidation", **shop["liquidation"], "note_fictional": fictional})
+        write({"id": "shop_staff_system", "kind": "staff_system", **shop.get("staffSystem", {}), "note_fictional": fictional})
         for ev in shop["events"]:
             write({"id": f"shop_event_{ev['id']}", "kind": "event", **ev, "note_fictional": "実在の事件の構造だけを取り出した架空の事件。"})
     print("wrote", OUTPUT)

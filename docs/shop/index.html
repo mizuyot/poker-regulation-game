@@ -1804,13 +1804,14 @@ summary{cursor:pointer;color:var(--muted)}
     {
       "id": "lesson",
       "name": "初心者講習スペース",
-      "desc": "初心者が常連に育ちやすい。講師代がかかり、卓を置ける席が4席減る。",
+      "desc": "初心者が来やすく、常連に育ちやすい。講師代がかかり、卓を置ける席が2席減る。",
       "setup": 150,
-      "monthly": 10,
+      "monthly": 5,
       "fx": {
-        "convert": 1.6,
+        "convert": 2.0,
         "comfortTarget": 8,
-        "seatsLoss": 4
+        "seatsLoss": 2,
+        "demand": 1.03
       },
       "eventBias": {
         "whale": 2
@@ -1821,12 +1822,12 @@ summary{cursor:pointer;color:var(--muted)}
       "name": "大型大会（月1回）",
       "desc": "知名度と大会客が増える。通常営業の常連が座りにくくなり、準備でスタッフが疲れる。",
       "setup": 50,
-      "monthly": 30,
+      "monthly": 20,
       "fx": {
         "fameGain": 1.5,
         "tourney": 0.2,
-        "demand": 1.08,
-        "comfortTarget": -6,
+        "demand": 1.12,
+        "comfortTarget": -4,
         "slackTarget": -5
       },
       "eventBias": {
@@ -1867,14 +1868,15 @@ summary{cursor:pointer;color:var(--muted)}
     {
       "id": "vip",
       "name": "高レート卓・VIPルーム",
-      "desc": "単価が上がる。初心者の居心地は下がり、黒・グレーの営業の摘発・是正指摘の確率が1.3倍になる。",
+      "desc": "単価が上がる。初心者の居心地が下がって常連に育ちにくくなり、黒・グレーの営業の摘発・是正指摘の確率が1.3倍になる。",
       "setup": 300,
-      "monthly": 10,
+      "monthly": 20,
       "fx": {
-        "spend": 1.12,
+        "spend": 1.06,
         "tourney": 0.05,
-        "comfortTarget": -4,
-        "riskMult": 1.3
+        "comfortTarget": -6,
+        "riskMult": 1.3,
+        "convert": 0.85
       }
     }
   ],
@@ -2191,6 +2193,12 @@ const turnsFor = (open, close, policy) => bandWeight(open, close) / O.avgStayHou
 /* ---------- 状態 ---------- */
 let S = null;
 function gauss(){ let u = 0, v = 0; while (!u) u = rand(); while (!v) v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+/* 同じ条件で再挑戦：外の出来事（物件の当たり外れ・競合・トラブル・事件・摘発・調査）は、条件コード×月×種類で決まる */
+function hashStr(t){ let h = 2166136261; for (let i = 0; i < t.length; i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function mulberry(a){ return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hr(tag, k = 0, month){ const code = S && S.seed ? S.seed : "x"; return mulberry(hashStr(`${code}:${tag}:${month != null ? month : (S ? S.month : 0)}:${k}`))(); }
+function hgauss(tag){ let u = hr(tag, 1, -1) || 1e-9, v = hr(tag, 2, -1); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+const newCode = () => Math.floor(Math.random() * 36 ** 6).toString(36).toUpperCase().padStart(6, "0");
 function newState(cfg){
   const loc = byId(D.locations, cfg.loc), b = build(loc, cfg.tables);
   const hiring = byId(ST.hiring, cfg.hiring), policy = byId(ST.policy, cfg.policy), contact = byId(ST.contact, cfg.contact);
@@ -2204,11 +2212,12 @@ function newState(cfg){
     month: 0, monthT: 0, openedAt: null,
     licensed: false, licenseWait: cfg.unlicensed ? 0 : D.license.waitMonths, unlicensed: !!cfg.unlicensed,
     used: {}, lastUsed: {}, stopUntil: {}, riskMonths: [], orders: 0, rumor: 0, shock: 0,
-    ind, share: Math.max(0.3, 1 + gauss() * loc.demandSd), competitors: 0,
+    ind, share: 1, competitors: 0, seed: cfg.seed,
     tempDemand: [], pending: [], eventsSeen: new Set(),
     ops: [], last: { guests: 0, occ: 0, rev: 0, net: 0 }, peakMonth: -Infinity,
     year: { rev: 0, op: 0 }, recs: [], q: [], log: [], timeline: [], over: null, paused: false, speed: 1, ddNotified: false,
   };
+  { const saved = S; S = st; st.share = Math.max(0.3, 1 + hgauss(`share:${loc.id}`) * loc.demandSd); S = saved; }
   st.startCash = st.cash; st.prevCash = st.cash; st.invest = M.fund - st.cash;
   st.autoHire = true;
   { const n = Math.round(cfg.tables * (cfg.hiring === "lean" ? SS.leanPerTable : SS.perTable) * (cfg.close - cfg.open) / O.baseHours); const saved = S; S = st; st.staffList = Array.from({ length: n }, () => makeStaff(cfg.hiring, loc)); S = saved; }
@@ -2315,8 +2324,8 @@ function monthTick(){
   if (wasOpen){
     const rk = risks();
     for (const a of rk.active){ S.used[a.id] = (S.used[a.id] || 0) + 1; S.lastUsed[a.id] = S.month; S.riskMonths.push({ t: S.month, id: a.id, tier: a.tier }); }
-    if (rand() < rk.arrest){ logEv("arrest", {}); story("摘発された。"); spawnPolice(); S.month++; rec(p, wasOpen); return finish("arrest"); }
-    if (rk.active.length && rand() < rk.order) orderActs = rk.active;
+    if (hr("arrest") < rk.arrest){ logEv("arrest", {}); story("摘発された。"); spawnPolice(); S.month++; rec(p, wasOpen); return finish("arrest"); }
+    if (rk.active.length && hr("order") < rk.order) orderActs = rk.active;
   }
   const i = S.ind;
   if (wasOpen){
@@ -2335,11 +2344,11 @@ function monthTick(){
   if (S.shock > 0) S.shock--;
   if (S.licenseWait > 0){ S.licenseWait--; if (S.licenseWait === 0){ S.licensed = true; S.unlicensed = false; note("許可が下りた。", "good"); logEv("licensed", {}); } }
 
-  if (wasOpen && rand() < S.loc.competition.p){ S.competitors++; S.share *= 1 - S.loc.competition.hit * (1 - SEG.regularCompShield * S.mix.regular); note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`, "bad"); story("近くに競合店が開業した。"); }
+  if (wasOpen && hr("comp") < S.loc.competition.p){ S.competitors++; S.share *= 1 - S.loc.competition.hit * (1 - SEG.regularCompShield * S.mix.regular); note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`, "bad"); story("近くに競合店が開業した。"); }
   const trP = S.loc.troubleP * S.hiring.trouble * (i.slack < 30 ? 1.5 : 1);
-  if (wasOpen && rand() < trP){
-    if (rand() < 0.5){ const c = (O.trouble.costMin + rand() * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; const t = D.troubleTexts[Math.floor(rand() * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`, "bad"); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
-    else { S.shock = O.trouble.shockMonths; const t = D.shockTexts[Math.floor(rand() * D.shockTexts.length)]; note(`${t}（3か月 売上−30%）`, "bad"); story(`${t}。`); logEv("shock", {}); }
+  if (wasOpen && hr("trouble") < trP){
+    if (hr("trouble", 1) < 0.5){ const c = (O.trouble.costMin + hr("trouble", 2) * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; const t = D.troubleTexts[Math.floor(hr("trouble", 3) * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`, "bad"); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
+    else { S.shock = O.trouble.shockMonths; const t = D.shockTexts[Math.floor(hr("trouble", 3) * D.shockTexts.length)]; note(`${t}（3か月 売上−30%）`, "bad"); story(`${t}。`); logEv("shock", {}); }
   }
   for (const pd of S.pending.filter((x) => x.at <= S.month)){ applyEffects(pd.effects || {}); note(`後日談：${pd.text}`); story(`後日談：${pd.text}`); }
   S.pending = S.pending.filter((x) => x.at > S.month);
@@ -2429,11 +2438,11 @@ function eligible(ev){
   return true;
 }
 function maybeEvent(){
-  if (rand() > D.eventChance) return;
+  if (hr("event") > D.eventChance) return;
   const list = D.events.filter(eligible);
   if (!list.length) return;
   const wts = list.map((e) => FX().eventBias[e.id] || 1), tot = wts.reduce((a, b) => a + b, 0);
-  let r = rand() * tot, ev = list.at(-1); for (let k = 0; k < list.length; k++){ if (r < wts[k]){ ev = list[k]; break; } r -= wts[k]; }
+  let r = hr("event", 1) * tot, ev = list.at(-1); for (let k = 0; k < list.length; k++){ if (r < wts[k]){ ev = list[k]; break; } r -= wts[k]; }
   S.eventsSeen.add(ev.id);
   enqueue(() => pauseWith(() => {
     show(`<div class="kicker">${monthLabel(S.month)} ・ 事件</div><h1>${esc(ev.title)}</h1><p>${esc(ev.omen)}</p>
@@ -2445,12 +2454,12 @@ function decide(ev, c){
   if (c.whenNotClean && styleNow().tier !== "clean"){
     // 黒・グレーで営業しているのに「していない」と説明した場合は、裏目に出る
     const w = c.whenNotClean; c = { ...c, effects: { ...(c.effects || {}), ...(w.effects || {}) }, text: w.text, outcomes: null };
-    if (w.orderChance && rand() < w.orderChance){ const acts = riskSources(); if (acts.length) S.q.unshift(() => order(acts)); }
+    if (w.orderChance && hr("event", 2) < w.orderChance){ const acts = riskSources(); if (acts.length) S.q.unshift(() => order(acts)); }
   }
   if (c.effects) applyEffects(c.effects);
   let text = c.text || "", later = c.later;
   if (c.outcomes){
-    let r = rand(), o = c.outcomes.at(-1);
+    let r = hr("outcome"), o = c.outcomes.at(-1);
     for (const x of c.outcomes){ if (r < x.p){ o = x; break; } r -= x.p; }
     if (o.effects) applyEffects(o.effects);
     text = (text ? text + " " : "") + o.text; if (o.later) later = o.later;
@@ -2589,19 +2598,19 @@ function ddCheck(){
   const black = S.riskMonths.filter((x) => x.tier === "black");
   const bEarly = black.filter((x) => x.t < R.ddStart).length, bLate = black.filter((x) => x.t >= R.ddStart).length;
   const pBlack = 1 - Math.pow(1 - R.ddEarlyQ, bEarly) * Math.pow(1 - R.ddLateQ, bLate);
-  if (black.length && rand() < pBlack) return { kind: "shell", late: bLate, p: pBlack, months: black.length };
+  if (black.length && hr("dd") < pBlack) return { kind: "shell", late: bLate, p: pBlack, months: black.length };
   let worst = null;
   for (const st of STYLES.filter((s) => s.tier === "gray")){
     const ms = S.riskMonths.filter((x) => x.id === st.id); if (!ms.length) continue;
     const e = ms.filter((x) => x.t < R.ddStart).length, l = ms.length - e;
     const p = 1 - Math.pow(1 - st.dd.q, e) * Math.pow(1 - st.dd.lateQ, l);
-    if (rand() < p && (!worst || st.dd.cut < worst.cut)) worst = { kind: "cut", cut: st.dd.cut, name: st.name, p, months: ms.length };
+    if (hr("dd", st.id.length) < p && (!worst || st.dd.cut < worst.cut)) worst = { kind: "cut", cut: st.dd.cut, name: st.name, p, months: ms.length };
   }
   return worst || { kind: "none" };
 }
 function proposal(){
   const dd = ddCheck();
-  if (dd.kind === "shell" && dd.late > 0 && rand() < R.ddArrestIfLate){ logEv("arrest", { dd: true }); story(R.ddArrestText); spawnPolice(); return finish("arrest"); }
+  if (dd.kind === "shell" && dd.late > 0 && hr("dd", 9) < R.ddArrestIfLate){ logEv("arrest", { dd: true }); story(R.ddArrestText); spawnPolice(); return finish("arrest"); }
   const v = valuation(dd), sale = v.adopted;
   logEv("proposal", { dd: dd.kind, sale: Math.round(sale), dcf: Math.round(v.dcf.point), comps: Math.round(v.comps.point), liq: Math.round(v.liq.point) });
   story(dd.kind === "shell" ? "買収前調査で、黒の営業が見つかった。" : dd.kind === "cut" ? `買収前調査で、グレーの営業（${dd.name}）が見つかり減額された。` : "買収提案がまとまった。");
@@ -2636,12 +2645,20 @@ function finish(kind){
     <h2>改善すべき点</h2>${diagnoseHTML(kind)}
     <h2>初月からの推移</h2>${simChart()}${simTable()}
     <h2>5年の物語</h2><div class="timeline">${S.timeline.map((x) => `<span class="num">${monthLabel(x.t)}</span>：${esc(x.text)}`).join("<br>") || "—"}</div>
+    <h2>同じ条件で比べる</h2>${sameCodeHTML()}
+    <h2>全体ランキング</h2><div id="globalRank" class="muted" style="font-size:13px">読み込み中…</div>
+    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap"><input id="nickIn" maxlength="12" placeholder="店主名（任意・12文字まで）" style="font-size:14px;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"><button class="btn" id="submitBtn" ${kind === "arrest" ? "disabled" : ""}>全体ランキングに登録</button></div>
+    <p class="muted" style="font-size:11.5px">登録すると、店主名・金額・立地・卓数・営業スタイルの区分・店のタイプ・条件コードだけを、このゲームのサーバーに送る。登録しなければ何も送らない。</p>
     <h2>ランキング（この端末）</h2>${rankHTML(rank)}
     <h2>SNS用の画像</h2><img id="shareImg" alt="結果の画像" style="width:100%;max-width:420px;display:block;margin:0 auto;border:1.5px solid var(--soft);border-radius:10px">
     <p class="muted" style="font-size:12px;text-align:center">画像を長押し（パソコンは右クリック）で保存できる。</p>
     <div class="row"><button class="btn" id="dlBtn">プレイログを保存（JSONL）</button><button class="btn primary" id="againBtn">もう一度</button></div>
     <div class="foot">ログとランキングはこの端末に保存されるだけで、送信されない。${esc(M.disclaimer)}</div>`);
   makeShareImage(kind, amount, rank).then((url) => { const im = $("shareImg"); if (im) im.src = url; });
+  saveRun(kind, amount);
+  loadGlobal();
+  $("submitBtn").onclick = () => submitScore(kind, amount);
+  if ($("retryBtn")) $("retryBtn").onclick = () => { CFG.seed = S.seed; S = null; resetScene(); openStyle(); };
   $("dlBtn").onclick = exportLog; $("againBtn").onclick = () => { S = null; resetScene(); openTitle(); };
 }
 
@@ -2918,15 +2935,15 @@ function staffStats(){
 }
 function staffMonthly(){
   const st = S.staffList; if (!st) return;
-  for (const x of st){
+  st.forEach((x, i) => {
     x.months++;
     x.morale = clamp(x.morale + ((58 + (S.ind.slack - 50) * 0.5 + (x.manager ? 15 : 0)) - x.morale) * 0.15, 0, 100);
-    if (rand() < x.growth){ const k = ["skill", "teach", "host"][Math.floor(rand() * 3)]; if (x[k] < 5){ x[k]++; } }
-  }
+    if (hr(`grow${i}`) < x.growth){ const k = ["skill", "teach", "host"][Math.floor(hr(`growk${i}`) * 3)]; if (x[k] < 5){ x[k]++; } }
+  });
   // 退職：士気が低いほど辞めやすい。育ったエースは「退職相談」の事件になる
-  for (const x of [...st]){
+  for (const [i, x] of [...st].entries()){
     const q = SS.quitBase + Math.max(0, 35 - x.morale) / 300;
-    if (rand() < q){
+    if (hr(`quit${i}`) < q){
       if (x.skill >= 4 && x.months >= 12 && !x.manager){ enqueue(() => quitTalk(x)); break; }
       S.staffList = S.staffList.filter((y) => y !== x); note(`スタッフの${x.name}さんが辞めた`, "bad"); story(`スタッフの${x.name}さんが辞めた（勤続${x.months}か月）。`); logEv("quit", {});
       if (S.autoHire){ const n = makeStaff("rookie", S.loc); S.staffList.push(n); S.cash -= SS.hireCost; }
@@ -3002,11 +3019,11 @@ function expansionTick(wasOpen){
   const br = S.branch;
   if (br && br.wait > 0){ br.wait--; if (br.wait === 0){ br.openedAt = S.month; note(`2号店（${br.loc.name}）が開業した。`, "good"); story(`2号店（${br.loc.name}・${br.tables}卓）が開業した。`); logEv("branch_open", {}); } }
   if (!wasOpen) return;
-  if (S.fc.recruiting && !fcWhyNot() && S.fc.count < EXF.max && rand() < EXF.joinBase * S.ind.fame / 50){
+  if (S.fc.recruiting && !fcWhyNot() && S.fc.count < EXF.max && hr("fc") < EXF.joinBase * S.ind.fame / 50){
     S.fc.count++; S.cash += EXF.fee; note(`FC加盟店が1店増えた（加盟金 +${yen(EXF.fee)}）`, "good"); story(`FC加盟店が${S.fc.count}店になった。`); logEv("fc_join", { n: S.fc.count });
   }
-  if (S.fc.count && rand() < EXF.scandalP * S.fc.count * (S.ind.trust < 50 ? 2 : 1)){
-    const t = EXF.scandalTexts[Math.floor(rand() * EXF.scandalTexts.length)];
+  if (S.fc.count && hr("fc", 1) < EXF.scandalP * S.fc.count * (S.ind.trust < 50 ? 2 : 1)){
+    const t = EXF.scandalTexts[Math.floor(hr("fc", 2) * EXF.scandalTexts.length)];
     S.ind.trust = clamp(S.ind.trust - 8, 0, 100); S.ind.fame = clamp(S.ind.fame - 3, 0, 100);
     note(`${t}（信頼−8）`, "bad"); story(`${t}。本部の信頼が下がった。`); logEv("fc_scandal", {});
   }
@@ -3035,9 +3052,8 @@ function openStores(){
     wireGroups(f, render);
     card.querySelectorAll("[data-s]").forEach((x) => x.onclick = () => { f.tables = clamp(f.tables + +x.dataset.s, EXB.minTables, EXB.maxTables); render(); });
     if ($("openBr")) $("openBr").onclick = () => {
-      const share = Math.max(0.3, 1 + gauss() * loc.demandSd);
-      S.cash -= cost;
-      S.branch = { loc, tables: f.tables, share, openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost };
+            S.cash -= cost;
+      S.branch = { loc, tables: f.tables, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost };
       note(`2号店（${loc.name}・${f.tables}卓）の出店を決めた（${yen(-cost)}）`); story(`2号店を${loc.name}に${f.tables}卓で出すと決めた。初期投資 ${yen(cost)}。`); logEv("branch", { loc: loc.id, tables: f.tables });
       render();
     };
@@ -3045,6 +3061,38 @@ function openStores(){
     $("okBtn").onclick = () => { hide(); S.paused = was; syncHUD(); };
   };
   render();
+}
+
+/* ---------- 同じ条件の比較（この端末）と全体ランキング（サーバー） ---------- */
+const RUNS_KEY = "poker-shop-v10-runs";
+function loadRuns(){ try { return JSON.parse(localStorage.getItem(RUNS_KEY)) || []; } catch { return []; } }
+function saveRun(kind, amount){
+  if (TEST) return;
+  const runs = loadRuns(); runs.push({ seed: S.seed, kind, amount: Math.round(amount), loc: S.loc.name, tables: S.cfg.tables, style: S.style.name, fac: S.fac.map((id) => byId(FAC, id).name), type: shopType().name, date: new Date().toISOString().slice(0, 10) });
+  try { localStorage.setItem(RUNS_KEY, JSON.stringify(runs.slice(-100))); } catch {}
+}
+function sameCodeHTML(){
+  const runs = loadRuns().filter((x) => x.seed === S.seed);
+  const rows = runs.slice(-6).reverse().map((x, i) => `<tr><td>${i === 0 ? "今回" : "前回" + (i > 1 ? `（${i}つ前）` : "")}</td><td>${esc(x.loc)} ${x.tables}卓</td><td>${esc(x.style)}</td><td style="text-align:left">${esc((x.fac || []).join("・") || "—")}</td><td>${x.kind === "complete" ? yen(x.amount) : x.kind === "arrest" ? "失格" : "倒産"}</td></tr>`).join("");
+  return `<p style="font-size:13px">条件コード <b class="num" style="font-size:18px">${esc(S.seed)}</b>　<button class="btn" id="retryBtn">同じ条件で再挑戦</button></p>
+    ${runs.length > 1 ? `<table class="t" style="font-size:12px"><tr><th>回</th><th>店</th><th>スタイル</th><th>設備・企画</th><th>手取り</th></tr>${rows}</table>` : `<p class="muted" style="font-size:12px">同じ条件で遊ぶと、ここに前回との比較が出る。友だちに条件コードを渡せば、同じ条件で腕を比べられる。</p>`}`;
+}
+async function loadGlobal(){
+  const box = $("globalRank"); if (!box) return;
+  try {
+    const r = await fetch(`/api/shop/ranking?seed=${encodeURIComponent(S.seed)}`, { cache: "no-store" });
+    if (!r.ok) throw 0; const j = await r.json();
+    const li = (x, k = "amount") => `<li>${yen(x[k])}${k === "peak" ? "／月" : ""} <span style="font-family:var(--font)">・ ${esc(x.name || "名無しの店主")} ・ ${esc(x.loc)} ${x.tables}卓 ・ ${esc(x.type || "")}</span></li>`;
+    box.innerHTML = `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額（全体）</div><ol class="rank">${j.final.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol></div>
+      <div><div class="kicker">瞬間収益（全体）</div><ol class="rank">${j.peak.map((x) => li(x, "peak")).join("") || "<li>まだ記録がない</li>"}</ol></div></div>
+      <div class="kicker" style="margin-top:8px">条件コード ${esc(S.seed)} のランキング</div><ol class="rank">${j.seed.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol>`;
+  } catch { box.textContent = "全体ランキングは、ゲームのサーバー（python3 server.py）で遊んだときだけ使える。"; const b = $("submitBtn"); if (b) b.disabled = true; }
+}
+async function submitScore(kind, amount){
+  const b = $("submitBtn"); b.disabled = true;
+  const body = { name: ($("nickIn").value || "").trim().slice(0, 12), kind, amount: Math.round(amount), peak: isFinite(S.peakMonth) ? Math.round(S.peakMonth) : 0, loc: S.loc.name, tables: S.cfg.tables, tier: S.style.tier, type: shopType().name, seed: S.seed, version: M.version };
+  try { const r = await fetch("/api/shop/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (!r.ok) throw 0; note("全体ランキングに登録した", "good"); loadGlobal(); }
+  catch { note("登録できなかった（サーバーで遊んでいないときは使えない）", "bad"); }
 }
 const RANK_KEY = "poker-shop-v07-rank";
 function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
@@ -3080,7 +3128,7 @@ function show(html, after){ card.innerHTML = html; ov.classList.add("show"); car
 function hide(){ ov.classList.remove("show"); }
 function pauseWith(fn){ S.paused = true; fn(); if (TEST) autoClick(); }
 function resume(){ hide(); if (!S || S.over) return; if (S.q.length) S.q.shift()(); else S.paused = false; }
-function autoClick(){ setTimeout(() => { const cs = card.querySelectorAll(".choice"); const b = cs.length ? cs[Math.floor(Math.random() * cs.length)] : $("okBtn"); if (b && ov.classList.contains("show")) b.click(); }, 10); }
+function autoClick(){ setTimeout(() => { const cs = card.querySelectorAll(".choice"); const b = cs.length ? cs[Math.floor(rand() * cs.length)] : $("okBtn"); if (b && ov.classList.contains("show")) b.click(); }, 10); }
 function note(text, kind){
   const d = document.createElement("div"); d.textContent = text; if (kind) d.className = kind; $("toast").prepend(d);
   setTimeout(() => d.remove(), 4500);
@@ -3181,11 +3229,13 @@ function openTitle(){
       ${best ? `<div class="amt">${yen(best.amount)}</div><div class="muted" style="font-size:12px">${esc(best.loc)} ${best.tables}卓${bestPeak ? ` ・ 瞬間収益の最高 ${yen(bestPeak.amount)}` : ""}</div>` : `<div style="font-size:15px">まだ記録がない。最初の店を開こう。</div>`}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${sv ? `<button class="btn primary start" id="contBtn">つづきから（${monthLabel(sv.month)}・${esc(byId(D.locations, sv.loc).name)}）</button>` : ""}
         <button class="btn ${sv ? "" : "primary start"}" id="goBtn">新しく始める</button></div></div>
+    <details><summary>条件コードで挑戦する（友だちと同じ条件で比べる）</summary><div style="display:flex;gap:8px;align-items:center;margin-top:6px"><input id="codeIn" maxlength="6" placeholder="例：7F3A21" style="font-family:var(--mono);font-size:16px;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;width:9em;text-transform:uppercase;background:var(--bg);color:var(--ink)"><button class="btn" id="codeBtn">この条件で始める</button></div><p class="muted" style="font-size:12px">物件の当たり外れ・競合・トラブル・事件・調査の出方が同じになる。設計だけを変えて比べられる。</p></details>
     ${best ? `<details><summary>ランキングを見る</summary>${rankHTML(r)}</details>` : ""}
     <div class="foot">${esc(M.disclaimer)}</div>`);
   let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } drawPreview(c, 6, 11 + (k++ % 6) * 7, false, 0.45 + 0.35 * Math.abs(Math.sin(k / 2))); };
   clearInterval(titleTimer); paint(); titleTimer = setInterval(paint, 1400);
-  $("goBtn").onclick = () => { clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
+  $("goBtn").onclick = () => { CFG.seed = null; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
+  $("codeBtn").onclick = () => { const c = ($("codeIn").value || "").trim().toUpperCase(); if (!/^[0-9A-Z]{4,6}$/.test(c)) return note("条件コードは英数字4〜6文字", "bad"); CFG.seed = c; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
   if (sv) $("contBtn").onclick = () => resumeGame(sv);
 }
 function styleList(sel){
@@ -3276,6 +3326,8 @@ function openBuild(){
   refresh();
 }
 function startGame(cfg){
+  cfg = { ...cfg, seed: (cfg.seed || newCode()).toUpperCase() };
+  if (!QS.has("seed")) rand = mulberry(hashStr(cfg.seed + ":internal"));
   clearInterval(titleTimer); card.classList.remove("titlecard");
   S = newState(cfg); hide(); resetScene();
   logEv("open", { ...cfg });
@@ -3687,7 +3739,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.state] = (a[p.state] || 0) + 1, a), {}), sample: people.slice(0, 3).map((p) => [p.x.toFixed(2), p.y.toFixed(2), p.tx && p.tx.toFixed(2), p.ty && p.ty.toFixed(2), p.state]), lit: shopLit(), want: targetSeated() });
-window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + gauss() * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
+window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
   fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
