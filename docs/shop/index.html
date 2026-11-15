@@ -38,7 +38,7 @@ button{font-family:inherit;color:inherit}
 .speed{font-size:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:2px 8px;cursor:pointer;font-family:var(--mono)}
 .ind{display:grid;grid-template-columns:auto 80px 2.2em;gap:3px 8px;font-size:11.5px;align-items:center;background:color-mix(in srgb,var(--bg) 82%,transparent);padding:6px 8px;border-radius:10px}
 .ind .bar{height:6px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.ind .bar i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s}
+.ind .bar i{display:block;height:100%;background:var(--gray);width:0;transition:width .3s}
 .ind .v{font-family:var(--mono);text-align:right;color:var(--muted)}
 
 /* 上中央：時間 */
@@ -52,9 +52,9 @@ button{font-family:inherit;color:inherit}
 .tbar .y{display:flex;gap:1px;flex:1}
 .tbar .y + .y{margin-left:5px}
 .tbar i{flex:1;background:var(--soft2);border:1px solid var(--soft);border-radius:2px;position:relative;overflow:hidden}
-.tbar i.past{background:var(--ink);border-color:var(--ink)}
+.tbar i.past{background:var(--gray);border-color:var(--gray)}
 .tbar i.now{border-color:var(--ink)}
-.tbar i.now b{position:absolute;left:0;top:0;bottom:0;background:var(--ink)}
+.tbar i.now b{position:absolute;left:0;top:0;bottom:0;background:var(--gray)}
 .tbar i.mark::after{content:"";position:absolute;left:50%;bottom:-1px;width:4px;height:4px;transform:translateX(-50%) rotate(45deg);background:var(--danger)}
 .tlabels{position:relative;height:16px;font-size:10.5px;color:var(--muted);margin-top:2px}
 .tlabels span{position:absolute;transform:translateX(-50%);white-space:nowrap}
@@ -66,13 +66,15 @@ button{font-family:inherit;color:inherit}
 .money.neg{color:var(--danger)}
 .money small{font-size:13px;font-family:var(--font)}
 .chip{display:inline-block;width:.62em;height:.62em;border-radius:50%;border:.17em solid currentColor;flex:none}
-.money .chip{background:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 .12em var(--bg)}
+.money .chip{border-color:var(--ink)}
 .hud .sub{font-size:13.5px}
 .hud .tiny{font-size:12px;color:var(--muted)}
 .hud .risk{font-size:12px;color:var(--danger);margin-top:2px}
 .pos{color:var(--good)} .negc{color:var(--danger)}
 
 .toast{position:fixed;top:120px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:min(520px,calc(100vw - 32px));z-index:2}
+.toast div.bad{border-color:var(--danger);color:var(--danger)}
+.toast div.good{border-color:var(--good);color:var(--good)}
 .toast div{border:1.5px solid var(--line);border-radius:10px;background:var(--bg);padding:3px 10px;font-size:13px;animation:fade 4.5s forwards;text-align:center}
 @keyframes fade{0%{opacity:0;transform:translateY(-4px)}8%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 
@@ -82,7 +84,8 @@ button{font-family:inherit;color:inherit}
 .dock{display:flex;gap:12px;border:2px solid var(--line);border-radius:18px;padding:12px 14px 8px;background:var(--bg);overflow-x:auto;max-width:100%}
 .act{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;padding:0;position:relative;min-width:58px}
 .act .ic{width:52px;height:52px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;background:var(--bg);box-shadow:3px 4px 0 var(--shadow);font-size:19px;font-weight:700;transition:transform .08s}
-.act.on .ic{background:var(--ink);color:var(--bg)}
+.act.on .ic{border-width:4px}
+.act.on .c{font-weight:700}
 .act:active .ic{transform:translateY(2px)}
 .act .k{position:absolute;left:0;top:36px;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:10px;display:grid;place-items:center;font-family:var(--mono)}
 .act .c{font-size:11.5px;white-space:nowrap}
@@ -98,17 +101,21 @@ button{font-family:inherit;color:inherit}
 .kicker{font-size:12px;color:var(--muted);letter-spacing:.08em}
 .muted{color:var(--muted)}
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
-.opt{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg);text-align:left;cursor:pointer;font-size:13px;line-height:1.55}
+.opt{position:relative;border:1.5px solid var(--soft);border-radius:12px;padding:10px 12px;background:var(--bg);text-align:left;cursor:pointer;font-size:13px;line-height:1.55;transition:box-shadow .1s,transform .1s}
+.opt:hover{border-color:var(--line)}
 .opt b{display:block;font-size:14px;margin-bottom:2px}
 .opt small{color:var(--muted);display:block}
-.opt[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.opt[aria-pressed="true"] small{color:color-mix(in srgb,var(--bg) 72%,transparent)}
+.opt[aria-pressed="true"]{border:2.5px solid var(--ink);box-shadow:4px 5px 0 var(--ink);transform:translate(-2px,-2px)}
+.opt[aria-pressed="true"]::before{content:"✓";position:absolute;top:-10px;left:-10px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:2px solid var(--ink);display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1}
 .stylelist{display:flex;flex-direction:column;gap:8px}
-.stylelist .opt{display:grid;grid-template-columns:4.2em 1fr auto;gap:12px;align-items:center}
-.tier{display:inline-grid;place-items:center;height:28px;border-radius:14px;font-size:12px;font-weight:700;border:1.5px solid var(--line)}
-.tier.black{background:#111;color:#fff;border-color:#111}
-.tier.gray{background:var(--gray);color:#fff;border-color:var(--gray)}
-.tier.clean{background:var(--bg);color:var(--ink)}
+.stylelist .opt{display:grid;grid-template-columns:1fr auto 14px;gap:12px;align-items:center;padding-right:0;overflow:visible}
+.stylelist .stripe{align-self:stretch;margin:-10px 0 -10px 0;border-radius:0 10px 10px 0}
+.stripe.black,.tsw.black{background:#111}
+.stripe.gray,.tsw.gray{background:#9a9a9a}
+.stripe.clean,.tsw.clean{background:var(--good)}
+.tsw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin:6px 2px 0;flex-wrap:wrap}
+.okc{color:var(--good);font-weight:700}
 .riskcol{font-size:11.5px;text-align:right;font-family:var(--mono);white-space:nowrap}
 .arrow{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin:4px 2px 0}
 .choice{display:block;width:100%;margin:6px 0}
@@ -117,7 +124,7 @@ button{font-family:inherit;color:inherit}
 .stepper output{font-size:28px;min-width:2ch;text-align:center;font-family:var(--mono)}
 .row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap;align-items:center}
 .btn{border:2px solid var(--line);border-radius:999px;padding:9px 20px;background:var(--bg);cursor:pointer;font-size:14px}
-.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.primary{border-width:3px;font-weight:700;box-shadow:3px 4px 0 var(--ink)}
 .btn[disabled]{opacity:.4;cursor:default}
 table.t{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0}
 table.t td,table.t th{border-bottom:1px solid var(--soft);padding:5px 6px;text-align:right}
@@ -133,7 +140,7 @@ summary{cursor:pointer;color:var(--muted)}
 .timeline{font-size:12.5px;line-height:1.8;max-height:200px;overflow:auto;border:1px solid var(--soft);border-radius:10px;padding:8px 12px;margin-top:8px}
 .foot{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6}
 .slider{display:grid;grid-template-columns:4.5em 1fr 4.5em;gap:8px;align-items:center;font-size:13px;margin:6px 0}
-.slider input{width:100%;accent-color:var(--ink)}
+.slider input{width:100%;accent-color:var(--gray)}
 /* 営業時間ゲージ（1本・つまみ2つ） */
 .gauge{position:relative;height:46px;margin:26px 4px 26px;user-select:none;touch-action:none}
 .gauge .track{position:absolute;left:0;right:0;top:14px;height:18px;border:1.5px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
@@ -1268,7 +1275,7 @@ function yen(man, sign){
 const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
 const hhLong = (h) => h >= 24 ? `翌${h - 24}時` : `${h}時`;
 const clockStr = (h) => { const hh = Math.floor(h) % 24, mm = Math.floor((h % 1) * 60 / 10) * 10; return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`; };
-const tierHTML = (st) => `<span class="tier ${st.tier}">${esc(st.tierLabel)}</span>`;
+const tierHTML = (st) => `<span class="tsw ${st.tier}" title="${esc(st.tierLabel)}"></span>`;
 
 /* ---------- 店の形 ---------- */
 function build(loc, tables){
@@ -1398,13 +1405,13 @@ function monthTick(){
   S.tempDemand = S.tempDemand.filter((t) => --t.months > 0);
   if (S.rumor > 0) S.rumor--;
   if (S.shock > 0) S.shock--;
-  if (S.licenseWait > 0){ S.licenseWait--; if (S.licenseWait === 0){ S.licensed = true; S.unlicensed = false; note("許可が下りた。"); logEv("licensed", {}); } }
+  if (S.licenseWait > 0){ S.licenseWait--; if (S.licenseWait === 0){ S.licensed = true; S.unlicensed = false; note("許可が下りた。", "good"); logEv("licensed", {}); } }
 
-  if (wasOpen && rand() < S.loc.competition.p){ S.competitors++; S.share *= 1 - S.loc.competition.hit; note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`); story("近くに競合店が開業した。"); }
+  if (wasOpen && rand() < S.loc.competition.p){ S.competitors++; S.share *= 1 - S.loc.competition.hit; note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`, "bad"); story("近くに競合店が開業した。"); }
   const trP = S.loc.troubleP * S.hiring.trouble * (i.slack < 30 ? 1.5 : 1);
   if (wasOpen && rand() < trP){
-    if (rand() < 0.5){ const c = (O.trouble.costMin + rand() * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; const t = D.troubleTexts[Math.floor(rand() * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
-    else { S.shock = O.trouble.shockMonths; const t = D.shockTexts[Math.floor(rand() * D.shockTexts.length)]; note(`${t}（3か月 売上−30%）`); story(`${t}。`); logEv("shock", {}); }
+    if (rand() < 0.5){ const c = (O.trouble.costMin + rand() * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; const t = D.troubleTexts[Math.floor(rand() * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`, "bad"); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
+    else { S.shock = O.trouble.shockMonths; const t = D.shockTexts[Math.floor(rand() * D.shockTexts.length)]; note(`${t}（3か月 売上−30%）`, "bad"); story(`${t}。`); logEv("shock", {}); }
   }
   for (const pd of S.pending.filter((x) => x.at <= S.month)){ applyEffects(pd.effects || {}); note(`後日談：${pd.text}`); story(`後日談：${pd.text}`); }
   S.pending = S.pending.filter((x) => x.at > S.month);
@@ -1712,7 +1719,7 @@ function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || 
 function saveRank(kind, amount){
   const r = loadRank();
   if (kind !== "arrest"){
-    const base = { loc: S.loc.name, tables: S.tables, style: S.style.tierLabel, date: new Date().toISOString().slice(0, 10) };
+    const base = { loc: S.loc.name, tables: S.tables, tier: S.style.tier, date: new Date().toISOString().slice(0, 10) };
     r.final.push({ ...base, amount: Math.round(amount), mine: true });
     if (isFinite(S.peakMonth)) r.peak.push({ ...base, amount: Math.round(S.peakMonth), mine: true });
   }
@@ -1722,7 +1729,7 @@ function saveRank(kind, amount){
   return out;
 }
 function rankHTML(r){
-  const li = (x) => `<li${x.mine ? ' style="font-weight:700"' : ""}>${yen(x.amount)} <span style="font-family:var(--font)">・ ${esc(x.loc)} ${x.tables}卓${x.style ? " ・ " + esc(x.style) : ""}</span></li>`;
+  const li = (x) => `<li${x.mine ? ' style="font-weight:700"' : ""}>${yen(x.amount)} <span style="font-family:var(--font)">・ ${esc(x.loc)} ${x.tables}卓</span>${x.tier ? ` <span class="tsw ${esc(x.tier)}"></span>` : ""}</li>`;
   return `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額</div><ol class="rank">${r.final.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div>
     <div><div class="kicker">瞬間収益（一番稼いだ月）</div><ol class="rank">${r.peak.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div></div>`;
 }
@@ -1742,8 +1749,8 @@ function hide(){ ov.classList.remove("show"); }
 function pauseWith(fn){ S.paused = true; fn(); if (TEST) autoClick(); }
 function resume(){ hide(); if (!S || S.over) return; if (S.q.length) S.q.shift()(); else S.paused = false; }
 function autoClick(){ setTimeout(() => { const cs = card.querySelectorAll(".choice"); const b = cs.length ? cs[Math.floor(Math.random() * cs.length)] : $("okBtn"); if (b && ov.classList.contains("show")) b.click(); }, 10); }
-function note(text){
-  const d = document.createElement("div"); d.textContent = text; $("toast").prepend(d);
+function note(text, kind){
+  const d = document.createElement("div"); d.textContent = text; if (kind) d.className = kind; $("toast").prepend(d);
   setTimeout(() => d.remove(), 4500);
   while ($("toast").children.length > 3) $("toast").lastChild.remove();
 }
@@ -1781,7 +1788,7 @@ function wireGauge(cfg, onChange){
     g.querySelectorAll(".tick").forEach((t) => t.style.left = x(+t.dataset.t));
     g.querySelector(".legal").style.left = x(O.legalClose);
     const rg = g.querySelector(".range"); rg.style.left = x(cfg.open); rg.style.width = `calc(${x(cfg.close)} - ${x(cfg.open)})`;
-    rg.style.borderColor = cfg.close > O.legalClose ? "var(--danger)" : "var(--ink)";
+    rg.style.borderColor = cfg.close > O.legalClose ? "var(--danger)" : "var(--good)";
     g.querySelector('[data-h="open"]').style.left = x(cfg.open); g.querySelector('[data-h="close"]').style.left = x(cfg.close);
     const lo = g.querySelector('[data-l="open"]'), lc = g.querySelector('[data-l="close"]');
     lo.style.left = x(cfg.open); lo.textContent = hhLong(cfg.open); lc.style.left = x(cfg.close); lc.textContent = hhLong(cfg.close);
@@ -1817,10 +1824,11 @@ function openTitle(){
   $("goBtn").onclick = openStyle;
 }
 function styleList(sel){
-  return `<div class="stylelist" data-k="style">${STYLES.map((s) => `<button class="opt" data-v="${s.id}" aria-pressed="${s.id === sel}">${tierHTML(s)}
+  return `<div class="stylelist" data-k="style">${STYLES.map((s) => `<button class="opt" data-v="${s.id}" aria-pressed="${s.id === sel}" aria-label="${esc(s.name)}（${esc(s.tierLabel)}）">
     <span><b>${esc(s.name)}</b><small>${esc(s.desc)}${s.effect.spend !== 1 ? ` 客単価×${s.effect.spend}` : ""}${s.effect.demand !== 1 ? ` 客数×${s.effect.demand}` : ""}</small></span>
-    <span class="riskcol">${s.tier === "clean" ? "リスクなし" : `摘発 ${pct(s.arrest)}/月<br>${R.labels.order} ${pct(s.order, 0)}/月`}</span></button>`).join("")}</div>
-    <div class="arrow"><span>↑ リスクが高い</span><span>リスクが低い ↓</span></div>`;
+    <span class="riskcol">${s.tier === "clean" ? `<span class="okc">リスクなし</span>` : `摘発 ${pct(s.arrest)}/月<br>${R.labels.order} ${pct(s.order, 0)}/月`}</span><span class="stripe ${s.tier}"></span></button>`).join("")}</div>
+    <div class="arrow"><span>↑ リスクが高い</span><span>リスクが低い ↓</span></div>
+    <div class="legend"><span><span class="tsw black"></span> 違法</span><span><span class="tsw gray"></span> グレー</span><span><span class="tsw clean"></span> 健全</span></div>`;
 }
 function openStyle(){
   show(`${stepsBar(0)}<h1>どんな営業スタイルにする？</h1>
@@ -2037,7 +2045,7 @@ function syncHUD(){
   $("guestV").textContent = Math.round(S.last.guests || 0); $("occV").textContent = Math.round((S.last.occ || 0) * 100);
   $("valueV").textContent = S.ops.length >= 3 ? yen(storeValue()) : "—";
   const st = styleNow();
-  $("styleV").innerHTML = `営業スタイル ${tierHTML(st).replace('class="tier', 'style="height:18px;padding:0 6px;font-size:10.5px" class="tier')} ${esc(st.name)}`;
+  $("styleV").innerHTML = `営業スタイル ${tierHTML(st)} ${esc(st.name)}`;
   $("debtV").textContent = S.debt > 0 ? `借入残高 ${yen(S.debt)}` : "";
   const rk = risks();
   $("riskV").textContent = rk.arrest > 0 || rk.order > 0 ? `今月 摘発 ${pct(rk.arrest)} ／ ${R.labels.order} ${pct(rk.order, 0)}` : "";
@@ -2185,8 +2193,8 @@ function draw(dt){
   if (S){
     const label = !isOpen() ? `許可待ち あと${S.licenseWait}か月` : !lit ? `営業時間外（${hhLong(S.open)}から）` : `${S.tables}卓 ・ 満席率 ${Math.round((S.last.occ || 0) * 100)}%`;
     const p = iso(room.w / 2, 0, WH + 26); cx.font = `700 14px ${C.font}`; const tw = cx.measureText(label).width + 26;
-    cx.fillStyle = C.ink; cx.beginPath(); cx.roundRect(p[0] - tw / 2, p[1] - 15, tw, 30, 9); cx.fill();
-    cx.fillStyle = C.bg; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(label, p[0], p[1] + 1); cx.textAlign = "start"; cx.textBaseline = "alphabetic";
+    cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath(); cx.roundRect(p[0] - tw / 2, p[1] - 15, tw, 30, 9); cx.fill(); cx.stroke();
+    cx.fillStyle = C.ink; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(label, p[0], p[1] + 1); cx.textAlign = "start"; cx.textBaseline = "alphabetic";
     const rk = risks();
     if (rk.arrest + rk.order > 0){ const q = iso(room.w / 2, 0, WH + 50); cx.font = `500 12px ${C.font}`; cx.fillStyle = C.danger; cx.textAlign = "center"; cx.fillText(`摘発 ${pct(rk.arrest)} ・ ${R.labels.order} ${pct(rk.order, 0)}（今月）`, q[0], q[1]); cx.textAlign = "start"; }
   }
