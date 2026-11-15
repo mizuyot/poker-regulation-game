@@ -532,7 +532,10 @@ summary{cursor:pointer;color:var(--muted)}
     "growthMax": 0.06,
     "terminalGrowth": 0.01,
     "years": 5,
-    "shellMessage": "継続的なキャッシュフローと認められませんでした。評価額は、敷金や内装・設備など「ハコとしての価値」のみです。"
+    "shellMessage": "継続的なキャッシュフローと認められませんでした。評価額は、敷金や内装・設備など「ハコとしての価値」のみです。",
+    "ownerDependence": 0.03,
+    "sensR": 0.025,
+    "sensG": 0.01
   },
   "finance": {
     "unlockMonths": 6,
@@ -2008,6 +2011,82 @@ summary{cursor:pointer;color:var(--muted)}
         "focus": "人に頼った人気を、引き継げる仕組みに変える"
       }
     ]
+  },
+  "comps": {
+    "note": "架空の売買事例。実在の店・企業とは関係ない。倍率はゲーム用の仮置き。",
+    "deals": [
+      {
+        "name": "事例A（都心・4卓）",
+        "tables": 4,
+        "sales": 7200,
+        "ebitda": 1500,
+        "ev": 6300
+      },
+      {
+        "name": "事例B（都心・7卓）",
+        "tables": 7,
+        "sales": 13000,
+        "ebitda": 2400,
+        "ev": 11500
+      },
+      {
+        "name": "事例C（大都市・5卓）",
+        "tables": 5,
+        "sales": 7800,
+        "ebitda": 1700,
+        "ev": 6100
+      },
+      {
+        "name": "事例D（大都市・3卓）",
+        "tables": 3,
+        "sales": 4300,
+        "ebitda": 800,
+        "ev": 2900
+      },
+      {
+        "name": "事例E（地方都市・6卓）",
+        "tables": 6,
+        "sales": 6400,
+        "ebitda": 1400,
+        "ev": 4800
+      },
+      {
+        "name": "事例F（地方都市・4卓）",
+        "tables": 4,
+        "sales": 4100,
+        "ebitda": 700,
+        "ev": 2300
+      },
+      {
+        "name": "事例G（郊外・5卓）",
+        "tables": 5,
+        "sales": 4000,
+        "ebitda": 900,
+        "ev": 3100
+      },
+      {
+        "name": "事例H（郊外・3卓）",
+        "tables": 3,
+        "sales": 2500,
+        "ebitda": 450,
+        "ev": 1500
+      }
+    ],
+    "adjust": {
+      "trust": 250,
+      "regular": 0.3,
+      "noManager": -0.15,
+      "min": 0.7,
+      "max": 1.3,
+      "distress": 0.5
+    }
+  },
+  "liquidation": {
+    "restorePerTsubo": 5,
+    "fitoutLifeMonths": 120,
+    "tableLifeMonths": 60,
+    "tableSale": 0.3,
+    "fitoutSale": 0
   }
 }
     </script>
@@ -2206,20 +2285,21 @@ function risks(){
   }
   return { arrest: Math.min(0.9, arrest), order: Math.min(0.9, order), active: act };
 }
-function dcfParts(){
+function dcfParts(rr, gg){
   const recent = S.ops.slice(-12);
-  const fcfMonth = (recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : 0) - O.maintenancePerTable * S.tables;
-  const i = S.ind;
-  const r = V.discountBase + (50 - i.trust) / 100 * V.discountTrust * 2 + V.discountPerOrder * S.orders + (i.slack < 30 ? V.discountLowSlack : 0);
-  const g = clamp(V.growthBase + (i.comfort - 50) / 100 * V.growthComfort * 2 + (i.fame - 50) / 100 * V.growthFame * 2 + (S.mix.regular - 0.4) * SEG.regularGrowth, V.growthMin, V.growthMax);
+  const fcfMonth = (recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : 0) - O.maintenancePerTable * (S.tables + (S.branch ? S.branch.tables : 0));
+  const i = S.ind, mgr = S.staffList && S.staffList.some((x) => x.manager);
+  const r0 = V.discountBase + (50 - i.trust) / 100 * V.discountTrust * 2 + V.discountPerOrder * S.orders + (i.slack < 30 ? V.discountLowSlack : 0) + (mgr ? 0 : V.ownerDependence);
+  const g0 = clamp(V.growthBase + (i.comfort - 50) / 100 * V.growthComfort * 2 + (i.fame - 50) / 100 * V.growthFame * 2 + (S.mix.regular - 0.4) * SEG.regularGrowth, V.growthMin, V.growthMax);
+  const r = rr != null ? rr : r0, g = gg != null ? gg : g0;
   const rows = []; let fcf = fcfMonth * 12, pv = 0;
   for (let y = 1; y <= V.years; y++){ fcf *= 1 + g; const d = fcf / Math.pow(1 + r, y); pv += d; rows.push({ y, fcf, pv: d }); }
   const tv = fcf * (1 + V.terminalGrowth) / (r - V.terminalGrowth), tvPv = tv / Math.pow(1 + r, V.years);
-  return { fcfMonth, r, g, rows, tv, tvPv, ev: Math.max(0, pv + tvPv) };
+  return { fcfMonth, r, g, mgr, rows, tv, tvPv, ev: Math.max(0, pv + tvPv) };
 }
 const shellValue = () => S.deposit + S.fitout * L.fitoutResidual + S.tablesValue * L.tableResidual + (S.branch ? S.branch.deposit + S.branch.fitout * L.fitoutResidual + S.branch.tablesValue * L.tableResidual : 0);
 const deposits = () => S.deposit + (S.branch ? S.branch.deposit : 0);
-const storeValue = () => Math.max(dcfParts().ev + deposits(), shellValue());
+const storeValue = () => valuation().adopted;
 
 /* ---------- 月次 ---------- */
 function monthTick(){
@@ -2405,6 +2485,83 @@ function rDetail(){
     <tr><td>初心者の居心地 ${Math.round(i.comfort)}</td><td>${pct((i.comfort - 50) / 100 * V.growthComfort * 2)}</td></tr>
     <tr><td>知名度 ${Math.round(i.fame)}</td><td>${pct((i.fame - 50) / 100 * V.growthFame * 2)}</td></tr></table></details>`;
 }
+
+/* ---------- バリュエーション：DCF・類似取引比較・清算価値 → 中央値（清算価値が下限） ---------- */
+const CP = D.comps, LQ = D.liquidation;
+const pctile = (arr, q) => { const a = [...arr].sort((x, y) => x - y), i = (a.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return a[lo] + (a[hi] - a[lo]) * (i - lo); };
+function ltm(){ const r = S.recs.filter((x) => x.open).slice(-12); return { sales: r.reduce((a, x) => a + x.rev, 0), ebitda: r.reduce((a, x) => a + x.net + x.interest, 0), months: r.length }; }
+function valuation(dd){
+  const dep = deposits(), months = S.openedAt == null ? 0 : S.month - S.openedAt;
+  // DCF と感応度
+  const d = dcfParts(), sens = [];
+  for (const dr of [-V.sensR, 0, V.sensR]){ const row = []; for (const dg of [-V.sensG, 0, V.sensG]) row.push(dcfParts(d.r + dr, clamp(d.g + dg, -0.1, 0.2)).ev + dep); sens.push(row); }
+  const flat = sens.flat(), dcf = { point: d.ev + dep, lo: Math.min(...flat), hi: Math.max(...flat), d, sens };
+  // 類似取引比較
+  const L12 = ltm(), seats = (S.tables + (S.branch ? S.branch.tables : 0)) * 9 + (S.fc ? S.fc.count * 18 : 0);
+  const m = { ebitda: CP.deals.map((x) => x.ev / x.ebitda), sales: CP.deals.map((x) => x.ev / x.sales), seat: CP.deals.map((x) => x.ev / (x.tables * 9)) };
+  const A = CP.adjust, mgr = d.mgr;
+  const adj = clamp(1 + (S.ind.trust - 50) / A.trust + (S.mix.regular - 0.4) * A.regular + (mgr ? 0 : A.noManager), A.min, A.max);
+  const distress = L12.ebitda <= 0 ? A.distress : 1;
+  const implied = (q) => {
+    const v = [];
+    if (L12.ebitda > 0) v.push(pctile(m.ebitda, q) * L12.ebitda);
+    if (L12.sales > 0) v.push(pctile(m.sales, q) * L12.sales * distress);
+    v.push(pctile(m.seat, q) * seats * distress * (L12.months >= 6 ? 1 : 0.5));
+    return Math.max(0, pctile(v, 0.5) * adj) + dep;
+  };
+  const comps = { point: implied(0.5), lo: implied(0.25), hi: implied(0.75), adj, distress, L12, seats, mult: { ebitda: pctile(m.ebitda, 0.5), sales: pctile(m.sales, 0.5), seat: pctile(m.seat, 0.5) } };
+  // 清算価値（帳簿の純資産と、急いで売る清算価値）
+  const fitBook = (S.fitout + (S.branch ? S.branch.fitout : 0)) * Math.max(0, 1 - months / LQ.fitoutLifeMonths);
+  const tabBook = (S.tablesValue + (S.branch ? S.branch.tablesValue : 0)) * Math.max(0, 1 - months / LQ.tableLifeMonths);
+  const area = S.area + (S.branch ? (S.branch.tables * L.tsuboPerTable + L.commonTsubo) : 0), restore = area * LQ.restorePerTsubo;
+  const book = dep + fitBook + tabBook, liquid = Math.max(0, dep - restore + (S.tablesValue + (S.branch ? S.branch.tablesValue : 0)) * LQ.tableSale + fitBook * LQ.fitoutSale);
+  const liq = { point: liquid, lo: liquid, hi: Math.max(liquid, book), book, liquid, dep, fitBook, tabBook, restore };
+  // 買収前調査
+  let use = { dcf: dcf.point, comps: comps.point }, note = "";
+  if (dd && dd.kind === "shell"){ use = null; note = V.shellMessage; }
+  else if (dd && dd.kind === "cut"){ use = { dcf: dcf.point * dd.cut, comps: comps.point * dd.cut }; note = `グレーな運営（${dd.name}）が見つかり、DCFと類似取引比較を${Math.round(dd.cut * 100)}%に減額した。`; }
+  const median = use ? pctile([use.dcf, use.comps, liq.point], 0.5) : liq.point;
+  const adopted = Math.max(median, liq.point);
+  return { dcf, comps, liq, use, median, adopted, floor: adopted > median, note, dd };
+}
+function footballField(v){
+  const items = [["DCF", v.dcf.lo, v.dcf.hi, v.use ? v.use.dcf : null], ["類似取引比較", v.comps.lo, v.comps.hi, v.use ? v.use.comps : null], ["清算価値", v.liq.lo, v.liq.hi, v.liq.point]];
+  const max = Math.max(1, ...items.map((x) => x[2]), v.adopted) * 1.08, w = 680, left = 120, right = w - 20, X = (x) => left + x / max * (right - left);
+  const h = 40 + items.length * 40 + 30;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((q) => max * q);
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="フットボールフィールド" style="width:100%;height:auto;font-family:var(--font)">
+    ${ticks.map((t) => `<line x1="${X(t)}" x2="${X(t)}" y1="20" y2="${h - 26}" stroke="var(--soft)"/><text x="${X(t)}" y="${h - 10}" font-size="10" text-anchor="middle" fill="var(--muted)">${Math.round(t).toLocaleString("ja-JP")}</text>`).join("")}
+    ${items.map(([n, lo, hi, pt], i) => { const y = 34 + i * 40; return `<text x="${left - 8}" y="${y + 5}" font-size="12" text-anchor="end" fill="var(--ink)">${n}</text>
+      <rect x="${X(lo)}" y="${y - 9}" width="${Math.max(3, X(hi) - X(lo))}" height="18" rx="3" fill="var(--gray)" opacity="${v.use || n === "清算価値" ? 0.55 : 0.15}"><title>${n}：${yen(lo)}〜${yen(hi)}</title></rect>
+      ${pt != null ? `<line x1="${X(pt)}" x2="${X(pt)}" y1="${y - 12}" y2="${y + 12}" stroke="var(--ink)" stroke-width="2"/>` : `<text x="${X(lo) + 6}" y="${y + 4}" font-size="10" fill="var(--danger)">不採用</text>`}`; }).join("")}
+    <line x1="${X(v.adopted)}" x2="${X(v.adopted)}" y1="16" y2="${h - 26}" stroke="var(--good)" stroke-width="2.5" stroke-dasharray="5 3"/>
+    <text x="${Math.min(X(v.adopted) + 5, right - 90)}" y="14" font-size="11" font-weight="700" fill="var(--good)">採用 ${yen(v.adopted)}</text>
+  </svg><p class="muted" style="font-size:11.5px">灰色の帯が各方法の幅（DCF：割引率±${pct(V.sensR)}・成長率±${pct(V.sensG, 0)}、類似取引比較：倍率の下位25%〜上位25%、清算価値：清算〜帳簿）。黒い線が各方法の値、緑の点線が採用額。万円。</p>`;
+}
+function valuationReport(v, opts = {}){
+  const d = v.dcf.d, c = v.comps, q = v.liq, ri = ["−" + pct(V.sensR), "基準", "+" + pct(V.sensR)], gi = ["−" + pct(V.sensG, 0), "基準", "+" + pct(V.sensG, 0)];
+  const why = v.use ? (v.floor ? `3つの中央値（${yen(v.median)}）が清算価値を下回ったため、清算価値を採用した（たたんだ方が得なら、それより安くは売らない）。` : `DCF・類似取引比較・清算価値の中央値を採用した。`) : v.note;
+  return `<div style="border:2px solid var(--line);border-radius:14px;padding:12px 14px">
+      <div class="kicker">${esc(opts.kicker || "バリュエーション・レポート")}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><div style="font-size:26px;font-family:var(--mono)">${yen(v.adopted)}</div><div class="muted" style="font-size:12px">事業価値（敷金を含む）</div></div>
+      <p style="font-size:13px;margin:4px 0">${esc(why)}</p></div>
+    <h2>フットボールフィールド</h2>${footballField(v)}
+    <details ${opts.open ? "open" : ""}><summary>DCF：${yen(v.dcf.point)}（割引率 ${pct(d.r)}・成長率 ${pct(d.g)}）</summary>
+      <table class="t"><tr><th>年</th><th>予測FCF</th><th>今の価値</th></tr>${d.rows.map((r) => `<tr><td>${r.y}年目</td><td>${yen(r.fcf)}</td><td>${yen(r.pv)}</td></tr>`).join("")}
+        <tr><td>6年目以降（ターミナルバリュー ${yen(d.tv)}）</td><td></td><td>${yen(d.tvPv)}</td></tr><tr><td>敷金</td><td></td><td>${yen(q.dep)}</td></tr><tr class="total"><td>DCF</td><td></td><td>${yen(v.dcf.point)}</td></tr></table>
+      <p class="muted" style="font-size:12px">直近12か月の平均FCF ${yen(d.fcfMonth)}/月。${d.mgr ? "" : `店長がいないため、オーナー依存として割引率に+${pct(V.ownerDependence, 0)}。`}</p>
+      <table class="t" style="font-size:12px"><tr><th>割引率＼成長率</th>${gi.map((x) => `<th>${x}</th>`).join("")}</tr>${v.dcf.sens.map((row, i) => `<tr><td>${ri[i]}</td>${row.map((x, j) => `<td style="${i === 1 && j === 1 ? "font-weight:700" : ""}">${yen(x)}</td>`).join("")}</tr>`).join("")}</table>
+      ${rDetail()}</details>
+    <details><summary>類似取引比較：${yen(c.point)}（補正 ×${c.adj.toFixed(2)}${c.distress < 1 ? "・赤字のため割引" : ""}）</summary>
+      <table class="t" style="font-size:12px"><tr><th>事例（架空）</th><th>年商</th><th>EBITDA</th><th>EV</th><th>EV/EBITDA</th><th>EV/売上</th></tr>
+        ${CP.deals.map((x) => `<tr><td>${esc(x.name)}</td><td>${yen(x.sales)}</td><td>${yen(x.ebitda)}</td><td>${yen(x.ev)}</td><td>${(x.ev / x.ebitda).toFixed(1)}x</td><td>${(x.ev / x.sales).toFixed(2)}x</td></tr>`).join("")}
+        <tr class="total"><td>中央値</td><td></td><td></td><td></td><td>${c.mult.ebitda.toFixed(1)}x</td><td>${c.mult.sales.toFixed(2)}x</td></tr></table>
+      <p class="muted" style="font-size:12px">あなたの店：直近12か月の売上 ${yen(c.L12.sales)}・EBITDA ${yen(c.L12.ebitda)}・${c.seats}席（1席あたりEVの中央値 ${yen(c.mult.seat)}）。3つの倍率から出した値の中央をとり、信頼・常連の厚さ・店長の有無で補正し、敷金を足した。${esc(CP.note)}</p></details>
+    <details><summary>清算価値：${yen(q.liquid)}（帳簿の純資産 ${yen(q.book)}）</summary>
+      <table class="t"><tr><td>敷金</td><td>${yen(q.dep)}</td></tr><tr><td>内装（帳簿価額）</td><td>${yen(q.fitBook)}</td></tr><tr><td>卓・設備（帳簿価額）</td><td>${yen(q.tabBook)}</td></tr><tr class="total"><td>帳簿の純資産</td><td>${yen(q.book)}</td></tr>
+        <tr><td>原状回復費（坪${LQ.restorePerTsubo}万円）</td><td>${yen(-q.restore)}</td></tr><tr><td>内装の処分価値</td><td>0円</td></tr><tr><td>卓・設備の中古売却（${Math.round(LQ.tableSale * 100)}%）</td><td>—</td></tr><tr class="total"><td>清算価値</td><td>${yen(q.liquid)}</td></tr></table></details>
+    ${opts.bridge ? `<h2>最終手取り額への橋渡し</h2><table class="t"><tr><td>事業価値（採用額）</td><td>${yen(v.adopted)}</td></tr><tr><td>＋ 手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>− 借入</td><td>${yen(-S.debt)}</td></tr><tr class="total"><td>最終手取り額</td><td>${yen(v.adopted + S.cash - S.debt)}</td></tr></table>` : ""}`;
+}
 function annual(){
   const y = S.month / 12, d = dcfParts();
   story(`${y}年目の決算：売上 ${yen(S.year.rev)}、営業利益 ${yen(S.year.op)}。`);
@@ -2415,7 +2572,7 @@ function annual(){
     <div class="grid2"><span>売上</span><span>${yen(S.year.rev)}</span><span>営業利益</span><span>${yen(S.year.op)}</span>
       <span>手元資金</span><span>${yen(S.cash)}</span><span>借入残高</span><span>${yen(S.debt)}</span>
       ${Object.entries(IND.names).map(([k, n]) => `<span>${n}</span><span>${Math.round(S.ind[k])}</span>`).join("")}</div>
-    <h2>いまの店の値段（DCF）</h2>${dcfTable(d)}${rDetail()}
+    <h2>中間評価</h2>${valuationReport(valuation(), { kicker: `${y}年目の中間評価` })}
     <p style="font-size:13px">${fin.ok ? `借入できます（上限 ${yen(fin.limit)}）。ドックの「借入」から。` : `借入はまだできません：${esc(fin.why)}`}</p>
     <div class="row"><button class="btn primary" id="okBtn">${y + 1}年目へ</button></div>`, () => { S.year = { rev: 0, op: 0 }; $("okBtn").onclick = resume; }));
 }
@@ -2443,21 +2600,16 @@ function ddCheck(){
   return worst || { kind: "none" };
 }
 function proposal(){
-  const dd = ddCheck(), d = dcfParts(), full = storeValue();
+  const dd = ddCheck();
   if (dd.kind === "shell" && dd.late > 0 && rand() < R.ddArrestIfLate){ logEv("arrest", { dd: true }); story(R.ddArrestText); spawnPolice(); return finish("arrest"); }
-  const sale = dd.kind === "shell" ? shellValue() : dd.kind === "cut" ? full * dd.cut : full;
-  logEv("proposal", { dd: dd.kind, sale: Math.round(sale) });
+  const v = valuation(dd), sale = v.adopted;
+  logEv("proposal", { dd: dd.kind, sale: Math.round(sale), dcf: Math.round(v.dcf.point), comps: Math.round(v.comps.point), liq: Math.round(v.liq.point) });
   story(dd.kind === "shell" ? "買収前調査で、黒の営業が見つかった。" : dd.kind === "cut" ? `買収前調査で、グレーの営業（${dd.name}）が見つかり減額された。` : "買収提案がまとまった。");
-  S.sale = sale; S.dd = dd;
+  S.sale = sale; S.dd = dd; S.val = v;
   pauseWith(() => show(`
     <div class="kicker">60か月目</div><h1>${dd.kind === "none" ? "買収提案" : "買収前調査の結果"}</h1>
-    ${dd.kind === "shell" ? `<p><b>${esc(V.shellMessage)}</b></p>
-      <table class="t"><tr><td>敷金</td><td>${yen(S.deposit)}</td></tr><tr><td>内装の残存価値（${Math.round(L.fitoutResidual * 100)}%）</td><td>${yen(S.fitout * L.fitoutResidual)}</td></tr>
-      <tr><td>卓の残存価値（${Math.round(L.tableResidual * 100)}%）</td><td>${yen(S.tablesValue * L.tableResidual)}</td></tr><tr class="total"><td>売却額</td><td>${yen(sale)}</td></tr></table>
-      <p class="muted" style="font-size:12px">参考：健全なら ${yen(full)}。</p>`
-    : dd.kind === "cut" ? `<p><b>グレーな運営（${esc(dd.name)}）が見つかり、将来のキャッシュフローに疑問がつけられた。売却額は${Math.round(dd.cut * 100)}%に減額された。</b></p>
-      <table class="t"><tr><td>DCFでの店の値段</td><td>${yen(full)}</td></tr><tr><td>減額</td><td>×${dd.cut}</td></tr><tr class="total"><td>売却額</td><td>${yen(sale)}</td></tr></table>`
-    : `<p>あなたの店の将来のキャッシュフローを、今の価値に直した金額で買いたい、という提案。</p>${dcfTable(d)}${rDetail()}`}
+    ${dd.kind === "shell" ? `<p><b>${esc(V.shellMessage)}</b></p>` : dd.kind === "cut" ? `<p><b>${esc(v.note)}</b></p>` : `<p>買い手は、3つの方法で店の価値を出し、その中央の値で買いたいと言っている。</p>`}
+    ${valuationReport(v, { kicker: "バリュエーション・レポート", bridge: true, open: true })}
     <div class="row"><button class="btn primary" id="okBtn">結果発表へ</button></div>`, () => { $("okBtn").onclick = () => finish("complete"); }));
 }
 
@@ -2469,7 +2621,7 @@ function finish(kind){
   logEv("end", { kind, amount: Math.round(amount), sale: Math.round(sale), peak: Math.round(S.peakMonth) });
   const rank = saveRank(kind, amount);
   const title = { complete: "結果発表", arrest: R.labels.arrest, bankrupt: "資金が尽きた" }[kind];
-  const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（DCF）";
+  const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（3つの評価の中央値）";
   const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、満額にはならなかった。" : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。両方のランキングで失格。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
   show(`
     <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓${S.branch ? ` ・ 2号店 ${esc(S.branch.loc.name)}` : ""}${S.fc && S.fc.count ? ` ・ FC${S.fc.count}店` : ""} ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
@@ -2479,6 +2631,7 @@ function finish(kind){
       <tr><td>借入残高</td><td>${yen(-S.debt)}</td></tr><tr class="total"><td>最終手取り額</td><td>${yen(amount)}</td></tr></table>` : ""}
     <p class="muted" style="font-size:12.5px">一番稼いだ月の利益：<span class="num">${isFinite(S.peakMonth) ? yen(S.peakMonth) : "—"}</span>${kind === "arrest" ? "（失格）" : ""}</p>
     <div style="border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin:14px 0"><div class="kicker">店のタイプ診断</div><div style="font-size:22px;font-weight:700;margin:2px 0">${esc(shopType().name)}</div><div style="font-size:13px">${esc(shopType().desc)}</div><div class="muted" style="font-size:11px;margin-top:4px">${esc(TYPES.note)}</div></div>
+    ${kind === "complete" && S.val ? `<details><summary>売却のバリュエーション・レポートを見る</summary>${valuationReport(S.val, { bridge: true })}</details>` : ""}
     <h2>設計の振り返り</h2>${causalHTML(kind)}
     <h2>改善すべき点</h2>${diagnoseHTML(kind)}
     <h2>初月からの推移</h2>${simChart()}${simTable()}

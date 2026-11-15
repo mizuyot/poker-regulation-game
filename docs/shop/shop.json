@@ -262,7 +262,10 @@
     "growthMax": 0.06,
     "terminalGrowth": 0.01,
     "years": 5,
-    "shellMessage": "継続的なキャッシュフローと認められませんでした。評価額は、敷金や内装・設備など「ハコとしての価値」のみです。"
+    "shellMessage": "継続的なキャッシュフローと認められませんでした。評価額は、敷金や内装・設備など「ハコとしての価値」のみです。",
+    "ownerDependence": 0.03,
+    "sensR": 0.025,
+    "sensG": 0.01
   },
   "finance": {
     "unlockMonths": 6,
@@ -1738,5 +1741,81 @@
         "focus": "人に頼った人気を、引き継げる仕組みに変える"
       }
     ]
+  },
+  "comps": {
+    "note": "架空の売買事例。実在の店・企業とは関係ない。倍率はゲーム用の仮置き。",
+    "deals": [
+      {
+        "name": "事例A（都心・4卓）",
+        "tables": 4,
+        "sales": 7200,
+        "ebitda": 1500,
+        "ev": 6300
+      },
+      {
+        "name": "事例B（都心・7卓）",
+        "tables": 7,
+        "sales": 13000,
+        "ebitda": 2400,
+        "ev": 11500
+      },
+      {
+        "name": "事例C（大都市・5卓）",
+        "tables": 5,
+        "sales": 7800,
+        "ebitda": 1700,
+        "ev": 6100
+      },
+      {
+        "name": "事例D（大都市・3卓）",
+        "tables": 3,
+        "sales": 4300,
+        "ebitda": 800,
+        "ev": 2900
+      },
+      {
+        "name": "事例E（地方都市・6卓）",
+        "tables": 6,
+        "sales": 6400,
+        "ebitda": 1400,
+        "ev": 4800
+      },
+      {
+        "name": "事例F（地方都市・4卓）",
+        "tables": 4,
+        "sales": 4100,
+        "ebitda": 700,
+        "ev": 2300
+      },
+      {
+        "name": "事例G（郊外・5卓）",
+        "tables": 5,
+        "sales": 4000,
+        "ebitda": 900,
+        "ev": 3100
+      },
+      {
+        "name": "事例H（郊外・3卓）",
+        "tables": 3,
+        "sales": 2500,
+        "ebitda": 450,
+        "ev": 1500
+      }
+    ],
+    "adjust": {
+      "trust": 250,
+      "regular": 0.3,
+      "noManager": -0.15,
+      "min": 0.7,
+      "max": 1.3,
+      "distress": 0.5
+    }
+  },
+  "liquidation": {
+    "restorePerTsubo": 5,
+    "fitoutLifeMonths": 120,
+    "tableLifeMonths": 60,
+    "tableSale": 0.3,
+    "fitoutSale": 0
   }
 }
