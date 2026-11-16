@@ -3364,6 +3364,7 @@ function monthTick(){
   S.pending = S.pending.filter((x) => x.at > S.month);
 
   S.month++;
+  if (TEST && window.__onMonth) window.__onMonth(S); // 検証用：月末のフック（scripts/sim_annual.js）
   if (wasOpen) judgeChoke(p);
   rec(p, wasOpen);
   flowAnim(p, wasOpen);
@@ -4872,7 +4873,10 @@ function frame(now){
 }
 window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.state] = (a[p.state] || 0) + 1, a), {}), sample: people.slice(0, 3).map((p) => [p.x.toFixed(2), p.y.toFixed(2), p.tx && p.tx.toFixed(2), p.ty && p.ty.toFixed(2), p.state]), lit: shopLit(), want: targetSeated() });
 window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
-  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, preview: (c, n) => drawPreview(c, n), raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
+  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG,
+  // 検証用：いま売ったらいくらか（売却時点の直前6か月を「調査期間」とみなす）と、営業スタイルの切り替え
+  sellNow: () => { const keep = R.ddStart; R.ddStart = S.month - 6; let dd; try { dd = ddCheck(); } finally { R.ddStart = keep; } const v = valuation(dd), arrestP = dd.kind === "shell" && dd.late > 0 ? R.ddArrestIfLate : 0; return { month: S.month, dd: dd.kind, arrestP, sale: v.adopted, dcf: v.dcf.point, comps: v.comps.point, liq: v.liq.point, cash: S.cash, debt: S.debt, amount: S.cash + v.adopted - S.debt }; },
+  setStyle: (id) => { S.style = byId(STYLES, id); }, preview: (c, n) => drawPreview(c, n), raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
 requestAnimationFrame(frame);
