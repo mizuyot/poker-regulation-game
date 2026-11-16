@@ -100,8 +100,8 @@
     "baseHours": 7,
     "otherFixed": 45,
     "variableRate": 0.15,
-    "rampStart": 0.3,
-    "rampMonths": 18,
+    "rampStart": 0.5,
+    "rampMonths": 12,
     "maintenancePerTable": 2,
     "bands": [
       {
@@ -850,7 +850,7 @@
         "tierLabel": "黒",
         "desc": "勝ったチップを現金に戻す。",
         "effect": {
-          "demand": 1.0,
+          "demand": 0.4,
           "spend": 5.0
         },
         "arrest": 0.003,
@@ -865,7 +865,10 @@
         ],
         "arrestGrowth2": 0.001,
         "orderGrowth": 0.001,
-        "arrestDelay": 6.0
+        "arrestDelay": 6.0,
+        "heatStart": 9,
+        "heatDecay": 0.08,
+        "heatFloor": 0.25
       },
       {
         "id": "token",
@@ -900,14 +903,14 @@
         },
         "arrest": 0.001,
         "arrestGrowth": 0,
-        "order": 0.02,
+        "order": 0.008,
         "dd": {
           "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
         ],
-        "orderGrowth": 0.0008
+        "orderGrowth": 0.0002
       },
       {
         "id": "food",
@@ -921,14 +924,14 @@
         },
         "arrest": 0.0005,
         "arrestGrowth": 0,
-        "order": 0.012,
+        "order": 0.005,
         "dd": {
           "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
         ],
-        "orderGrowth": 0.0005
+        "orderGrowth": 0.0001
       },
       {
         "id": "deposit",
@@ -2809,5 +2812,59 @@
     "上質",
     "豪華",
     "旗艦店"
-  ]
+  ],
+  "market": {
+    "shakeStart": 48,
+    "shakePerMonth": 0.025,
+    "shakeMax": 0.3,
+    "compExitP": 0.25,
+    "note": "5年目（48か月目以降）は業界の淘汰が進む：客数が毎月+2.5%ずつ戻り（最大+30%）、近くの競合が毎月25%で撤退し、新しい出店は減る（v1.4、ユーザー指定）。架空値。"
+  },
+  "tax": {
+    "corpSmallRate": 0.15,
+    "corpSmallLimit": 800,
+    "corpRate": 0.232,
+    "localCorpRate": 0.103,
+    "defenseRate": 0.04,
+    "defenseDeduction": 500,
+    "residentPrefRate": 0.01,
+    "residentMuniRate": 0.06,
+    "perCapitaPref": 2,
+    "perCapitaMuni": 5,
+    "perCapitaMuniOver": 12,
+    "perCapitaMuniStaff": 50,
+    "enterprise": [
+      [
+        0,
+        400,
+        0.035
+      ],
+      [
+        400,
+        800,
+        0.053
+      ],
+      [
+        800,
+        null,
+        0.07
+      ]
+    ],
+    "specialEnterpriseRate": 0.37,
+    "provisionIds": [
+      "hojinzei66",
+      "sochi42_3_2",
+      "hojinzei57",
+      "chihohojinzei10",
+      "boei13",
+      "boei14",
+      "chihozei51",
+      "chihozei314_4",
+      "chihozei52",
+      "chihozei312",
+      "chihozei72_24_7",
+      "tokubetsu7"
+    ],
+    "note": "店は資本金1千万円以下の中小法人（普通法人）として計算する。税率は法令の標準税率（e-Gov法令API、2026年11月時点の版）。条例による超過税率、事業税の翌年の損金算入、中間申告、外形標準課税は扱わない。決算のたびに1年分を納める（実際は決算から2か月以内）。単位は万円。"
+  }
 }

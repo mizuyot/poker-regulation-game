@@ -402,8 +402,8 @@ summary{cursor:pointer;color:var(--muted)}
     "baseHours": 7,
     "otherFixed": 45,
     "variableRate": 0.15,
-    "rampStart": 0.3,
-    "rampMonths": 18,
+    "rampStart": 0.5,
+    "rampMonths": 12,
     "maintenancePerTable": 2,
     "bands": [
       {
@@ -1152,7 +1152,7 @@ summary{cursor:pointer;color:var(--muted)}
         "tierLabel": "黒",
         "desc": "勝ったチップを現金に戻す。",
         "effect": {
-          "demand": 1.0,
+          "demand": 0.4,
           "spend": 5.0
         },
         "arrest": 0.003,
@@ -1167,7 +1167,10 @@ summary{cursor:pointer;color:var(--muted)}
         ],
         "arrestGrowth2": 0.001,
         "orderGrowth": 0.001,
-        "arrestDelay": 6.0
+        "arrestDelay": 6.0,
+        "heatStart": 9,
+        "heatDecay": 0.08,
+        "heatFloor": 0.25
       },
       {
         "id": "token",
@@ -1202,14 +1205,14 @@ summary{cursor:pointer;color:var(--muted)}
         },
         "arrest": 0.001,
         "arrestGrowth": 0,
-        "order": 0.02,
+        "order": 0.008,
         "dd": {
           "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
         ],
-        "orderGrowth": 0.0008
+        "orderGrowth": 0.0002
       },
       {
         "id": "food",
@@ -1223,14 +1226,14 @@ summary{cursor:pointer;color:var(--muted)}
         },
         "arrest": 0.0005,
         "arrestGrowth": 0,
-        "order": 0.012,
+        "order": 0.005,
         "dd": {
           "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
         ],
-        "orderGrowth": 0.0005
+        "orderGrowth": 0.0001
       },
       {
         "id": "deposit",
@@ -3111,7 +3114,61 @@ summary{cursor:pointer;color:var(--muted)}
     "上質",
     "豪華",
     "旗艦店"
-  ]
+  ],
+  "market": {
+    "shakeStart": 48,
+    "shakePerMonth": 0.025,
+    "shakeMax": 0.3,
+    "compExitP": 0.25,
+    "note": "5年目（48か月目以降）は業界の淘汰が進む：客数が毎月+2.5%ずつ戻り（最大+30%）、近くの競合が毎月25%で撤退し、新しい出店は減る（v1.4、ユーザー指定）。架空値。"
+  },
+  "tax": {
+    "corpSmallRate": 0.15,
+    "corpSmallLimit": 800,
+    "corpRate": 0.232,
+    "localCorpRate": 0.103,
+    "defenseRate": 0.04,
+    "defenseDeduction": 500,
+    "residentPrefRate": 0.01,
+    "residentMuniRate": 0.06,
+    "perCapitaPref": 2,
+    "perCapitaMuni": 5,
+    "perCapitaMuniOver": 12,
+    "perCapitaMuniStaff": 50,
+    "enterprise": [
+      [
+        0,
+        400,
+        0.035
+      ],
+      [
+        400,
+        800,
+        0.053
+      ],
+      [
+        800,
+        null,
+        0.07
+      ]
+    ],
+    "specialEnterpriseRate": 0.37,
+    "provisionIds": [
+      "hojinzei66",
+      "sochi42_3_2",
+      "hojinzei57",
+      "chihohojinzei10",
+      "boei13",
+      "boei14",
+      "chihozei51",
+      "chihozei314_4",
+      "chihozei52",
+      "chihozei312",
+      "chihozei72_24_7",
+      "tokubetsu7"
+    ],
+    "note": "店は資本金1千万円以下の中小法人（普通法人）として計算する。税率は法令の標準税率（e-Gov法令API、2026年11月時点の版）。条例による超過税率、事業税の翌年の損金算入、中間申告、外形標準課税は扱わない。決算のたびに1年分を納める（実際は決算から2か月以内）。単位は万円。"
+  }
 }
     </script>
 <script type="application/json" id="provisions-data">
@@ -3157,6 +3214,114 @@ summary{cursor:pointer;color:var(--muted)}
     "text": "第二条第一項第四号のまあじやん屋又は同項第五号の営業を営む者は、その営業に関し、遊技の結果に応じて賞品を提供してはならない。",
     "verified": true,
     "url": "https://laws.e-gov.go.jp/law/323AC0000000122#Mp-At_23"
+  },
+  "hojinzei66": {
+    "id": "hojinzei66",
+    "name": "法人税法66条1項・2項（法人税の税率）",
+    "text": "内国法人である普通法人、一般社団法人等（別表第二に掲げる一般社団法人、一般財団法人及び労働者協同組合並びに公益社団法人及び公益財団法人をいう。次項及び第三項において同じ。）又は人格のない社団等に対して課する各事業年度の所得に対する法人税の額は、各事業年度の所得の金額に百分の二十三・二の税率を乗じて計算した金額とする。\n２前項の場合において、普通法人（通算法人を除く。）若しくは一般社団法人等のうち、各事業年度終了の時において資本金の額若しくは出資金の額が一億円以下であるもの若しくは資本若しくは出資を有しないもの又は人格のない社団等の各事業年度の所得の金額のうち年八百万円以下の金額については、同項の規定にかかわらず、百分の十九の税率による。",
+    "verified": true,
+    "note": "中小法人（資本金1億円以下）の年800万円以下の部分は19%（租税特別措置法42条の3の2で15%に読み替え）。",
+    "url": "https://laws.e-gov.go.jp/law/340AC0000000034#Mp-At_66",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/340AC0000000034', 'law_title': '法人税法', 'law_revision_id': '340AC0000000034_20261001_508AC0000000012', 'amendment_enforcement_date': '2026-10-01', 'retrieved': '2026-11-16'}"
+  },
+  "sochi42_3_2": {
+    "id": "sochi42_3_2",
+    "name": "租税特別措置法42条の3の2第1項（中小企業者等の法人税率の特例）",
+    "text": "次の表の第一欄に掲げる法人又は人格のない社団等（普通法人のうち各事業年度終了の時において法人税法第六十六条第五項各号若しくは第百四十三条第五項各号に掲げる法人又は次条第十九項第八号に規定する適用除外事業者に該当するもの及び通算法人を除く。）の平成二十四年四月一日から令和九年三月三十一日までの間に開始する各事業年度の所得に係る同法その他法人税に関する法令の規定の適用については、同欄に掲げる法人又は人格のない社団等の区分に応じ同表の第二欄に掲げる規定中同表の第三欄に掲げる税率は、同表の第四欄に掲げる税率とする。第一欄第二欄第三欄第四欄一　普通法人のうち当該各事業年度終了の時において資本金の額若しくは出資金の額が一億円以下であるもの若しくは資本若しくは出資を有しないもの（第四号に掲げる法人を除く。）又は人格のない社団等法人税法第六十六条第二項及び第百四十三条第二項百分の十九百分の十五（所得の金額が年十億円を超える事業年度については、百分の十七）二　一般社団法人等（法人税法別表第二に掲げる一般社団法人、一般財団法人及び労働者協同組合並びに公益社団法人及び公益財団法人をいう。）又は同法以外の法律によつて公益法人等とみなされているもので政令で定めるもの法人税法第六十六条第二項百分の十九百分の十五（所得の金額が年十億円を超える事業年度については、百分の十七）三　公益法人等（前号に掲げる法人を除く。）又は協同組合等（第六十八条第一項に規定する協同組合等を除く。）法人税法第六十六条第三項百分の十九百分の十九（各事業年度の所得の金額のうち年八百万円以下の金額については、百分の十五（所得の金額が年十億円を超える事業年度については、百分の十七）とする。）四　第六十七条の二第一項の規定による承認を受けている同項に規定する医療法人同項百分の十九百分の十九（各事業年度の所得の金額のうち年八百万円以下の金額については、百分の十五（所得の金額が年十億円を超える事業年度については、百分の十七）とする。）",
+    "verified": true,
+    "note": "令和9年3月31日までに開始する事業年度。表の第1号：資本金1億円以下の普通法人は19%→15%（所得が年10億円超の事業年度は17%）。",
+    "url": "https://laws.e-gov.go.jp/law/332AC0000000026#Mp-At_42_3_2",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/332AC0000000026', 'law_title': '租税特別措置法', 'law_revision_id': '332AC0000000026_20261101_507AC0000000013', 'amendment_enforcement_date': '2026-11-01', 'retrieved': '2026-11-16'}"
+  },
+  "hojinzei57": {
+    "id": "hojinzei57",
+    "name": "法人税法57条1項（欠損金の繰越し）",
+    "text": "内国法人の各事業年度開始の日前十年以内に開始した事業年度において生じた欠損金額（この項の規定により当該各事業年度前の事業年度の所得の金額の計算上損金の額に算入されたもの及び第八十条（欠損金の繰戻しによる還付）の規定により還付を受けるべき金額の計算の基礎となつたものを除く。）がある場合には、当該欠損金額に相当する金額は、当該各事業年度の所得の金額の計算上、損金の額に算入する。ただし、当該欠損金額に相当する金額が損金算入限度額（本文の規定を適用せず、かつ、第五十九条第三項及び第四項（会社更生等による債務免除等があつた場合の欠損金の損金算入）並びに第六十二条の五第五項（現物分配による資産の譲渡）の規定を適用しないものとして計算した場合における当該各事業年度の所得の金額の百分の五十に相当する金額をいう。）から当該欠損金額の生じた事業年度前の事業年度において生じた欠損金額に相当する金額で本文の規定により当該各事業年度の所得の金額の計算上損金の額に算入される金額を控除した金額を超える場合は、その超える部分の金額については、この限りでない。",
+    "verified": true,
+    "note": "前10年以内の欠損金を控除。中小法人は所得の全額まで控除できる（同条11項）。ゲームでは全額控除で計算する。",
+    "url": "https://laws.e-gov.go.jp/law/340AC0000000034#Mp-At_57",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/340AC0000000034', 'law_title': '法人税法', 'law_revision_id': '340AC0000000034_20261001_508AC0000000012', 'amendment_enforcement_date': '2026-10-01', 'retrieved': '2026-11-16'}"
+  },
+  "chihohojinzei10": {
+    "id": "chihohojinzei10",
+    "name": "地方法人税法10条1項（地方法人税の税率）",
+    "text": "基準法人税額に対する地方法人税の額は、各課税事業年度の課税標準法人税額に百分の十・三の税率を乗じて計算した金額とする。",
+    "verified": true,
+    "note": "",
+    "url": "https://laws.e-gov.go.jp/law/426AC0000000011#Mp-At_10",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/426AC0000000011', 'law_title': '地方法人税法', 'law_revision_id': '426AC0000000011_20260401_507AC0000000013', 'amendment_enforcement_date': '2026-04-01', 'retrieved': '2026-11-16'}"
+  },
+  "boei13": {
+    "id": "boei13",
+    "name": "防衛財源確保法13条（防衛特別法人税の課税標準・基礎控除）",
+    "text": "防衛特別法人税の課税標準は、各課税事業年度の課税標準法人税額とする。\n２各課税事業年度の課税標準法人税額は、次の各号に掲げる場合の区分に応じ当該各号に定める金額とする。一次号に掲げる場合以外の場合各課税事業年度の基準法人税額から基礎控除額を控除した金額二各課税事業年度の基準法人税額に法人税法第六十七条第一項の規定により加算された金額がある場合次に掲げる金額の合計額イ当該課税事業年度の加算前基準法人税額（基準法人税額から法人税法第六十七条第一項の規定により加算された金額を控除した金額をいう。以下この条において同じ。）から基礎控除額を控除した金額ロ当該課税事業年度の基準法人税加算額（基準法人税額のうち法人税法第六十七条第一項の規定により加算された金額をいう。以下この条において同じ。）から基礎控除残額を控除した金額\n３前項に規定する基礎控除額とは、次の各号に掲げる課税事業年度の区分に応じ当該各号に定める金額をいう。一通算法人以外の法人の課税事業年度年五百万円二通算法人の課税事業年度（通算子法人の課税事業年度にあっては、当該通算子法人に係る通算親法人の課税事業年度終了の日に終了する課税事業年度に限る。）五百万円にイに掲げる金額がロに掲げる金額のうちに占める割合を乗じて計算した金額イ当該通算法人の当該課税事業年度の基準法人税額（前項第二号に掲げる場合には、加算前基準法人税額。以下この条において同じ。）ロ当該通算法人の当該課税事業年度及び当該課税事業年度終了の日において当該通算法人との間に通算完全支配関係がある他の通算法人の同日に終了する課税事業年度の基準法人税額の合計額三通算子法人の前号に掲げる課税事業年度以外の課税事業年度五百万円を十二で除し、これに当該課税事業年度の月数を乗じて計算した金額",
+    "verified": true,
+    "note": "基礎控除額は年500万円（法人税額から控除）。",
+    "url": "https://laws.e-gov.go.jp/law/505AC0000000069#Mp-At_13",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/505AC0000000069', 'law_title': '我が国の防衛力の抜本的な強化等のために必要な財源の確保に関する特別措置法', 'law_revision_id': '505AC0000000069_20260401_508AC0000000012', 'amendment_enforcement_date': '2026-04-01', 'retrieved': '2026-11-16'}"
+  },
+  "boei14": {
+    "id": "boei14",
+    "name": "防衛財源確保法14条1項（防衛特別法人税の税率）",
+    "text": "防衛特別法人税の額は、各課税事業年度の課税標準法人税額に百分の四の税率を乗じて計算した金額とする。",
+    "verified": true,
+    "note": "",
+    "url": "https://laws.e-gov.go.jp/law/505AC0000000069#Mp-At_14",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/505AC0000000069', 'law_title': '我が国の防衛力の抜本的な強化等のために必要な財源の確保に関する特別措置法', 'law_revision_id': '505AC0000000069_20260401_508AC0000000012', 'amendment_enforcement_date': '2026-04-01', 'retrieved': '2026-11-16'}"
+  },
+  "chihozei51": {
+    "id": "chihozei51",
+    "name": "地方税法51条1項（道府県民税の法人税割の税率）",
+    "text": "法人税割の標準税率は、百分の一とする。ただし、標準税率を超える税率で課する場合においても、百分の二を超えることができない。",
+    "verified": true,
+    "note": "標準税率。条例で超過税率を定める道府県がある。",
+    "url": "https://laws.e-gov.go.jp/law/325AC0000000226#Mp-At_51",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/325AC0000000226', 'law_title': '地方税法', 'law_revision_id': '325AC0000000226_20261101_508AC0000000002', 'amendment_enforcement_date': '2026-11-01', 'retrieved': '2026-11-16'}"
+  },
+  "chihozei314_4": {
+    "id": "chihozei314_4",
+    "name": "地方税法314条の4第1項（市町村民税の法人税割の税率）",
+    "text": "法人税割の標準税率は、百分の六とする。ただし、標準税率を超えて課する場合においても、百分の八・四を超えることができない。",
+    "verified": true,
+    "note": "標準税率。条例で超過税率を定める市町村がある。",
+    "url": "https://laws.e-gov.go.jp/law/325AC0000000226#Mp-At_314_4",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/325AC0000000226', 'law_title': '地方税法', 'law_revision_id': '325AC0000000226_20261101_508AC0000000002', 'amendment_enforcement_date': '2026-11-01', 'retrieved': '2026-11-16'}"
+  },
+  "chihozei52": {
+    "id": "chihozei52",
+    "name": "地方税法52条1項（道府県民税の法人の均等割）",
+    "text": "法人の均等割の標準税率は、次の表の上欄に掲げる法人の区分に応じ、それぞれ同表の下欄に定める額とする。法人の区分税率一　次に掲げる法人イ　法人税法第二条第五号の公共法人及び第二十四条第五項に規定する公益法人等のうち、第二十五条第一項の規定により均等割を課することができないもの以外のもの（同法別表第二に規定する独立行政法人で収益事業を行うものを除く。）ロ　人格のない社団等ハ　一般社団法人（非営利型法人（法人税法第二条第九号の二に規定する非営利型法人をいう。以下この号において同じ。）に該当するものを除く。）及び一般財団法人（非営利型法人に該当するものを除く。）ニ　保険業法に規定する相互会社以外の法人で資本金の額又は出資金の額を有しないもの（イからハまでに掲げる法人を除く。）ホ　資本金等の額を有する法人（法人税法別表第二に規定する独立行政法人で収益事業を行わないもの及びニに掲げる法人を除く。以下この表において同じ。）で資本金等の額が千万円以下であるもの年額　二万円二　資本金等の額を有する法人で資本金等の額が千万円を超え一億円以下であるもの年額　五万円三　資本金等の額を有する法人で資本金等の額が一億円を超え十億円以下であるもの年額　十三万円四　資本金等の額を有する法人で資本金等の額が十億円を超え五十億円以下であるもの年額　五十四万円五　資本金等の額を有する法人で資本金等の額が五十億円を超えるもの年額　八十万円",
+    "verified": true,
+    "note": "資本金等の額1千万円以下：年2万円（標準税率）。",
+    "url": "https://laws.e-gov.go.jp/law/325AC0000000226#Mp-At_52",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/325AC0000000226', 'law_title': '地方税法', 'law_revision_id': '325AC0000000226_20261101_508AC0000000002', 'amendment_enforcement_date': '2026-11-01', 'retrieved': '2026-11-16'}"
+  },
+  "chihozei312": {
+    "id": "chihozei312",
+    "name": "地方税法312条1項（市町村民税の法人の均等割）",
+    "text": "法人に対して課する均等割の標準税率は、次の表の上欄に掲げる法人の区分に応じ、それぞれ同表の下欄に定める額とする。法人の区分税率一　次に掲げる法人イ　法人税法第二条第五号の公共法人及び第二百九十四条第七項に規定する公益法人等のうち、第二百九十六条第一項の規定により均等割を課することができないもの以外のもの（同法別表第二に規定する独立行政法人で収益事業を行うものを除く。）ロ　人格のない社団等ハ　一般社団法人（非営利型法人（法人税法第二条第九号の二に規定する非営利型法人をいう。以下この号において同じ。）に該当するものを除く。）及び一般財団法人（非営利型法人に該当するものを除く。）ニ　保険業法に規定する相互会社以外の法人で資本金の額又は出資金の額を有しないもの（イからハまでに掲げる法人を除く。）ホ　資本金等の額を有する法人（法人税法別表第二に規定する独立行政法人で収益事業を行わないもの及びニに掲げる法人を除く。以下この表において同じ。）で資本金等の額が千万円以下であるもののうち、市町村内に有する事務所、事業所又は寮等の従業者（政令で定める役員を含む。）の数の合計数（次号から第九号まで及び第五項において「従業者数の合計数」という。）が五十人以下のもの年額　五万円二　資本金等の額を有する法人で資本金等の額が千万円以下であるもののうち、従業者数の合計数が五十人を超えるもの年額　十二万円三　資本金等の額を有する法人で資本金等の額が千万円を超え一億円以下であるもののうち、従業者数の合計数が五十人以下であるもの年額　十三万円四　資本金等の額を有する法人で資本金等の額が千万円を超え一億円以下であるもののうち、従業者数の合計数が五十人を超えるもの年額　十五万円五　資本金等の額を有する法人で資本金等の額が一億円を超え十億円以下であるもののうち、従業者数の合計数が五十人以下であるもの年額　十六万円六　資本金等の額を有する法人で資本金等の額が一億円を超え十億円以下であるもののうち、従業者数の合計数が五十人を超えるもの年額　四十万円七　資本金等の額を有する法人で資本金等の額が十億円を超えるもののうち、従業者数の合計数が五十人以下であるもの年額　四十一万円八　資本金等の額を有する法人で資本金等の額が十億円を超え五十億円以下であるもののうち、従業者数の合計数が五十人を超えるもの年額　百七十五万円九　資本金等の額を有する法人で資本金等の額が五十億円を超えるもののうち、従業者数の合計数が五十人を超えるもの年額　三百万円",
+    "verified": true,
+    "note": "資本金等の額1千万円以下：従業者50人以下 年5万円、50人超 年12万円（標準税率）。",
+    "url": "https://laws.e-gov.go.jp/law/325AC0000000226#Mp-At_312",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/325AC0000000226', 'law_title': '地方税法', 'law_revision_id': '325AC0000000226_20261101_508AC0000000002', 'amendment_enforcement_date': '2026-11-01', 'retrieved': '2026-11-16'}"
+  },
+  "chihozei72_24_7": {
+    "id": "chihozei72_24_7",
+    "name": "地方税法72条の24の7第1項（法人の事業税の標準税率）",
+    "text": "法人の行う事業（電気供給業、ガス供給業、保険業及び貿易保険業を除く。第五項において同じ。）に対する事業税の額は、次の各号に掲げる法人の区分に応じ、それぞれ当該各号に定める金額とする。一第七十二条の二第一項第一号イに掲げる法人次に掲げる金額の合計額イ各事業年度の付加価値額に百分の一・二の標準税率により定めた率を乗じて得た金額ロ各事業年度の資本金等の額に百分の〇・五の標準税率により定めた率を乗じて得た金額ハ各事業年度の所得に百分の一の標準税率により定めた率を乗じて得た金額二特別法人次の表の上欄に掲げる金額の区分により各事業年度の所得を区分し、当該区分に応ずる同表の下欄に掲げる標準税率により定めた率を乗じて計算した金額の合計額各事業年度の所得のうち年四百万円以下の金額百分の三・五各事業年度の所得のうち年四百万円を超える金額百分の四・九三その他の法人次の表の上欄に掲げる金額の区分により各事業年度の所得を区分し、当該区分に応ずる同表の下欄に掲げる標準税率により定めた率を乗じて計算した金額の合計額各事業年度の所得のうち年四百万円以下の金額百分の三・五各事業年度の所得のうち年四百万円を超え年八百万円以下の金額百分の五・三各事業年度の所得のうち年八百万円を超える金額百分の七",
+    "verified": true,
+    "note": "第3号（その他の法人）：所得のうち年400万円以下3.5%、400万円超800万円以下5.3%、800万円超7%。",
+    "url": "https://laws.e-gov.go.jp/law/325AC0000000226#Mp-At_72_24_7",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/325AC0000000226', 'law_title': '地方税法', 'law_revision_id': '325AC0000000226_20261101_508AC0000000002', 'amendment_enforcement_date': '2026-11-01', 'retrieved': '2026-11-16'}"
+  },
+  "tokubetsu7": {
+    "id": "tokubetsu7",
+    "name": "特別法人事業税及び特別法人事業譲与税に関する法律7条（特別法人事業税の額）",
+    "text": "特別法人事業税の額は、次の各号に掲げる法人の区分に応じ、それぞれ当該各号に定める金額とする。一付加価値割額、資本割額及び所得割額の合算額により法人の事業税を課される法人基準法人所得割額に百分の二百六十の税率を乗じて得た金額二所得割額により法人の事業税を課される特別法人（地方税法第七十二条の二十四の七第七項に規定する特別法人をいう。次号において同じ。）基準法人所得割額に百分の三十四・五の税率を乗じて得た金額三所得割額により法人の事業税を課される法人（第一号に掲げる法人及び特別法人を除く。）基準法人所得割額に百分の三十七の税率を乗じて得た金額四収入割額により法人の事業税を課される法人基準法人収入割額に百分の三十の税率を乗じて得た金額五収入割額、付加価値割額及び資本割額の合算額又は収入割額及び所得割額の合算額により法人の事業税を課される法人（地方税法第七十二条の二第一項第三号に掲げる事業を行う法人に限る。）基準法人収入割額に百分の四十の税率を乗じて得た金額六収入割額、付加価値割額及び資本割額の合算額により法人の事業税を課される法人（地方税法第七十二条の二第一項第四号に掲げる事業を行う法人に限る。）基準法人収入割額に百分の六十二・五の税率を乗じて得た金額",
+    "verified": true,
+    "note": "第3号：基準法人所得割額×37%。",
+    "url": "https://laws.e-gov.go.jp/law/431AC0000000004#Mp-At_7",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/431AC0000000004', 'law_title': '特別法人事業税及び特別法人事業譲与税に関する法律', 'law_revision_id': '431AC0000000004_20260401_508AC0000000002', 'amendment_enforcement_date': '2026-04-01', 'retrieved': '2026-11-16'}"
   }
 }
     </script>
@@ -3260,10 +3425,13 @@ function demandMult(legalOnly){
   const i = S.ind;
   let m = (0.82 + 0.6 * i.fame / 100) * (0.8 + 0.4 * i.comfort / 100); // 開業時（知名度30・居心地50）で1.0
   m *= Math.pow(S.price, -O.price.elasticity) * S.contact.demand * FX().demand * (1 - SEG.regularDemandBonus / 2 + SEG.regularDemandBonus * S.mix.regular); // 常連が厚いほど客が客を呼ぶ
-  if (!legalOnly) m *= styleNow().effect.demand;
+  if (!legalOnly){ const st = styleNow(); m *= st.effect.demand; if (st.heatDecay){ const u = S.used[st.id] || 0; m *= Math.max(st.heatFloor, 1 - st.heatDecay * Math.max(0, u - st.heatStart)); } } // 黒：続けるほど警戒されて客が減る（v1.4）
+  m *= shakeOf(S.month); // 5年目：業界の淘汰で客が戻ってくる（v1.4）
   for (const t of S.tempDemand) m *= t.mult;
   return m;
 }
+const MK = D.market;
+const shakeOf = (month) => 1 + Math.min(MK.shakeMax, MK.shakePerMonth * Math.max(0, month - MK.shakeStart));
 function ramp(){ const t = S.openedAt == null ? 0 : S.month - S.openedAt; return Math.min(1, O.rampStart + (1 - O.rampStart) * t / O.rampMonths); }
 const hoursLen = () => S.close - S.open;
 /* 1店舗ぶんの計算（本店と2号店で共用）。ブランド（指標・客層・コンセプト・営業スタイル・営業時間・料金）は共通 */
@@ -3344,7 +3512,7 @@ function monthTick(){
   if (wasOpen && S.openedAt == null){ S.openedAt = S.month; story(S.licensed ? "許可が下り、開業した。" : "許可を待たずに開業した。"); }
   const p = wasOpen ? project() : { demand: 0, occ: 0, guests: 0, rev: 0, op: -S.rent, interest: 0, net: -S.rent, rent: S.rent, varCost: 0, other: 0, staff: 0 };
   expansionTick(wasOpen);
-  S.cash += p.net; S.last = p;
+  S.cash += p.net; S.last = p; S.year.net = (S.year.net || 0) + p.net;
   if (wasOpen){ S.ops.push(p.op); S.year.rev += p.rev; S.year.op += p.op; S.peakMonth = Math.max(S.peakMonth, p.net); }
   logEv("month", { net: Math.round(p.net), guests: Math.round(p.guests), occ: +p.occ.toFixed(3), style: styleNow().id });
 
@@ -3373,16 +3541,19 @@ function monthTick(){
   if (S.shock > 0) S.shock--;
   if (S.licenseWait > 0){ S.licenseWait--; if (S.licenseWait === 0){ S.licensed = true; S.unlicensed = false; note("許可が下りた。", "good"); logEv("licensed", {}); } }
 
-  if (wasOpen && hr("comp") < S.loc.competition.p){ S.competitors++; S.share *= 1 - S.loc.competition.hit * (1 - SEG.regularCompShield * S.mix.regular); note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`, "bad"); story("近くに競合店が開業した。"); }
+  if (wasOpen && S.month >= MK.shakeStart && S.competitors > 0 && hr("comp", 7) < MK.compExitP){ S.competitors--; S.share = Math.min(S.share / (1 - S.loc.competition.hit * 0.6), S.share * 1.15); note("近くの競合店が撤退した（業界の淘汰）", "good"); story("近くの競合店が撤退した。業界の淘汰が進んでいる。"); }
+  if (S.month === MK.shakeStart && wasOpen){ note("業界の淘汰が始まった。弱い店が撤退し、残った店に客が集まる", "good"); story("5年目に入り、業界の淘汰が始まった。"); }
+  if (wasOpen && hr("comp") < S.loc.competition.p * (S.month >= MK.shakeStart ? 0.3 : 1)){ S.competitors++; S.share *= 1 - S.loc.competition.hit * (1 - SEG.regularCompShield * S.mix.regular); note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`, "bad"); story("近くに競合店が開業した。"); }
   const trP = S.loc.troubleP * S.hiring.trouble * (i.slack < 30 ? 1.5 : 1);
   if (wasOpen && hr("trouble") < trP){
-    if (hr("trouble", 1) < 0.5){ const c = (O.trouble.costMin + hr("trouble", 2) * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; const t = D.troubleTexts[Math.floor(hr("trouble", 3) * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`, "bad"); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
+    if (hr("trouble", 1) < 0.5){ const c = (O.trouble.costMin + hr("trouble", 2) * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; taxAdj(-c); const t = D.troubleTexts[Math.floor(hr("trouble", 3) * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`, "bad"); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
     else { S.shock = O.trouble.shockMonths; const t = D.shockTexts[Math.floor(hr("trouble", 3) * D.shockTexts.length)]; note(`${t}（3か月 売上−30%）`, "bad"); story(`${t}。`); logEv("shock", {}); }
   }
   for (const pd of S.pending.filter((x) => x.at <= S.month)){ applyEffects(pd.effects || {}); note(`後日談：${pd.text}`); story(`後日談：${pd.text}`); }
   S.pending = S.pending.filter((x) => x.at > S.month);
 
   S.month++;
+  if (S.month % 12 === 0) payTax(`${S.month / 12}年目`);
   if (TEST && window.__onMonth) window.__onMonth(S); // 検証用：月末のフック（scripts/sim_annual.js）
   if (wasOpen) judgeChoke(p);
   rec(p, wasOpen);
@@ -3422,7 +3593,7 @@ function enqueue(fn){ S.q.push(fn); S.paused = true; }
 function applyEffects(e){
   const i = S.ind;
   for (const k of ["fame", "trust", "comfort", "slack"]) if (e[k]) i[k] = clamp(i[k] + e[k], 0, 100);
-  if (e.cash) S.cash += e.cash;
+  if (e.cash){ S.cash += e.cash; taxAdj(e.cash); }
   if (e.demand) S.tempDemand.push({ mult: e.demand.mult, months: e.demand.months });
   if (e.closeDelta) S.close = clamp(S.close + e.closeDelta, S.open + 4, O.closeMax);
   if (e.contactBan) S.contact = byId(ST.contact, "ban");
@@ -3433,7 +3604,7 @@ function applyEffects(e){
 function order(acts){
   S.orders++;
   const cost = Math.max(R.orderCostMin, Math.max(0, project(true).op) * R.orderCostMonths);
-  S.cash -= cost; S.ind.trust = clamp(S.ind.trust + R.orderTrust, 0, 100); S.rumor = R.orderRumorMonths;
+  S.cash -= cost; taxAdj(-cost); S.ind.trust = clamp(S.ind.trust + R.orderTrust, 0, 100); S.rumor = R.orderRumorMonths;
   for (const a of acts){
     if (a.id === "latenight"){ S.close = Math.min(S.close, O.legalClose); S.open = Math.max(S.open, O.legalOpen); }
     else if (a.style) S.stopUntil[a.id] = S.month + R.orderStopMonths;
@@ -3610,6 +3781,7 @@ function annual(){
     <div class="grid2"><span>売上</span><span>${yen(S.year.rev)}</span><span>営業利益</span><span>${yen(S.year.op)}</span>
       <span>手元資金</span><span>${yen(S.cash)}</span><span>借入残高</span><span>${yen(S.debt)}</span>
       ${Object.entries(IND.names).map(([k, n]) => `<span>${n}</span><span>${Math.round(S.ind[k])}</span>`).join("")}</div>
+    <h2>税金（法人税など）：${yen(S.lastTax ? S.lastTax.total : 0)}</h2>${S.lastTax ? `<details><summary>内訳を見る</summary>${taxHTML(S.lastTax)}</details>` : ""}
     <h2>中間評価：いま売ったら ${yen(storeValue())}</h2>
     <details><summary>評価レポートを開く（DCF・類似取引・清算価値）</summary>${valuationReport(valuation(), { kicker: `${y}年目の中間評価` })}</details>
     <p style="font-size:13px">${fin.ok ? `借入できます（上限 ${yen(fin.limit)}）。ドックの「借入」から。` : `借入はまだできません：${esc(fin.why)}`}</p>
@@ -3672,23 +3844,61 @@ function proposal(early){
     <div class="row stick"><button class="btn primary" id="okBtn">結果発表へ</button></div>`, () => { $("okBtn").onclick = () => finish("complete"); }));
 }
 
+/* ---------- 税金（法人の税、v1.4）----------
+   税率は docs/questions.json の条文（e-Gov 法令APIから取得）にもとづく標準税率。shop.json の tax に値と条文IDを置く。
+   課税所得＝その事業年度の月々の利益（営業利益−利息）＋臨時の損益（トラブル・是正対応費・採用・教育・許可申請・事件の入出金・FC加盟金）。
+   設備・卓・内装などの投資は損金に入れない（減価償却は省略）。欠損金は翌年以降に繰り越して控除する */
+const TX = D.tax;
+function taxAdj(x){ if (S && S.year) S.year.adj = (S.year.adj || 0) + x; }
+function corpTax(income, staffN){
+  const b = { income, carried: 0, taxable: 0, hojin: 0, chihohojin: 0, boei: 0, juminWari: 0, kintou: TX.perCapitaPref + (staffN > TX.perCapitaMuniStaff ? TX.perCapitaMuniOver : TX.perCapitaMuni), jigyo: 0, tokubetsu: 0 };
+  if (income <= 0){ S.taxLoss = (S.taxLoss || 0) - income; }
+  else { b.carried = Math.min(S.taxLoss || 0, income); S.taxLoss = (S.taxLoss || 0) - b.carried; b.taxable = income - b.carried; }
+  const T = b.taxable, br = (lo, hi) => Math.max(0, Math.min(T, hi) - lo);
+  b.hojin = TX.corpSmallRate * br(0, TX.corpSmallLimit) + TX.corpRate * br(TX.corpSmallLimit, Infinity);
+  b.chihohojin = b.hojin * TX.localCorpRate;
+  b.boei = Math.max(0, b.hojin - TX.defenseDeduction) * TX.defenseRate;
+  b.juminWari = b.hojin * (TX.residentPrefRate + TX.residentMuniRate);
+  b.jigyo = TX.enterprise.reduce((a, [lo, hi, r]) => a + br(lo, hi == null ? Infinity : hi) * r, 0);
+  b.tokubetsu = b.jigyo * TX.specialEnterpriseRate;
+  b.total = b.hojin + b.chihohojin + b.boei + b.juminWari + b.kintou + b.jigyo + b.tokubetsu;
+  return b;
+}
+function payTax(label){
+  const y = S.year || {}, income = (y.net || 0) + (y.adj || 0), b = corpTax(income, S.staffList ? S.staffList.length : 0);
+  S.cash -= b.total; S.taxPaid = (S.taxPaid || 0) + b.total; S.lastTax = b;
+  y.net = 0; y.adj = 0;
+  story(`${label}の税金（法人税など）${yen(b.total)}を納めた（課税所得 ${yen(b.taxable)}${b.carried ? `・繰越欠損金 ${yen(b.carried)}を控除` : ""}）。`);
+  logEv("tax", { income: Math.round(income), taxable: Math.round(b.taxable), total: Math.round(b.total) });
+  return b;
+}
+function taxHTML(b){
+  const r = (n, v) => v ? `<tr><td style="text-align:left">${n}</td><td>${yen(v)}</td></tr>` : "";
+  return `<table class="t"><tr><td style="text-align:left">その年の所得</td><td>${yen(b.income)}</td></tr>${b.carried ? `<tr><td style="text-align:left">繰越欠損金の控除</td><td>${yen(-b.carried)}</td></tr>` : ""}<tr><td style="text-align:left">課税所得</td><td>${yen(b.taxable)}</td></tr>
+    ${r("法人税", b.hojin)}${r("地方法人税", b.chihohojin)}${r("防衛特別法人税", b.boei)}${r("法人住民税（法人税割）", b.juminWari)}${r("法人住民税（均等割）", b.kintou)}${r("事業税", b.jigyo)}${r("特別法人事業税", b.tokubetsu)}
+    <tr class="total"><td style="text-align:left">税金の合計</td><td>${yen(b.total)}</td></tr></table>
+    <details><summary>税率と条文</summary><p class="muted" style="font-size:12px">${esc(TX.note)}</p>${provHTML(TX.provisionIds)}</details>`;
+}
+
 /* ---------- 終了 ---------- */
 function finish(kind){
   S.over = kind; S.paused = true; clearSave();
+  if (kind === "arrest" && ((S.year.net || 0) + (S.year.adj || 0)) !== 0) payTax("摘発までの期間");
   const sale = kind === "complete" ? S.sale : 0;
-  const amount = kind === "complete" ? S.cash + sale - S.debt : 0;
+  // 摘発：店は失うが、それまでに稼いだ手元資金は残る（借入は返す）。倒産は0
+  const amount = kind === "complete" ? S.cash + sale - S.debt : kind === "arrest" ? Math.max(0, S.cash - S.debt) : 0;
   logEv("end", { kind, amount: Math.round(amount), sale: Math.round(sale), peak: Math.round(S.peakMonth) });
   const rank = saveRank(kind, amount);
   const title = { complete: "結果発表", arrest: R.labels.arrest, bankrupt: "資金が尽きた" }[kind];
   const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（3つの評価の中央値）";
-  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。両方のランキングで失格。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
+  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。店は売れないが、それまでに稼いだ手元資金は残る。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
   show(`
     <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓${S.branch ? ` ・ 2号店 ${esc(S.branch.loc.name)}` : ""}${S.fc && S.fc.count ? ` ・ FC${S.fc.count}店` : ""} ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
     <div class="kicker" style="margin-top:12px">最終手取り額</div>
     <div class="big">${yen(amount)}<small class="${amount - M.fund >= 0 ? "pos" : "negc"}">元手${yen(M.fund)}から ${yen(amount - M.fund, true)}</small></div>
     ${kind === "complete" ? `<table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額${ddWord}</td><td>${yen(sale)}</td></tr>
       <tr><td>借入残高</td><td>${yen(-S.debt)}</td></tr><tr class="total"><td>最終手取り額</td><td>${yen(amount)}</td></tr></table>` : ""}
-    <p class="muted" style="font-size:12.5px">一番稼いだ月の利益：<span class="num">${isFinite(S.peakMonth) ? yen(S.peakMonth) : "—"}</span>${kind === "arrest" ? "（失格）" : ""}</p>
+    <p class="muted" style="font-size:12.5px">一番稼いだ月の利益：<span class="num">${isFinite(S.peakMonth) ? yen(S.peakMonth) : "—"}</span></p>${S.taxPaid ? `<p class="muted" style="font-size:12.5px">納めた税金（法人税など）の合計：<span class="num">${yen(S.taxPaid)}</span></p>` : ""}
     <div style="border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin:14px 0"><div class="kicker">店のタイプ診断</div><div style="font-size:22px;font-weight:700;margin:2px 0">${esc(shopType().name)}</div><div style="font-size:13px">${esc(shopType().desc)}</div><div class="muted" style="font-size:11px;margin-top:4px">${esc(TYPES.note)}</div></div>
     ${kind === "complete" && S.val ? `<details><summary>売却のバリュエーション・レポートを見る</summary>${valuationReport(S.val, { bridge: true })}</details>` : ""}
     <h2>設計の振り返り</h2>${causalHTML(kind)}
@@ -3697,7 +3907,7 @@ function finish(kind){
     <h2>5年の物語</h2><div class="timeline">${S.timeline.map((x) => `<span class="num">${monthLabel(x.t)}</span>：${esc(x.text)}`).join("<br>") || "—"}</div>
     <h2>同じ条件で比べる</h2>${sameCodeHTML()}
     <h2>全体ランキング</h2><div id="globalRank" class="muted" style="font-size:13px">読み込み中…</div>
-    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap"><input id="nickIn" maxlength="12" placeholder="店主名（任意・12文字まで）" style="font-size:14px;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"><button class="btn" id="submitBtn" ${kind === "arrest" ? "disabled" : ""}>全体ランキングに登録</button></div>
+    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap"><input id="nickIn" maxlength="12" placeholder="店主名（任意・12文字まで）" style="font-size:14px;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"><button class="btn" id="submitBtn">全体ランキングに登録</button></div>
     <p class="muted" style="font-size:11.5px">登録すると、店主名・金額・立地・卓数・営業スタイルの区分・店のタイプ・条件コードだけを、このゲームのサーバーに送る。登録しなければ何も送らない。</p>
     <h2>ランキング（この端末）</h2>${rankHTML(rank)}
     <h2>SNS用の画像</h2><img id="shareImg" alt="結果の画像" style="width:100%;max-width:420px;display:block;margin:0 auto;border:1.5px solid var(--soft);border-radius:10px">
@@ -3857,7 +4067,7 @@ function diagnoseHTML(kind){
   if (S.orders) items.push([4, `${R.labels.order}を${S.orders}回受けた`, `是正対応費・風評（売上−25%）・店の値段の割引率+10%が重なった。営業スタイルを「預入のみ」に戻すと止まる。`]);
   if (S.dd && S.dd.gray) items.push([4, "グレーの営業で、店の値段がハコの価値だけになった", `買収前調査で「${S.dd.name}」が見つかった。`]);
   if (S.dd && S.dd.kind === "shell") items.push([5, "黒の営業で売却額がハコの価値だけになった", "継続的なキャッシュフローと認められなかった。"]);
-  if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業や違法営業は、続けるほど摘発の確率が上がる。瞬間収益は大きいが、最終手取り額のランキングには残らない。"]);
+  if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業は1年目こそ一番稼げるが、半年を過ぎると摘発の確率が急に上がり、客も警戒して離れていく。稼いだ手元資金は残るが、店そのものと売却額を失う。健全な店を5年続けて売るほうが、平均では手取りが多い。"]);
   if (S.mix && S.mix.regular < 0.25) items.push([3, "常連が育たなかった", `最後の客層は常連${Math.round(S.mix.regular * 100)}%。初心者は居心地しだいで常連に育ち、常連は居心地と信頼が低いと離れる。常連が厚いほど客数が安定し、競合に強く、店の値段も上がる。`]);
   if (S.ind.slack < 35) items.push([2, "スタッフが疲れていた", `余力 ${Math.round(S.ind.slack)}。満席が続くと余力は落ち、居心地とトラブルに響く。`]);
   if (S.ind.comfort < 40) items.push([2, "初心者が定着しなかった", `初心者の居心地 ${Math.round(S.ind.comfort)}。成長率（店の値段）と客数に効く。教育方針「おもてなし」や事件での判断で上げられる。`]);
@@ -3886,7 +4096,7 @@ async function makeShareImage(kind, amount, rank){
   const diff = amount - M.fund; g.fillStyle = diff >= 0 ? good : bad; g.font = `700 38px ${F}`; g.fillText(`元手5,000万円から ${yen(diff, true)}`, 80, 514);
   // 順位
   const fpos = rank.final.findIndex((x) => x.mine) + 1, ppos = rank.peak.findIndex((x) => x.mine) + 1;
-  g.fillStyle = ink; g.font = `700 52px ${F}`; g.fillText(kind === "arrest" ? "ランキング：失格" : fpos ? `ランキング ${fpos}位` : "ランキング 圏外", 80, 620);
+  g.fillStyle = ink; g.font = `700 52px ${F}`; g.fillText(fpos ? `ランキング ${fpos}位` : "ランキング 圏外", 80, 620);
   g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText(`最終手取り額（この端末の上位10件）${ppos ? ` ・ 瞬間収益 ${ppos}位` : ""}`, 80, 664);
   // 店の情報
   const tier = S.style.tier, sw = { black: ink, gray, clean: good }[tier];
@@ -3996,7 +4206,7 @@ function staffMonthly(){
     if (hr(`quit${i}`) < q){
       if (x.skill >= 4 && x.months >= 12 && !x.manager){ enqueue(() => quitTalk(x)); break; }
       S.staffList = S.staffList.filter((y) => y !== x); note(`スタッフの${x.name}さんが辞めた`, "bad"); story(`スタッフの${x.name}さんが辞めた（勤続${x.months}か月）。`); logEv("quit", {});
-      if (S.autoHire){ const n = makeStaff("rookie", S.loc); S.staffList.push(n); S.cash -= SS.hireCost; }
+      if (S.autoHire){ const n = makeStaff("rookie", S.loc); S.staffList.push(n); S.cash -= SS.hireCost; taxAdj(-SS.hireCost); }
     }
   }
 }
@@ -4011,7 +4221,7 @@ function quitTalk(x){
       const k = b.dataset.k;
       if (k === "raise"){ x.wage = Math.round(x.wage * 1.3 * 10) / 10; x.morale = 80; story(`${x.name}さんを昇給で引き留めた。`); }
       if (k === "mgr"){ (S.staffList.find((y) => y.manager) || {}).manager = false; x.manager = true; x.wage = Math.round(x.wage * SS.managerWageMult * 10) / 10; x.morale = 90; story(`${x.name}さんを店長に抜擢した。`); }
-      if (k === "go"){ S.staffList = S.staffList.filter((y) => y !== x); if (S.autoHire){ S.staffList.push(makeStaff("rookie", S.loc)); S.cash -= SS.hireCost; } S.mix.regular = Math.max(0.05, S.mix.regular - 0.04); normMix(); story(`${x.name}さんを送り出した。指名の常連の一部が離れた。`); }
+      if (k === "go"){ S.staffList = S.staffList.filter((y) => y !== x); if (S.autoHire){ S.staffList.push(makeStaff("rookie", S.loc)); S.cash -= SS.hireCost; taxAdj(-SS.hireCost); } S.mix.regular = Math.max(0.05, S.mix.regular - 0.04); normMix(); story(`${x.name}さんを送り出した。指名の常連の一部が離れた。`); }
       logEv("quitTalk", { choice: k }); hide(); resume();
     });
   }));
@@ -4041,7 +4251,7 @@ function openStaff(){
       <div class="row"><button class="btn" id="eduBtn">教育する（${yen(O.education.cost)}）</button><button class="btn primary" id="okBtn">閉じる</button></div>`);
     card.querySelectorAll("[data-raise]").forEach((b) => b.onclick = () => { const x = S.staffList[+b.dataset.raise]; x.wage = Math.round(x.wage * (1 + SS.raiseRate) * 10) / 10; x.morale = clamp(x.morale + 20, 0, 100); render(); });
     card.querySelectorAll("[data-mgr]").forEach((b) => b.onclick = () => { S.staffList.forEach((y) => { if (y.manager){ y.manager = false; } }); const x = S.staffList[+b.dataset.mgr]; x.manager = true; x.wage = Math.round(x.wage * SS.managerWageMult * 10) / 10; x.morale = 90; story(`${x.name}さんを店長にした。`); logEv("manager", {}); render(); });
-    card.querySelectorAll("[data-hire]").forEach((b) => b.onclick = () => { const c = cands[+b.dataset.hire]; S.staffList.push(c); S.cash -= SS.hireCost; cands = cands.map((x) => x === c ? makeStaff(["exp", "rookie", "lean"][Math.floor(rand() * 3)], S.loc) : x); logEv("hire", {}); render(); });
+    card.querySelectorAll("[data-hire]").forEach((b) => b.onclick = () => { const c = cands[+b.dataset.hire]; S.staffList.push(c); S.cash -= SS.hireCost; taxAdj(-SS.hireCost); cands = cands.map((x) => x === c ? makeStaff(["exp", "rookie", "lean"][Math.floor(rand() * 3)], S.loc) : x); logEv("hire", {}); render(); });
     $("autoHire").onchange = (e) => { S.autoHire = e.target.checked; };
     $("eduBtn").onclick = () => { act("edu"); render(); };
     $("okBtn").onclick = () => { hide(); S.paused = was; syncHUD(); };
@@ -4070,7 +4280,7 @@ function expansionTick(wasOpen){
   if (br && br.wait > 0){ br.wait--; if (br.wait === 0){ br.openedAt = S.month; note(`2号店（${br.loc.name}）が開業した。`, "good"); story(`2号店（${br.loc.name}・${br.tables}卓）が開業した。`); logEv("branch_open", {}); } }
   if (!wasOpen) return;
   if (S.fc.recruiting && !fcWhyNot() && S.fc.count < EXF.max && hr("fc") < EXF.joinBase * S.ind.fame / 50){
-    S.fc.count++; S.cash += EXF.fee; note(`FC加盟店が1店増えた（加盟金 +${yen(EXF.fee)}）`, "good"); story(`FC加盟店が${S.fc.count}店になった。`); logEv("fc_join", { n: S.fc.count });
+    S.fc.count++; S.cash += EXF.fee; taxAdj(EXF.fee); note(`FC加盟店が1店増えた（加盟金 +${yen(EXF.fee)}）`, "good"); story(`FC加盟店が${S.fc.count}店になった。`); logEv("fc_join", { n: S.fc.count });
   }
   if (S.fc.count && hr("fc", 1) < EXF.scandalP * S.fc.count * (S.ind.trust < 50 ? 2 : 1)){
     const t = EXF.scandalTexts[Math.floor(hr("fc", 2) * EXF.scandalTexts.length)];
@@ -4148,7 +4358,7 @@ const RANK_KEY = "poker-shop-v07-rank";
 function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
 function saveRank(kind, amount){
   const r = loadRank();
-  if (kind !== "arrest"){
+  if (kind !== "bankrupt"){
     const base = { loc: S.loc.name, tables: S.tables, tier: S.style.tier, date: new Date().toISOString().slice(0, 10) };
     r.final.push({ ...base, amount: Math.round(amount), mine: true });
     if (isFinite(S.peakMonth)) r.peak.push({ ...base, amount: Math.round(S.peakMonth), mine: true });
@@ -4517,7 +4727,7 @@ function act(a){
     S.tables--; const back = L.tablePrice * L.tableResidual; S.cash += back; S.tablesValue -= L.tablePrice;
     note(`減卓（${yen(back)}で売却。面積と家賃はそのまま）`); logEv("tables", { n: S.tables }); layoutRoom();
   }
-  if (a === "edu"){ const e = O.education, k = S.hiring.eduMult; S.cash -= e.cost; for (let z = 0; z < 2 && S.staffList.length; z++){ const x = S.staffList[Math.floor(rand() * S.staffList.length)], kk = ["skill", "teach", "host"][Math.floor(rand() * 3)]; if (x[kk] < 5) x[kk]++; x.morale = clamp(x.morale + 5, 0, 100); } S.ind.slack = clamp(S.ind.slack + e.slack * k, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort * k, 0, 100); S.eduCount = (S.eduCount || 0) + 1; note(`スタッフ教育（${yen(-e.cost)}）余力 +${Math.round(e.slack * k)}・居心地 +${Math.round(e.comfort * k)}`); logEv("edu", {}); }
+  if (a === "edu"){ const e = O.education, k = S.hiring.eduMult; S.cash -= e.cost; taxAdj(-e.cost); for (let z = 0; z < 2 && S.staffList.length; z++){ const x = S.staffList[Math.floor(rand() * S.staffList.length)], kk = ["skill", "teach", "host"][Math.floor(rand() * 3)]; if (x[kk] < 5) x[kk]++; x.morale = clamp(x.morale + 5, 0, 100); } S.ind.slack = clamp(S.ind.slack + e.slack * k, 0, 100); S.ind.comfort = clamp(S.ind.comfort + e.comfort * k, 0, 100); S.eduCount = (S.eduCount || 0) + 1; note(`スタッフ教育（${yen(-e.cost)}）余力 +${Math.round(e.slack * k)}・居心地 +${Math.round(e.comfort * k)}`); logEv("edu", {}); }
   if (a === "settings") openSettings();
   if (a === "finance") openFinance();
   if (a === "stores") openStores();
@@ -4552,7 +4762,7 @@ function openSettings(onDone){
   wireGroups(cfg, refresh);
   card.querySelectorAll(".stylelist .opt").forEach((b) => b.onclick = () => { cfg.style = b.dataset.v; card.querySelectorAll(".stylelist .opt").forEach((o) => o.setAttribute("aria-pressed", o === b)); refresh(); });
   wireFac(cfg.fac, refresh);
-  if ($("applyBtn")) $("applyBtn").onclick = () => { S.cash -= D.license.fee; S.licenseWait = D.license.waitMonths; note("許可を申請した。"); story("許可を申請した。"); $("applyBtn").replaceWith(document.createTextNode(`許可申請中（あと${S.licenseWait}か月）。`)); };
+  if ($("applyBtn")) $("applyBtn").onclick = () => { S.cash -= D.license.fee; taxAdj(-D.license.fee); S.licenseWait = D.license.waitMonths; note("許可を申請した。"); story("許可を申請した。"); $("applyBtn").replaceWith(document.createTextNode(`許可申請中（あと${S.licenseWait}か月）。`)); };
   $("cancelBtn").onclick = done;
   $("okBtn").onclick = () => {
     const ch = [];

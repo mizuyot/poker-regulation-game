@@ -47,8 +47,8 @@ def clean_text(value, limit):
 
 def validate_score(raw):
     kind = raw.get("kind")
-    if kind not in ("complete", "bankrupt"):
-        raise ValueError("invalid_kind")  # 摘発エンドは失格なので登録しない
+    if kind not in ("complete", "bankrupt", "arrest"):
+        raise ValueError("invalid_kind")
     seed = raw.get("seed")
     if not isinstance(seed, str) or not SEED_RE.match(seed):
         raise ValueError("invalid_seed")
@@ -88,7 +88,7 @@ def read_scores():
 
 def ranking(seed, limit=10):
     scores = read_scores()
-    done = [x for x in scores if x.get("kind") == "complete"]
+    done = [x for x in scores if x.get("kind") in ("complete", "arrest")]
     final = sorted(done, key=lambda x: -x.get("amount", 0))[:limit]
     peak = sorted(scores, key=lambda x: -x.get("peak", 0))[:limit]
     same = sorted([x for x in done if x.get("seed") == seed], key=lambda x: -x.get("amount", 0))[:limit]

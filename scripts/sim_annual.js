@@ -38,7 +38,7 @@ const strategies = process.env.ONLY ? ALL.filter((x) => new RegExp(process.env.O
         __shop.start({ ...base, style: st.style, seed });
       }, [j.st, j.seed, base]);
       await p.waitForFunction(() => __shop.state().over && (__shop.state().over !== 'complete' || __shop.state().sale != null), null, { timeout: 180000 });
-      const r = await p.evaluate(() => { const S = __shop.state(); return { over: S.over, month: S.month, final: S.over === 'complete' ? S.cash + S.sale - S.debt : 0, snap: window.__snap }; });
+      const r = await p.evaluate(() => { const S = __shop.state(); return { over: S.over, month: S.month, final: S.over === 'complete' ? S.cash + S.sale - S.debt : S.over === 'arrest' ? Math.max(0, S.cash - S.debt) : 0 /* v1.4：摘発でも稼いだ手元資金は残る */, snap: window.__snap }; });
       (res[j.st.name] ||= []).push(r);
     }
   }
@@ -53,7 +53,7 @@ const strategies = process.env.ONLY ? ALL.filter((x) => new RegExp(process.env.O
       row[`alive@${y}y`] = r.filter((x) => x.snap[y]).length;
       row[`cash@${y}y`] = Math.round(mean(r.map((x) => x.snap[y] ? x.snap[y].cash : 0)));
       // y年目の終わりに売った場合（その時点で摘発・倒産済みなら0。調査で摘発される確率は期待値に入れる）
-      const v = r.map((x) => { const s = x.snap[y]; return s ? Math.max(0, s.amount) * (1 - s.arrestP) : 0; });
+      const v = r.map((x) => { const s = x.snap[y]; return s ? Math.max(0, s.amount) * (1 - s.arrestP) + s.arrestP * Math.max(0, s.cash - s.debt) : (x.over === 'arrest' ? x.final : 0); });
       row[`sell@${y}y_mean`] = Math.round(mean(v));
       row[`sell@${y}y_med`] = Math.round(med(v));
       const live = r.map((x) => x.snap[y]).filter(Boolean);

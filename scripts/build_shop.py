@@ -29,7 +29,7 @@ def embed(html: str, element_id: str, data: dict) -> str:
 
 def cited_ids(shop: dict) -> list[str]:
     ids: list[str] = []
-    groups = [shop["illegal"], shop["styles"]["list"], [shop["license"]], [{"provisionIds": shop["operations"].get("legalCloseProvisionIds", [])}]]
+    groups = [shop["illegal"], shop["styles"]["list"], [shop["license"]], [{"provisionIds": shop["operations"].get("legalCloseProvisionIds", [])}], [shop.get("tax", {})]]
     for group in groups:
         for item in group:
             for pid in item.get("provisionIds", []):
@@ -89,6 +89,10 @@ def main() -> None:
             write({"id": "shop_comps", "kind": "comparable_deals", **shop["comps"], "note_fictional": "架空の取引事例。実在の取引ではない。"})
         if "liquidation" in shop:
             write({"id": "shop_liquidation", "kind": "liquidation", **shop["liquidation"], "note_fictional": fictional})
+        if "tax" in shop:
+            write({"id": "shop_tax", "kind": "tax", **shop["tax"], "provisions": prov_refs(shop["tax"]["provisionIds"])})
+        if "market" in shop:
+            write({"id": "shop_market", "kind": "market", **shop["market"]})
         write({"id": "shop_staff_system", "kind": "staff_system", **shop.get("staffSystem", {}), "note_fictional": fictional})
         for ev in shop["events"]:
             write({"id": f"shop_event_{ev['id']}", "kind": "event", **ev, "note_fictional": "実在の事件の構造だけを取り出した架空の事件。"})

@@ -1,11 +1,13 @@
 // 戦略別の、各年の手取り・累計の手取り・売却まで入れたトータルリターン（scripts/sim_annual.js と同じ自動プレイ）
 // 使い方: node scripts/sim_returns.js [各戦略の回数=40]
-// 定義（単位は万円、数値はすべてゲームの架空値）
+// 定義（単位は万円、数値はすべてゲームの架空値。税金（法人税など）は引いた後）
 //   開業時の手元資金 = 5,000万円 − 初期投資 − 許可の申請費
-//   年間の手取り     = その年末の手元資金 − 前の年末の手元資金（開業時から）。借入は使わない戦略なので手元資金の増減＝手取り
-//   累計の手取り     = その年末の手元資金 − 開業時の手元資金
-//   トータルリターン = その年末に売った場合の 手元資金＋売却額−借入 − 元手5,000万円（買収前調査での摘発の確率を期待値に入れる）
-//   5年目は実際の結果（5年目の売却）。摘発・倒産した回は、その年以降を「手取り0（元手は全損）」として数える
+//   各年末の手元資金 = 生きていればその年末の値。摘発された回はその時点の手元資金のまま（稼いだお金は残る）。倒産した回は0
+//   年間の手取り     = その年末の手元資金 − 前の年末（開業時から）。全回の平均
+//   累計の手取り     = その年末の手元資金 − 開業時の手元資金。全回の平均
+//   トータルリターン = その年末に売った場合の 手元資金＋売却額−借入 − 元手5,000万円。
+//                      調査で摘発される確率 p は期待値に入れる（摘発されたら売却額なしで手元資金だけ残る）。
+//                      それより前に摘発されていれば、摘発時の手元資金−借入。5年目は実際の結果
 const { chromium } = require('playwright');
 const path = require('path');
 const URL = 'file://' + path.resolve(__dirname, '../docs/shop/index.html') + '?test=1';
@@ -33,7 +35,7 @@ const strategies = [
         window.__cash0 = __shop.state().cash;
       }, [j.st, j.seed]);
       await p.waitForFunction(() => __shop.state().over && (__shop.state().over !== 'complete' || __shop.state().sale != null), null, { timeout: 180000 });
-      const r = await p.evaluate(() => { const S = __shop.state(); return { over: S.over, month: S.month, cash0: window.__cash0, cash5: S.cash, sale5: S.sale || 0, debt5: S.debt, snap: window.__snap }; });
+      const r = await p.evaluate(() => { const S = __shop.state(); return { over: S.over, month: S.month, cash0: window.__cash0, cashEnd: S.cash, debtEnd: S.debt, sale5: S.sale || 0, tax: S.taxPaid || 0, snap: window.__snap }; });
       (res[j.st.name] ||= []).push(r);
     }
   }
@@ -42,16 +44,20 @@ const strategies = [
   const out = {};
   for (const st of strategies){
     const runs = res[st.name], rows = [];
+    // y年目末の状態：{ cash, amount }。amount＝その年末に売った場合の期待手取り
+    const at = (r, y) => {
+      if (y === 0) return { cash: r.cash0, amount: r.cash0 };
+      const endY = Math.ceil(r.month / 12);
+      if (r.over === 'complete' && y === 5) return { cash: r.cashEnd, amount: r.cashEnd + r.sale5 - r.debtEnd, alive: true };
+      if (y < 5 && r.snap[y]) { const s = r.snap[y], kept = Math.max(0, s.cash - s.debt); return { cash: s.cash, amount: (1 - s.arrestP) * Math.max(0, s.amount) + s.arrestP * kept, alive: true }; }
+      if (r.over === 'arrest') return { cash: r.cashEnd, amount: Math.max(0, r.cashEnd - r.debtEnd) };
+      return { cash: 0, amount: 0 }; // 倒産
+    };
     for (let y = 1; y <= 5; y++){
-      // y年目末の手元資金（生きている回だけ）と、売った場合の手取り
-      const at = (r, yy) => yy === 0 ? { cash: r.cash0 } : yy < 5 ? (r.snap[yy] ? { cash: r.snap[yy].cash, amount: Math.max(0, r.snap[yy].amount) * (1 - r.snap[yy].arrestP) } : null) : (r.over === 'complete' ? { cash: r.cash5, amount: r.cash5 + r.sale5 - r.debt5 } : null);
-      const alive = runs.filter((r) => at(r, y));
-      const annual = alive.map((r) => at(r, y).cash - at(r, y - 1).cash);
-      const cum = alive.map((r) => at(r, y).cash - r.cash0);
-      const total = runs.map((r) => (at(r, y) ? at(r, y).amount : 0) - FUND);
-      rows.push({ year: y, alive: alive.length, annual: Math.round(mean(annual)), cumulative: Math.round(mean(cum)), totalReturn: Math.round(mean(total)), roi: Math.round(mean(total) / FUND * 100) });
+      const alive = runs.filter((r) => at(r, y).alive).length;
+      rows.push({ year: y, alive, annual: Math.round(mean(runs.map((r) => at(r, y).cash - at(r, y - 1).cash))), cumulative: Math.round(mean(runs.map((r) => at(r, y).cash - r.cash0))), totalReturn: Math.round(mean(runs.map((r) => at(r, y).amount - FUND))), roi: Math.round(mean(runs.map((r) => at(r, y).amount - FUND)) / FUND * 100) });
     }
-    out[st.name] = { n: runs.length, cash0: Math.round(mean(runs.map((r) => r.cash0))), rows };
+    out[st.name] = { n: runs.length, cash0: Math.round(mean(runs.map((r) => r.cash0))), arrested: runs.filter((r) => r.over === 'arrest').length, bankrupt: runs.filter((r) => r.over === 'bankrupt').length, tax: Math.round(mean(runs.map((r) => r.tax))), rows };
   }
   console.log(JSON.stringify(out, null, 1));
   await b.close();
