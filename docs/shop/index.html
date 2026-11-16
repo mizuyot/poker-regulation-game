@@ -4195,6 +4195,7 @@ function openBuild(){
   show(`${stepsBar(2)}<h1>どんな店にする？</h1><div class="kicker">${esc(loc.name)} ・ ${tierHTML(byId(STYLES, CFG.style))} ${esc(byId(STYLES, CFG.style).name)}</div>
     <h2>卓数（1卓＝9席）</h2>
     <div class="stepper"><button data-s="-1" aria-label="減らす">−</button><output id="tblOut">${CFG.tables}</output><button data-s="1" aria-label="増やす">＋</button><span class="muted" id="areaNote" style="font-size:12px"></span></div>
+    <canvas id="preview" style="width:100%;height:clamp(200px,48vw,320px);display:block;border:1.5px solid var(--soft);border-radius:12px;margin-top:8px"></canvas>
     <h2>営業時間</h2>${gaugeHTML()}<div id="hoursNote"></div>
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML(O.legalCloseProvisionIds)}</details>
     <h2>料金</h2>
@@ -4208,11 +4209,10 @@ function openBuild(){
     <label class="chk"><input type="radio" name="lic" value="0" ${CFG.unlicensed ? "" : "checked"}> <span>許可を待って開く（申請費 ${yen(D.license.fee)}・${D.license.waitMonths}か月待ち。その間も家賃はかかる）</span></label>
     <label class="chk"><input type="radio" name="lic" value="1" ${CFG.unlicensed ? "checked" : ""}> <span class="warn">許可を待たずにすぐ開く（黒：無許可）</span></label>
     <h2>初期投資と見込み</h2><div id="calc"></div>
-    <h2>店舗イメージ</h2><canvas id="preview" style="width:100%;height:320px;display:block;border:1.5px solid var(--soft);border-radius:12px"></canvas>
     <div class="row"><button class="btn" id="backBtn">戻る</button><button class="btn primary" id="goBtn">この店で開業する</button></div>`);
   const refresh = () => {
     const b = build(loc, CFG.tables);
-    $("tblOut").textContent = CFG.tables; $("areaNote").textContent = `面積 ${b.area}坪 ・ 家賃 ${yen(b.rent)}/月 ・ ${CFG.tables * 9}席`;
+    $("tblOut").textContent = CFG.tables; $("areaNote").textContent = `面積 ${b.area}坪 ・ 家賃 ${yen(b.rent)}/月 ・ ${CFG.tables * 9}席 ・ 内装「${D.layoutLux[layoutFor(CFG.tables).lux]}」`;
     $("hoursNote").innerHTML = hoursNote(CFG);
     $("priceNote").innerHTML = priceNote(loc, CFG.style, CFG.price);
     $("calc").innerHTML = buildCalc(loc);
@@ -4706,7 +4706,7 @@ function drawPreview(canvas, n, seed0, caption = true, fill = 0.62){
   lay.tables.forEach((t) => { stf.push({ ...dealerPos(t), sit: true }); for (let k = 0; k < 9; k++) if (rnd() < fill){ const s = seatPos(t, k); ppl.push({ ...s, sit: true, kind: rnd() < 0.25 ? "newbie" : "guest" }); } });
   stf.push({ x: lay.bar.x0 + 1, y: 1.4 });
   drawShopG(g, v, { lay, lit: true, people: ppl, staff: stf, elev: 0.6 });
-  if (caption){ g.fillStyle = C.muted; g.font = `500 12px ${C.font}`; g.fillText(`店舗イメージ ・ ${n}卓（${n * 9}席）・ エレベーターで入店`, 8, 18); }
+  if (caption){ g.fillStyle = C.muted; g.font = `500 12px ${C.font}`; g.fillText(`${n}卓（${n * 9}席）・ 内装「${D.layoutLux[layoutFor(n).lux]}」`, 8, 18); }
 }
 
 /* ---------- ループ ---------- */
