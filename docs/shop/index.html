@@ -4571,9 +4571,10 @@ const m2 = (tsubo) => (tsubo * 3.30578).toFixed(1);
 function seatPos(t, k){ const a = -Math.PI / 2 + 0.5 + k / 8 * (2 * Math.PI - 1.0); return { x: t[0] + Math.cos(a) * 1.55, y: t[1] + Math.sin(a) * 1.0 }; }
 const dealerPos = (t) => ({ x: t[0], y: t[1] - 1.0 });
 /* 画面にあわせた投影 */
+/* 縮尺はどの卓数でも同じ（いちばん広い12卓の店が収まる縮尺）。卓と人の大きさは実寸どおりそろい、狭い店は小さく見える */
 function makeView(lay, w, h, top, bottom){
-  const wallH = 1.25, span = lay.w + lay.d;
-  const tw = clamp(Math.min(w * 0.92 / (span / 2), (h - top - bottom) / (span / 4 + wallH * 0.55)), 18, 120);
+  const wallH = 1.25, ref = D.layouts[String(L.maxTables)], fit = (x) => (x.w + x.d);
+  const tw = clamp(Math.min(w * 0.92 / (fit(ref) / 2), (h - top - bottom) / (fit(ref) / 4 + wallH * 0.55)), 10, 120), span = lay.w + lay.d;
   const ox = w / 2 - (lay.w - lay.d) * tw / 4;
   const mid = top + (h - top - bottom) / 2, oy = mid - ((span) * tw / 4 - wallH * tw * 0.5) / 2 + tw * 0.15;
   return { tw, ox, oy, wh: wallH * tw * 0.5 };
@@ -4811,7 +4812,7 @@ function draw(dt){
   if (S){
     const seats = S.tables * 9, seated = people.filter((p) => p.sit).length;
     const label = !isOpen() ? `許可待ち あと${S.licenseWait}か月` : !lit ? `営業時間外（${hhLong(S.open)}から）` : `${S.tables}卓 ・ ${seated}/${seats}席 ・ 満席率 ${Math.round((S.last.occ || 0) * 100)}%`;
-    const p = iso(lay.w / 2, 0, VIEW.wh * 2 + 24); cx.font = `700 14px ${C.font}`; const tw = cx.measureText(label).width + 26;
+    const p = PHONE.matches ? [W / 2, 20] : iso(lay.w / 2, 0, VIEW.wh * 2 + 24); cx.font = `700 14px ${C.font}`; const tw = cx.measureText(label).width + 26;
     cx.fillStyle = C.bg; cx.strokeStyle = C.ink; cx.lineWidth = 2; cx.beginPath(); cx.roundRect(p[0] - tw / 2, p[1] - 15, tw, 30, 9); cx.fill(); cx.stroke();
     cx.fillStyle = C.ink; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(label, p[0], p[1] + 1); cx.textAlign = "start"; cx.textBaseline = "alphabetic";
     const rk = risks();
