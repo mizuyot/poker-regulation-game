@@ -7,16 +7,19 @@ const path = require('path');
 const URL = 'file://' + path.resolve(__dirname, '../docs/shop/index.html') + '?test=1';
 const N = +process.argv[2] || 24;
 const base = { loc: 'metro', tables: 5 };
-const strategies = [
+const ALL = [
   { name: 'healthy', style: 'deposit' },
   { name: 'black', style: 'cashout' },
   { name: 'token', style: 'token' },
+  { name: 'prize', style: 'prize' },
+  { name: 'food', style: 'food' },
   { name: 'black→healthy@1y', style: 'cashout', switchAt: 12 },
   { name: 'black→healthy@2y', style: 'cashout', switchAt: 24 },
   { name: 'token→healthy@1y', style: 'token', switchAt: 12 },
   { name: 'token→healthy@2y', style: 'token', switchAt: 24 },
   { name: 'token→healthy@3y', style: 'token', switchAt: 36 },
 ];
+const strategies = process.env.ONLY ? ALL.filter((x) => new RegExp(process.env.ONLY).test(x.name)) : ALL;
 (async () => {
   const b = await chromium.launch();
   const jobs = []; for (const st of strategies) for (let i = 0; i < N; i++) jobs.push({ st, seed: 'Y' + String(i).padStart(4, '0') });
@@ -47,6 +50,8 @@ const strategies = [
     const r = res[st.name];
     const row = { final_mean: Math.round(mean(r.map((x) => x.final))), final_med: Math.round(med(r.map((x) => x.final))), arrested: r.filter((x) => x.over === 'arrest').length, bankrupt: r.filter((x) => x.over === 'bankrupt').length, n: r.length };
     if (!st.switchAt) for (let y = 1; y <= 4; y++){
+      row[`alive@${y}y`] = r.filter((x) => x.snap[y]).length;
+      row[`cash@${y}y`] = Math.round(mean(r.map((x) => x.snap[y] ? x.snap[y].cash : 0)));
       // y年目の終わりに売った場合（その時点で摘発・倒産済みなら0。調査で摘発される確率は期待値に入れる）
       const v = r.map((x) => { const s = x.snap[y]; return s ? Math.max(0, s.amount) * (1 - s.arrestP) : 0; });
       row[`sell@${y}y_mean`] = Math.round(mean(v));

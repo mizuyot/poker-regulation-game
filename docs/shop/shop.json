@@ -242,7 +242,7 @@
     }
   ],
   "risk": {
-    "orderJump": 4,
+    "orderJump": 2,
     "orderStopMonths": 2,
     "orderRumorMonths": 6,
     "orderRumor": 0.25,
@@ -259,13 +259,15 @@
       "tail": "ゲーム上の残存リスク"
     },
     "note": "是正指摘・摘発エンド・確率はゲーム上の不利益イベントで、現実の法的手続きの順序や確率ではない。",
-    "ddArrestIfLate": 0.5,
-    "ddArrestText": "買収前調査の期間中に違法営業が見つかり、買い手が手を引いただけでは済まなかった（ゲーム上の処理）。",
-    "orderJumpGray": 1.5,
+    "ddArrestIfLate": 0.9,
+    "ddArrestText": "買収前調査で過去の換金営業が見つかり、買い手が手を引いただけでは済まなかった（ゲーム上の処理）。",
+    "orderJumpGray": 1.3,
     "heatWarn": 0.03,
     "raidNote": "立ち入りの人数（摘発＝機動隊20人、是正指摘＝5人と命令書）は演出。実際の捜査・行政手続の人数や手順を表すものではない。",
     "ddAlways": true,
-    "ddNote": "買収前調査は必ず行い、5年間で一度でも黒・グレーの営業をしていれば必ず見つかる（ユーザー指定）。黒はハコの価値だけ、グレーは styles[].dd.cut まで減額。調査期間中（ddStart以降）に黒の営業をしていた場合は ddArrestIfLate の確率で摘発エンド。"
+    "ddNote": "買収前調査は必ず行い、5年間で一度でも黒・グレーの営業をしていれば必ず見つかる（ユーザー指定）。黒はハコの価値だけ、グレーは styles[].dd.cut まで減額。調査期間中（ddStart以降）に黒の営業をしていた場合は ddArrestIfLate の確率で摘発エンド。",
+    "curveNote": "v1.2：摘発＝基礎＋growth×u＋growth2×u²、是正指摘＝基礎＋orderGrowth×u（uはそのスタイルを続けた月数）。黒は1年目は低く2年目から急に上がる。グレーは是正指摘が年々増える。架空値。",
+    "ddArrestIfPast": 0.8
   },
   "valuation": {
     "discountBase": 0.25,
@@ -848,16 +850,18 @@
           "demand": 1.0,
           "spend": 5.0
         },
-        "arrest": 0.02,
-        "arrestGrowth": 0.002,
-        "order": 0.15,
+        "arrest": 0.003,
+        "arrestGrowth": 0,
+        "order": 0.01,
         "dd": {
           "result": "shell"
         },
         "provisionIds": [
           "keiho185",
           "keiho186"
-        ]
+        ],
+        "arrestGrowth2": 0.00012,
+        "orderGrowth": 0.001
       },
       {
         "id": "token",
@@ -869,16 +873,17 @@
           "demand": 1.0,
           "spend": 2.0
         },
-        "arrest": 0.009,
-        "arrestGrowth": 0,
-        "order": 0.06,
+        "arrest": 0.003,
+        "arrestGrowth": 0.0,
+        "order": 0.04,
         "dd": {
           "result": "cut",
           "cut": 0.3
         },
         "provisionIds": [
           "fueiho23-2"
-        ]
+        ],
+        "orderGrowth": 0.018
       },
       {
         "id": "prize",
@@ -892,14 +897,15 @@
         },
         "arrest": 0.001,
         "arrestGrowth": 0,
-        "order": 0.035,
+        "order": 0.02,
         "dd": {
           "result": "cut",
           "cut": 0.5
         },
         "provisionIds": [
           "fueiho23-2"
-        ]
+        ],
+        "orderGrowth": 0.0008
       },
       {
         "id": "food",
@@ -913,14 +919,15 @@
         },
         "arrest": 0.0005,
         "arrestGrowth": 0,
-        "order": 0.02,
+        "order": 0.012,
         "dd": {
           "result": "cut",
           "cut": 0.7
         },
         "provisionIds": [
           "fueiho23-2"
-        ]
+        ],
+        "orderGrowth": 0.0005
       },
       {
         "id": "deposit",
