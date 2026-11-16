@@ -32,14 +32,16 @@
       "demand": 64,
       "fitoutPerTsubo": 35,
       "occCap": 0.9,
-      "demandSd": 0.35,
+      "demandSd": 0.5,
       "competition": {
-        "p": 0.05,
+        "p": 0.07,
         "hit": 0.12
       },
       "troubleP": 0.1,
       "staffPerTable": 50,
-      "note": "当たれば一番大きい。家賃が高く、競合の出店も多い。"
+      "note": "当たれば一番大きい。家賃が高く、競合の出店も多い。",
+      "sizeAlpha": 0.5,
+      "bigRampBeta": 0.42
     },
     {
       "id": "metro",
@@ -56,7 +58,9 @@
       },
       "troubleP": 0.09,
       "staffPerTable": 45,
-      "note": "大阪・名古屋・福岡のような都心。東京ほどではないが競合は激しい。"
+      "note": "大阪・名古屋・福岡のような都心。東京ほどではないが競合は激しい。",
+      "sizeAlpha": 0.6,
+      "bigRampBeta": 0.4
     },
     {
       "id": "regional",
@@ -73,7 +77,9 @@
       },
       "troubleP": 0.07,
       "staffPerTable": 36,
-      "note": "読みやすく、そこそこ稼げる。（坪単価は案）"
+      "note": "読みやすく、そこそこ稼げる。（坪単価は案）",
+      "sizeAlpha": 0.6,
+      "bigRampBeta": 0.5
     },
     {
       "id": "suburb",
@@ -90,7 +96,9 @@
       },
       "troubleP": 0.05,
       "staffPerTable": 32,
-      "note": "小さく確実。大きくは伸びない。（坪単価は案）"
+      "note": "小さく確実。大きくは伸びない。（坪単価は案）",
+      "sizeAlpha": 0.8,
+      "bigRampBeta": 0.5
     }
   ],
   "operations": {
@@ -2744,8 +2752,9 @@
     "note": "5年目（48か月目以降）は業界の淘汰が進む：客数が毎月+2.5%ずつ戻り（最大+30%）、近くの競合が毎月25%で撤退し、新しい出店は減る（v1.4、ユーザー指定）。架空値。",
     "sizeAlpha": 0,
     "sizeFrom": 5,
-    "bigRampBeta": 0,
-    "bigFrom": 5
+    "bigRampBeta": 0.5,
+    "bigFrom": 5,
+    "bigNote": "大型店（6卓以上）：客は遠くからも来る（需要×(卓数÷5)^sizeAlpha）が、客が埋まるまで時間がかかる（立ち上がりの出発点÷(卓数÷5)^bigRampBeta、期間×同じ倍率）。どちらも立地ごと（locations[].sizeAlpha・bigRampBeta）。都会ほど難しく、東京都心は11卓で約5〜8%、12卓は0%しか5年残らないように合わせた（v1.5.1）。架空値。"
   },
   "tax": {
     "corpSmallRate": 0.15,

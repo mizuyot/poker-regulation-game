@@ -336,14 +336,16 @@ summary{cursor:pointer;color:var(--muted)}
       "demand": 64,
       "fitoutPerTsubo": 35,
       "occCap": 0.9,
-      "demandSd": 0.35,
+      "demandSd": 0.5,
       "competition": {
-        "p": 0.05,
+        "p": 0.07,
         "hit": 0.12
       },
       "troubleP": 0.1,
       "staffPerTable": 50,
-      "note": "当たれば一番大きい。家賃が高く、競合の出店も多い。"
+      "note": "当たれば一番大きい。家賃が高く、競合の出店も多い。",
+      "sizeAlpha": 0.5,
+      "bigRampBeta": 0.42
     },
     {
       "id": "metro",
@@ -360,7 +362,9 @@ summary{cursor:pointer;color:var(--muted)}
       },
       "troubleP": 0.09,
       "staffPerTable": 45,
-      "note": "大阪・名古屋・福岡のような都心。東京ほどではないが競合は激しい。"
+      "note": "大阪・名古屋・福岡のような都心。東京ほどではないが競合は激しい。",
+      "sizeAlpha": 0.6,
+      "bigRampBeta": 0.4
     },
     {
       "id": "regional",
@@ -377,7 +381,9 @@ summary{cursor:pointer;color:var(--muted)}
       },
       "troubleP": 0.07,
       "staffPerTable": 36,
-      "note": "読みやすく、そこそこ稼げる。（坪単価は案）"
+      "note": "読みやすく、そこそこ稼げる。（坪単価は案）",
+      "sizeAlpha": 0.6,
+      "bigRampBeta": 0.5
     },
     {
       "id": "suburb",
@@ -394,7 +400,9 @@ summary{cursor:pointer;color:var(--muted)}
       },
       "troubleP": 0.05,
       "staffPerTable": 32,
-      "note": "小さく確実。大きくは伸びない。（坪単価は案）"
+      "note": "小さく確実。大きくは伸びない。（坪単価は案）",
+      "sizeAlpha": 0.8,
+      "bigRampBeta": 0.5
     }
   ],
   "operations": {
@@ -3048,8 +3056,9 @@ summary{cursor:pointer;color:var(--muted)}
     "note": "5年目（48か月目以降）は業界の淘汰が進む：客数が毎月+2.5%ずつ戻り（最大+30%）、近くの競合が毎月25%で撤退し、新しい出店は減る（v1.4、ユーザー指定）。架空値。",
     "sizeAlpha": 0,
     "sizeFrom": 5,
-    "bigRampBeta": 0,
-    "bigFrom": 5
+    "bigRampBeta": 0.5,
+    "bigFrom": 5,
+    "bigNote": "大型店（6卓以上）：客は遠くからも来る（需要×(卓数÷5)^sizeAlpha）が、客が埋まるまで時間がかかる（立ち上がりの出発点÷(卓数÷5)^bigRampBeta、期間×同じ倍率）。どちらも立地ごと（locations[].sizeAlpha・bigRampBeta）。都会ほど難しく、東京都心は11卓で約5〜8%、12卓は0%しか5年残らないように合わせた（v1.5.1）。架空値。"
   },
   "tax": {
     "corpSmallRate": 0.15,
@@ -3386,7 +3395,7 @@ function demandMult(legalOnly){
   m *= Math.pow(S.price, -O.price.elasticity) * FX().demand * (1 - SEG.regularDemandBonus / 2 + SEG.regularDemandBonus * S.mix.regular); // 常連が厚いほど客が客を呼ぶ
   if (!legalOnly){ const st = styleNow(); m *= st.effect.demand; if (st.heatDecay){ const u = S.used[st.id] || 0; m *= Math.max(st.heatFloor, 1 - st.heatDecay * Math.max(0, u - st.heatStart)); } } // 黒：続けるほど警戒されて客が減る（v1.4）
   m *= shakeOf(S.month); // 5年目：業界の淘汰で客が戻ってくる（v1.4）
-  if (MK.sizeAlpha && S.tables > MK.sizeFrom) m *= Math.pow(S.tables / MK.sizeFrom, MK.sizeAlpha); // 大型店ほど遠くから客が来る（v1.5）
+  { const al = S.loc.sizeAlpha ?? MK.sizeAlpha; if (al && S.tables > MK.sizeFrom) m *= Math.pow(S.tables / MK.sizeFrom, al); } // 大型店ほど遠くから客が来る（立地ごと、v1.5）
   for (const t of S.tempDemand) m *= t.mult;
   return m;
 }
@@ -3402,7 +3411,7 @@ function storeCalc(st, legalOnly){
   const seats = Math.max(9, (st.tables * 9 - (st.main ? FX().seatsLoss : 0)) * fill), turns = turnsFor(S.open, S.close, S.policy, offpeakGrow()) * (ssx ? 1 + (ssx.skill - 3) * 0.04 : 1);
   const hoursF = bandWeight(S.open, S.close, offpeakGrow()) / BASE_W;
   // 大型店は客が埋まるまで時間がかかる（v1.5）：基準の卓数を超えるほど、立ち上がりの出発点が低く、期間が長い
-  const big = Math.max(1, st.tables / MK.bigFrom) ** (MK.bigRampBeta || 0);
+  const big = Math.max(1, st.tables / MK.bigFrom) ** ((st.loc.bigRampBeta ?? MK.bigRampBeta) || 0);
   const rampF = st.openedAt == null ? 0 : Math.min(1, O.rampStart / big + (1 - O.rampStart / big) * (S.month - st.openedAt) / (O.rampMonths * big));
   const demand = st.loc.demand * st.share * rampF * demandMult(legalOnly) * hoursF;
   const cap = seats * turns * st.loc.occCap;
