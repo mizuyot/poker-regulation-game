@@ -224,7 +224,9 @@ summary{cursor:pointer;color:var(--muted)}
   .dockwrap{left:0;right:0;bottom:0;transform:none;max-width:none;background:var(--bg);border-top:1.5px solid var(--soft);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
   .dockwrap .dock{border:0;padding:4px 2px 0;gap:0;justify-content:space-between;width:100%;overflow:visible}
   .dockwrap .act{min-width:0;flex:1}.dockwrap .act .c{font-size:10px}.dockwrap .act .ic{width:38px;height:38px;box-shadow:2px 3px 0 var(--shadow)}.dockwrap .act .k{display:none}
-  .toast{top:auto;bottom:118px}
+  /* 通知は店の絵の枠の中（状態の札の下）に出し、年月・収支の文字には重ねない */
+  .toast{position:relative;grid-area:cv;align-self:start;justify-self:center;top:auto;left:auto;transform:none;margin-top:40px;max-width:calc(100vw - 24px);gap:4px}
+  .toast div{font-size:12px;padding:2px 8px}
   .money{font-size:24px}.hud{top:10px;right:10px}.tl{top:10px;left:10px}
   .ind{grid-template-columns:repeat(4,auto auto);gap:2px 4px;font-size:11px;padding:4px 6px;cursor:pointer}.ind .bar{display:none}.ind .full{display:none}.ind .short{display:inline}.ind .v{color:var(--ink)}
   .act .ic{width:42px;height:42px;font-size:16px}.act{min-width:46px}.act .k{top:28px}.dock{gap:6px;padding:10px 8px 6px}
@@ -4138,7 +4140,7 @@ function autoClick(){ setTimeout(() => { const cs = card.querySelectorAll(".choi
 function note(text, kind){
   const d = document.createElement("div"); d.textContent = text; if (kind) d.className = kind; $("toast").prepend(d);
   setTimeout(() => d.remove(), 4500);
-  while ($("toast").children.length > 3) $("toast").lastChild.remove();
+  while ($("toast").children.length > (PHONE.matches ? 2 : 3)) $("toast").lastChild.remove();
 }
 function provHTML(ids){
   return (ids || []).map((id) => {
