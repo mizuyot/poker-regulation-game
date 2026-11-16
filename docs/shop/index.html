@@ -171,6 +171,14 @@ summary{cursor:pointer;color:var(--muted)}
 .slider{display:grid;grid-template-columns:4.5em 1fr 4.5em;gap:8px;align-items:center;font-size:13px;margin:6px 0}
 .slider input{width:100%;accent-color:var(--gray)}
 .slider.price{grid-template-columns:4.2em 1fr 4.2em;line-height:1.25;font-size:12px}
+.pcbox{border:1.5px solid var(--soft);border-radius:12px;padding:8px 10px 6px;margin:6px 0 4px}
+.pchart{width:100%;height:auto;display:block;overflow:visible}
+.pchart .pc-t{font-size:12px;fill:var(--ink);font-weight:700}.pchart .pc-a{font-size:10.5px;fill:var(--muted)}
+.pchart .pc-g{stroke:var(--soft);stroke-width:1}.pchart .pc-z{stroke:var(--muted);stroke-width:1}
+.pchart .pc-r{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}.pchart .pc-c{stroke:var(--ink);stroke-width:1}
+.pchart .pc-l{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round}.pchart .pc-d{fill:var(--ink);stroke:var(--panel);stroke-width:2}
+.pc-x{display:grid;grid-template-columns:1fr auto 1fr;font-size:11px;color:var(--muted);padding-left:54px}.pc-x span:last-child{text-align:right}
+.pc-read{font-size:12.5px;margin:4px 0 2px;font-family:var(--mono)}
 .pticks{display:grid;grid-template-columns:1fr auto 1fr;font-size:11px;color:var(--muted);margin:-2px 4.6em 4px}.pticks span:nth-child(2){color:var(--ink);font-weight:700}.pticks span:last-child{text-align:right}
 /* 営業時間ゲージ（1本・つまみ2つ） */
 .gauge{position:relative;height:46px;margin:26px 4px 26px;user-select:none;touch-action:none}
@@ -559,9 +567,12 @@ summary{cursor:pointer;color:var(--muted)}
     "heatWarn": 0.03,
     "raidNote": "立ち入りの人数（摘発＝機動隊20人、是正指摘＝5人と命令書）は演出。実際の捜査・行政手続の人数や手順を表すものではない。",
     "ddAlways": true,
-    "ddNote": "買収前調査は必ず行い、5年間で一度でも黒・グレーの営業をしていれば必ず見つかる（ユーザー指定）。黒はハコの価値だけ、グレーは styles[].dd.cut まで減額。調査期間中（ddStart以降）に黒の営業をしていた場合は ddArrestIfLate の確率で摘発エンド。",
+    "ddNote": "買収前調査は必ず行い、黒・グレーの営業歴は必ず見つかる。売却額はハコの価値だけ（案1、v1.3）。摘発の確率：黒＝調査期間中も続けていれば ddArrestIfLate、それより前にやめていれば ddArrestIfPast。グレー＝調査期間中も続けていれば ddGrayArrestIfLate。調査期間は5年目の終わりなら最後の6か月、途中で売るなら売る直前の ddWindowEarly か月。",
     "curveNote": "v1.2：摘発＝基礎＋growth×u＋growth2×u²、是正指摘＝基礎＋orderGrowth×u（uはそのスタイルを続けた月数）。黒は1年目は低く2年目から急に上がる。グレーは是正指摘が年々増える。架空値。",
-    "ddArrestIfPast": 0.8
+    "ddArrestIfPast": 0.8,
+    "ddWindowEarly": 6,
+    "ddGrayArrestIfLate": 0.3,
+    "ddGrayArrestText": "買収前調査で、調査期間中も続けていたグレーの営業が問題になり、摘発に至った（ゲーム上の処理）。"
   },
   "valuation": {
     "discountBase": 0.25,
@@ -1172,8 +1183,7 @@ summary{cursor:pointer;color:var(--muted)}
         "arrestGrowth": 0.0,
         "order": 0.04,
         "dd": {
-          "result": "cut",
-          "cut": 0.3
+          "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
@@ -1194,8 +1204,7 @@ summary{cursor:pointer;color:var(--muted)}
         "arrestGrowth": 0,
         "order": 0.02,
         "dd": {
-          "result": "cut",
-          "cut": 0.5
+          "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
@@ -1216,8 +1225,7 @@ summary{cursor:pointer;color:var(--muted)}
         "arrestGrowth": 0,
         "order": 0.012,
         "dd": {
-          "result": "cut",
-          "cut": 0.7
+          "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
@@ -3605,7 +3613,24 @@ function annual(){
     <h2>中間評価：いま売ったら ${yen(storeValue())}</h2>
     <details><summary>評価レポートを開く（DCF・類似取引・清算価値）</summary>${valuationReport(valuation(), { kicker: `${y}年目の中間評価` })}</details>
     <p style="font-size:13px">${fin.ok ? `借入できます（上限 ${yen(fin.limit)}）。ドックの「借入」から。` : `借入はまだできません：${esc(fin.why)}`}</p>
-    <div class="row stick"><button class="btn primary" id="okBtn">${y + 1}年目へ</button></div>`, () => { S.year = { rev: 0, op: 0 }; $("okBtn").onclick = resume; }));
+    <h2>どうする？</h2>
+    <div class="row stick"><button class="btn" id="sellBtn">いま売る</button><button class="btn" id="polBtn">方針を変える</button><button class="btn primary" id="okBtn">${y + 1}年目へ</button></div>`, () => {
+      S.year = { rev: 0, op: 0 };
+      $("okBtn").onclick = resume;
+      $("polBtn").onclick = () => openSettings(resume);
+      $("sellBtn").onclick = sellConfirm;
+    }));
+}
+/* 途中で売る：直前の R.ddWindowEarly か月を調査期間とみなす。黒・グレーの営業歴は必ず見つかる */
+function sellConfirm(){
+  const dd = ddCheck(S.month - R.ddWindowEarly), v = valuation(dd), ap = ddArrestP(dd), amount = S.cash + v.adopted - S.debt;
+  show(`<div class="kicker">${S.month / 12}年目の決算</div><h1>いま店を売る？</h1>
+    <p>買い手が買収前調査をして、評価額で買い取る。売ればゲームはここで終わり、手取り額がスコアになる。</p>
+    <table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額（評価額）</td><td>${yen(v.adopted)}</td></tr>${S.debt ? `<tr><td>借入の返済</td><td>${yen(-S.debt)}</td></tr>` : ""}<tr class="total"><td>手取り額</td><td>${yen(amount)}</td></tr></table>
+    ${dd.kind === "shell" ? `<p class="warn">${dd.gray ? `グレーの営業（${esc(dd.name)}）` : "黒の営業"}の歴は、調査で必ず見つかる。売却額はハコとしての価値だけ。${ap ? `<b>${Math.round(ap * 100)}%の確率で摘発され、失格になる。</b>` : ""}</p>` : `<p class="muted" style="font-size:12.5px">5年目まで続けた場合と比べたいときは、評価レポートの成長率と割引率を見る。続けるほど実績が増え、値段も変わる。</p>`}
+    <div class="row stick"><button class="btn" id="backBtn">売らずに続ける</button><button class="btn primary" id="doSell">売る</button></div>`);
+  $("backBtn").onclick = resume;
+  $("doSell").onclick = () => { hide(); logEv("sellEarly", { month: S.month }); story(`${S.month / 12}年目の決算で、店を売ることにした。`); proposal(true); };
 }
 function offer(){
   story("大手から買収の打診が来た。ここから6か月が買収前調査。");
@@ -3615,30 +3640,34 @@ function offer(){
     <p>買い手は帳簿・取引記録・従業員への聞き取りまで必ず調べる。5年間で一度でも黒の営業や違法営業をしていれば必ず見つかり、売却額は「ハコとしての価値」だけになる。グレーの営業をしていれば、必ず見つかって減額される。調査期間中に黒の営業を続けていると、刑事事件になることもある。</p>
     <div class="row stick"><button class="btn primary" id="okBtn">分かった</button></div>`, () => { $("okBtn").onclick = resume; }));
 }
-function ddCheck(){
-  // 黒（換金・深夜営業・無許可）と、グレーを別々に判定する
+function ddCheck(win = R.ddStart){
+  // 黒（換金・深夜営業・無許可）と、グレーを別々に判定する。win＝調査期間の始まり（その月以降の営業は「調査中も続けていた」）
   const black = S.riskMonths.filter((x) => x.tier === "black");
-  const bEarly = black.filter((x) => x.t < R.ddStart).length, bLate = black.filter((x) => x.t >= R.ddStart).length;
+  const bLate = black.filter((x) => x.t >= win).length;
   // 買収前調査は必ず調べる：一度でも黒・グレーの営業をしていれば、必ず見つかる（v1.1.1）
   if (black.length) return { kind: "shell", late: bLate, p: 1, months: black.length };
   let worst = null;
   for (const st of STYLES.filter((s) => s.tier === "gray")){
     const ms = S.riskMonths.filter((x) => x.id === st.id); if (!ms.length) continue;
-    if (!worst || st.dd.cut < worst.cut) worst = { kind: "cut", cut: st.dd.cut, name: st.name, p: 1, months: ms.length };
+    // 案1（v1.3）：グレーも見つかればハコの価値だけ。調査期間中も続けていれば、一定の確率で摘発
+    const late = ms.filter((x) => x.t >= win).length;
+    if (!worst || late > worst.late) worst = { kind: "shell", gray: true, name: st.name, late, p: 1, months: ms.length };
   }
   return worst || { kind: "none" };
 }
-function proposal(){
-  const dd = ddCheck();
-  // 黒の営業歴は必ず見つかり、刑事事件になりうる。調査期間中も続けていれば確率は高い（v1.2）
-  if (dd.kind === "shell" && hr("dd", 9) < (dd.late > 0 ? R.ddArrestIfLate : R.ddArrestIfPast)){ logEv("arrest", { dd: true }); story(R.ddArrestText); return stageRaid("arrest", () => finish("arrest")); }
+/* 売却時の摘発の確率：黒の営業歴は必ず刑事事件になりうる。グレーは調査期間中も続けていた場合だけ */
+const ddArrestP = (dd) => dd.kind !== "shell" ? 0 : dd.gray ? (dd.late > 0 ? R.ddGrayArrestIfLate : 0) : (dd.late > 0 ? R.ddArrestIfLate : R.ddArrestIfPast);
+function proposal(early){
+  const dd = ddCheck(early ? S.month - R.ddWindowEarly : R.ddStart);
+  // 黒の営業歴は必ず見つかり、刑事事件になりうる。調査期間中も続けていれば確率は高い（v1.2）。グレーは調査期間中も続けていた場合（v1.3）
+  if (hr("dd", 9) < ddArrestP(dd)){ logEv("arrest", { dd: true, gray: !!dd.gray }); story(dd.gray ? R.ddGrayArrestText : R.ddArrestText); return stageRaid("arrest", () => finish("arrest")); }
   const v = valuation(dd), sale = v.adopted;
   logEv("proposal", { dd: dd.kind, sale: Math.round(sale), dcf: Math.round(v.dcf.point), comps: Math.round(v.comps.point), liq: Math.round(v.liq.point) });
-  story(dd.kind === "shell" ? "買収前調査で、黒の営業が見つかった。" : dd.kind === "cut" ? `買収前調査で、グレーの営業（${dd.name}）が見つかり減額された。` : "買収提案がまとまった。");
-  S.sale = sale; S.dd = dd; S.val = v;
+  story(dd.kind === "shell" ? (dd.gray ? `買収前調査で、グレーの営業（${dd.name}）が見つかった。` : "買収前調査で、黒の営業が見つかった。") : "買収提案がまとまった。");
+  S.sale = sale; S.dd = dd; S.val = v; S.soldAt = S.month;
   pauseWith(() => show(`
-    <div class="kicker">60か月目</div><h1>${dd.kind === "none" ? "買収提案" : "買収前調査の結果"}</h1>
-    ${dd.kind === "shell" ? `<p><b>${esc(V.shellMessage)}</b></p>` : dd.kind === "cut" ? `<p><b>${esc(v.note)}</b></p>` : `<p>買い手は、3つの方法で店の価値を出し、その中央の値で買いたいと言っている。</p>`}
+    <div class="kicker">${S.month}か月目${early ? `（${S.month / 12}年目の決算で売却）` : ""}</div><h1>${dd.kind === "none" ? "買収提案" : "買収前調査の結果"}</h1>
+    ${dd.kind === "shell" ? `<p><b>${dd.gray ? `グレーの営業（${esc(dd.name)}）が見つかった。` : ""}${esc(V.shellMessage)}</b></p>` : dd.kind === "cut" ? `<p><b>${esc(v.note)}</b></p>` : `<p>買い手は、3つの方法で店の価値を出し、その中央の値で買いたいと言っている。</p>`}
     ${valuationReport(v, { kicker: "バリュエーション・レポート", bridge: true, open: true })}
     <div class="row stick"><button class="btn primary" id="okBtn">結果発表へ</button></div>`, () => { $("okBtn").onclick = () => finish("complete"); }));
 }
@@ -3652,7 +3681,7 @@ function finish(kind){
   const rank = saveRank(kind, amount);
   const title = { complete: "結果発表", arrest: R.labels.arrest, bankrupt: "資金が尽きた" }[kind];
   const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（3つの評価の中央値）";
-  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、満額にはならなかった。" : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。両方のランキングで失格。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
+  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。両方のランキングで失格。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
   show(`
     <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓${S.branch ? ` ・ 2号店 ${esc(S.branch.loc.name)}` : ""}${S.fc && S.fc.count ? ` ・ FC${S.fc.count}店` : ""} ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
     <div class="kicker" style="margin-top:12px">最終手取り額</div>
@@ -3826,7 +3855,7 @@ function diagnoseHTML(kind){
   if (hoursLen() > 12) items.push([2, "営業時間が長い", `${hhLong(S.open)}〜${hhLong(S.close)}の${hoursLen()}時間。昼（12〜17時）の客入りは夜の約3分の1で、人件費は時間に比例する。`]);
   if (trouble > 0) items.push([2, "トラブルの出費", `トラブルで合計 ${yen(trouble)}。スタッフの余力が30を切るとトラブルは1.5倍起きやすい。教育（5）で余力を保つ。`]);
   if (S.orders) items.push([4, `${R.labels.order}を${S.orders}回受けた`, `是正対応費・風評（売上−25%）・店の値段の割引率+10%が重なった。営業スタイルを「預入のみ」に戻すと止まる。`]);
-  if (S.dd && S.dd.kind === "cut") items.push([4, "グレーの営業で売却額が減った", `買収前調査で「${S.dd.name}」が見つかり、売却額が${Math.round(S.dd.cut * 100)}%になった。`]);
+  if (S.dd && S.dd.gray) items.push([4, "グレーの営業で、店の値段がハコの価値だけになった", `買収前調査で「${S.dd.name}」が見つかった。`]);
   if (S.dd && S.dd.kind === "shell") items.push([5, "黒の営業で売却額がハコの価値だけになった", "継続的なキャッシュフローと認められなかった。"]);
   if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業や違法営業は、続けるほど摘発の確率が上がる。瞬間収益は大きいが、最終手取り額のランキングには残らない。"]);
   if (S.mix && S.mix.regular < 0.25) items.push([3, "常連が育たなかった", `最後の客層は常連${Math.round(S.mix.regular * 100)}%。初心者は居心地しだいで常連に育ち、常連は居心地と信頼が低いと離れる。常連が厚いほど客数が安定し、競合に強く、店の値段も上がる。`]);
@@ -3850,7 +3879,7 @@ async function makeShareImage(kind, amount, rank){
   g.strokeStyle = ink; g.lineWidth = 6; g.beginPath(); g.roundRect(28, 28, w - 56, h - 56, 36); g.stroke();
   g.fillStyle = ink; g.font = `700 44px ${F}`; g.fillText("ポーカー店経営 5年", 80, 120);
   g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText("5,000万円でポーカー店をつくり、5年後に売る", 80, 168);
-  const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : "5年経営して売却", arrest: "摘発エンド（失格）", bankrupt: "資金が尽きた" }[kind];
+  const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で売却` : "5年経営して売却", arrest: "摘発エンド（失格）", bankrupt: "資金が尽きた" }[kind];
   g.fillStyle = kind === "complete" ? ink : bad; g.font = `700 38px ${F}`; g.fillText(title, 80, 262);
   g.fillStyle = muted; g.font = `500 30px ${F}`; g.fillText("最終手取り額", 80, 330);
   { const txt = yen(amount); let fs = 120; g.font = `500 ${fs}px ${MONO}, ${F}`; while (g.measureText(txt).width > w - 160 && fs > 60){ fs -= 4; g.font = `500 ${fs}px ${MONO}, ${F}`; } g.fillStyle = ink; g.fillText(txt, 76, 450); }
@@ -4229,6 +4258,64 @@ function priceNote(loc, styleId, price){
   const st = byId(STYLES, styleId), std = loc.spend * st.effect.spend * 10000;
   return `競合店の料金を100%として <b class="num">${Math.round(price * 100)}%</b>（${pctSign(price)}）<br>客単価 <b class="num">${Math.round(std * price).toLocaleString("ja-JP")}円</b>（同じ営業スタイルの競合店 ${Math.round(std).toLocaleString("ja-JP")}円。「${esc(st.name)}」の指数 ${Math.round(st.effect.spend * 100)}・預入のみ＝100）<span class="muted">（高くすると客は減る）</span>`;
 }
+/* ---------- 料金と満席率の見える化（v1.3） ----------
+   料金を競合比で動かしたときの、満席率と月の差し引きを2つの小さなグラフで出す（縦軸は1本ずつ）。
+   客の数は 料金^(−弾力性) で動く。満席率が上限に張り付いている間は、値上げしても客は減らず売上だけ増える */
+const PRICE_STEPS = (() => { const a = []; for (let x = Math.round(O.price.min * 100); x <= Math.round(O.price.max * 100); x += 5) a.push(x / 100); return a; })();
+function buildEst(loc, price){
+  const keep = CFG.price; CFG.price = price;
+  try {
+    const b = build(loc, CFG.tables), hiring = byId(ST.hiring, CFG.hiring), policy = byId(ST.policy, CFG.policy), contact = byId(ST.contact, CFG.contact), style = byId(STYLES, CFG.style), fx = FX(CFG.fac);
+    const seats = CFG.tables * 9 - fx.seatsLoss, turns = turnsFor(CFG.open, CFG.close, policy);
+    const staff = loc.staffPerTable * hiring.staffMult * CFG.tables * (CFG.close - CFG.open) / O.baseHours;
+    const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utilityOf(CFG.tables, CFG.open, CFG.close);
+    const segSpend = SEG.list.reduce((a, g) => a + D.mixStart[g.id] * g.spend, 0);
+    const perOcc = seats * turns * O.days * loc.spend * price * style.effect.spend * (1 - O.variableRate - fx.varRate) * fx.spend * segSpend;
+    const want = loc.demand * Math.pow(price, -O.price.elasticity) * (bandWeight(CFG.open, CFG.close) / BASE_W) * contact.demand * style.effect.demand * fx.demand * (1 - SEG.regularDemandBonus / 2 + SEG.regularDemandBonus * D.mixStart.regular) / (seats * turns);
+    const occ = Math.min(loc.occCap, want);
+    return { p: price, occ, want, net: perOcc * occ - fixed, capped: want >= loc.occCap };
+  } finally { CFG.price = keep; }
+}
+function nowEst(cfg, price){
+  const keep = { open: S.open, close: S.close, price: S.price, style: S.style, fac: S.fac };
+  S.open = cfg.open; S.close = cfg.close; S.price = price; S.style = byId(STYLES, cfg.style); S.fac = cfg.fac;
+  try { const p = project(); return { p: price, occ: p.occ, want: p.occ, net: p.net, capped: p.occ >= S.loc.occCap - 1e-9 }; } finally { Object.assign(S, keep); }
+}
+function priceChartHTML(pts, cur, caption){
+  const W = 560, H = 112, L = 54, R = 14, x = (p) => L + (p - O.price.min) / (O.price.max - O.price.min) * (W - L - R);
+  const panel = (key, title, lo, hi, fmt, zero) => {
+    const y = (v) => 26 + (1 - (v - lo) / (hi - lo || 1)) * (H - 42);
+    const path = pts.map((d, i) => `${i ? "L" : "M"}${x(d.p).toFixed(1)},${y(d[key]).toFixed(1)}`).join("");
+    const c = pts.find((d) => Math.abs(d.p - cur) < 1e-6) || pts[0];
+    return `<svg viewBox="0 0 ${W} ${H}" class="pchart" role="img" aria-label="${title}">
+      <text x="2" y="12" class="pc-t">${title}</text>
+      <text x="${L - 6}" y="${y(hi) + 4}" class="pc-a" text-anchor="end">${fmt(hi)}</text><text x="${L - 6}" y="${y(lo) + 4}" class="pc-a" text-anchor="end">${fmt(lo)}</text>
+      <line x1="${L}" x2="${W - R}" y1="${y(lo)}" y2="${y(lo)}" class="pc-g"/>${zero && lo < 0 && hi > 0 ? `<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" class="pc-z"/><text x="${L - 6}" y="${y(0) + 4}" class="pc-a" text-anchor="end">0</text>` : ""}
+      <line x1="${x(1)}" x2="${x(1)}" y1="22" y2="${H - 16}" class="pc-r"/>
+      <path d="${path}" class="pc-l"/>
+      <line x1="${x(c.p)}" x2="${x(c.p)}" y1="22" y2="${H - 16}" class="pc-c"/><circle cx="${x(c.p)}" cy="${y(c[key])}" r="5" class="pc-d"/>
+      <circle cx="0" cy="0" r="4" class="pc-h" style="display:none"/>
+      ${pts.map((d) => `<rect x="${x(d.p) - 9}" y="0" width="18" height="${H}" fill="transparent" data-i="${pts.indexOf(d)}"><title>${Math.round(d.p * 100)}%：${fmt(d[key])}</title></rect>`).join("")}
+    </svg>`;
+  };
+  const nets = pts.map((d) => d.net), nlo = Math.min(0, ...nets), nhi = Math.max(0, ...nets);
+  const c = pts.find((d) => Math.abs(d.p - cur) < 1e-6) || pts[0];
+  return `<div class="pcbox">
+    ${panel("occ", "満席率", 0, 1, (v) => Math.round(v * 100) + "%")}
+    ${panel("net", "月の差し引き（万円）", Math.floor(nlo / 50) * 50, Math.ceil(nhi / 50) * 50, (v) => Math.round(v).toLocaleString("ja-JP"), true)}
+    <div class="pc-x"><span>${Math.round(O.price.min * 100)}%</span><span>100%＝競合と同じ</span><span>${Math.round(O.price.max * 100)}%</span></div>
+    <p class="pc-read" aria-live="polite">いまの設定 ${Math.round(c.p * 100)}%：満席率 ${Math.round(c.occ * 100)}%・差し引き ${yen(c.net)}/月${c.capped ? "（席が足りず満席。値上げしても客はあまり減らない）" : ""}</p>
+    <p class="muted" style="font-size:11.5px;margin:0">${caption} 客の数は料金の${O.price.elasticity}乗に反比例して動く（10%上げると客は約${Math.round((1 - Math.pow(1.1, -O.price.elasticity)) * 100)}%減る）。満席の間は、値上げしても売上が増えるだけ。グラフに触れると、その料金での値が出る。</p>
+  </div>`;
+}
+function wirePriceChart(box, pts){
+  const read = box.querySelector(".pc-read"), base = read.textContent;
+  box.querySelectorAll("rect[data-i]").forEach((r) => {
+    r.onpointerenter = () => { const d = pts[+r.dataset.i]; read.textContent = `${Math.round(d.p * 100)}% のとき：満席率 ${Math.round(d.occ * 100)}%・差し引き ${yen(d.net)}/月${d.capped ? "（満席）" : ""}`; };
+    r.onpointerleave = () => { read.textContent = base; };
+  });
+}
+
 /* 経費の表。rows＝[名前, 金額, 説明] */
 function costTableHTML(rows, rev, revLabel = "売上の見込み"){
   const total = rows.reduce((a, r) => a + r[1], 0);
@@ -4367,7 +4454,7 @@ function openBuild(){
     <div class="slider price"><span>競合より<br>安い</span><input type="range" id="priceR" min="${Math.round(O.price.min * 100)}" max="${Math.round(O.price.max * 100)}" step="5" value="${Math.round(CFG.price * 100)}" list="priceTicks"><span>競合より<br>高い</span></div>
     <datalist id="priceTicks"><option value="100"></option></datalist>
     <div class="pticks"><span>${Math.round(O.price.min * 100)}%</span><span>100%＝競合店と同じ</span><span>${Math.round(O.price.max * 100)}%</span></div>
-    <p id="priceNote" style="font-size:12.5px"></p>
+    <p id="priceNote" style="font-size:12.5px"></p><div id="priceChart"></div>
     <h2>設備・企画（いくつでも）</h2>${facGroup(CFG.fac)}
     <h2>スタッフの採用</h2>${optGroup(ST.hiring, CFG.hiring, "hiring", (h) => `${esc(h.desc)}<br>人件費 ×${h.staffMult}`)}
     <h2>教育方針</h2>${optGroup(ST.policy, CFG.policy, "policy", (p) => esc(p.desc))}
@@ -4382,6 +4469,7 @@ function openBuild(){
     $("tblOut").textContent = CFG.tables; $("areaNote").textContent = `面積 ${b.area}坪（${m2(b.area)}㎡）・ 家賃 ${yen(b.rent)}/月 ・ ${CFG.tables * 9}席 ・ 内装「${D.layoutLux[layoutFor(CFG.tables).lux]}」`;
     $("hoursNote").innerHTML = hoursNote(CFG);
     $("priceNote").innerHTML = priceNote(loc, CFG.style, CFG.price);
+    { const pts = PRICE_STEPS.map((pr) => buildEst(loc, pr)); $("priceChart").innerHTML = priceChartHTML(pts, CFG.price, "店が軌道に乗ったときの見込み（開業直後はこれより少ない）。"); wirePriceChart($("priceChart"), pts); }
     $("calc").innerHTML = buildCalc(loc);
     drawPreview($("preview"), CFG.tables);
   };
@@ -4436,8 +4524,9 @@ function act(a){
   if (a === "staff") openStaff();
   syncHUD();
 }
-function openSettings(){
+function openSettings(onDone){
   const was = S.paused; S.paused = true;
+  const done = () => { if (onDone) onDone(); else { hide(); S.paused = was; } };
   const cfg = { open: S.open, close: S.close, price: S.price, style: S.style.id, policy: S.policy.id, contact: S.contact.id, fac: [...S.fac] };
   show(`<div class="kicker">営業設定</div><h1>店の運営を変える</h1>
     <h2>営業スタイル</h2>${styleList(cfg.style)}
@@ -4447,7 +4536,7 @@ function openSettings(){
     <div class="slider price"><span>競合より<br>安い</span><input type="range" id="priceR" min="${Math.round(O.price.min * 100)}" max="${Math.round(O.price.max * 100)}" step="5" value="${Math.round(cfg.price * 100)}" list="priceTicks"><span>競合より<br>高い</span></div>
     <datalist id="priceTicks"><option value="100"></option></datalist>
     <div class="pticks"><span>${Math.round(O.price.min * 100)}%</span><span>100%＝競合店と同じ</span><span>${Math.round(O.price.max * 100)}%</span></div>
-    <p id="priceNote" style="font-size:12.5px"></p>
+    <p id="priceNote" style="font-size:12.5px"></p><div id="priceChart"></div>
     <h2>月の経費の見込み（この設定で）</h2><div id="costBox"></div>
     <h2>設備・企画（新しく入れると設置費。やめても戻らない）</h2>${facGroup(cfg.fac)}
     <h2>教育方針</h2>${optGroup(ST.policy, cfg.policy, "policy", (p) => esc(p.desc))}
@@ -4456,14 +4545,15 @@ function openSettings(){
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set([...STYLES.flatMap((s) => s.provisionIds), ...D.illegal.flatMap((a) => a.provisionIds)])])}
       ${D.illegal.filter((a) => a.missingSource).map((a) => `<p class="muted">未収録：${esc(a.missingSource)}</p>`).join("")}<p class="muted">${esc(R.note)}</p></details>
     <div class="row"><button class="btn" id="cancelBtn">戻る</button><button class="btn primary" id="okBtn">これでいく</button></div>`);
-  const refresh = () => { $("hoursNote").innerHTML = hoursNote(cfg); $("priceNote").innerHTML = priceNote(S.loc, cfg.style, cfg.price); $("costBox").innerHTML = costTableNow(cfg); };
+  const refresh = () => { $("hoursNote").innerHTML = hoursNote(cfg); $("priceNote").innerHTML = priceNote(S.loc, cfg.style, cfg.price); $("costBox").innerHTML = costTableNow(cfg);
+    const pts = PRICE_STEPS.map((pr) => nowEst(cfg, pr)); $("priceChart").innerHTML = priceChartHTML(pts, cfg.price, "いまの店の状態（客の育ち具合・評判・風評）で1か月回したときの見込み。"); wirePriceChart($("priceChart"), pts); };
   wireGauge(cfg, refresh);
   $("priceR").oninput = (e) => { cfg.price = +e.target.value / 100; refresh(); };
   wireGroups(cfg, refresh);
   card.querySelectorAll(".stylelist .opt").forEach((b) => b.onclick = () => { cfg.style = b.dataset.v; card.querySelectorAll(".stylelist .opt").forEach((o) => o.setAttribute("aria-pressed", o === b)); refresh(); });
   wireFac(cfg.fac, refresh);
   if ($("applyBtn")) $("applyBtn").onclick = () => { S.cash -= D.license.fee; S.licenseWait = D.license.waitMonths; note("許可を申請した。"); story("許可を申請した。"); $("applyBtn").replaceWith(document.createTextNode(`許可申請中（あと${S.licenseWait}か月）。`)); };
-  $("cancelBtn").onclick = () => { hide(); S.paused = was; };
+  $("cancelBtn").onclick = done;
   $("okBtn").onclick = () => {
     const ch = [];
     if (cfg.open !== S.open || cfg.close !== S.close) ch.push(`営業時間 ${hhLong(cfg.open)}〜${hhLong(cfg.close)}`);
@@ -4477,7 +4567,7 @@ function openSettings(){
     S.fac = [...cfg.fac];
     S.open = cfg.open; S.close = cfg.close; S.price = cfg.price; S.style = byId(STYLES, cfg.style); S.policy = byId(ST.policy, cfg.policy); S.contact = byId(ST.contact, cfg.contact);
     if (ch.length){ note(ch.join("・")); story(`方針を変えた：${ch.join("、")}。`); logEv("settings", { ...cfg }); }
-    hide(); S.paused = was; syncHUD();
+    syncHUD(); done();
   };
   refresh();
 }
@@ -4897,7 +4987,7 @@ window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.s
 window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
   fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG,
   // 検証用：いま売ったらいくらか（売却時点の直前6か月を「調査期間」とみなす）と、営業スタイルの切り替え
-  sellNow: () => { const keep = R.ddStart; R.ddStart = S.month - 6; let dd; try { dd = ddCheck(); } finally { R.ddStart = keep; } const v = valuation(dd), arrestP = dd.kind === "shell" ? (dd.late > 0 ? R.ddArrestIfLate : R.ddArrestIfPast) : 0; return { month: S.month, dd: dd.kind, arrestP, sale: v.adopted, dcf: v.dcf.point, comps: v.comps.point, liq: v.liq.point, cash: S.cash, debt: S.debt, amount: S.cash + v.adopted - S.debt }; },
+  sellNow: () => { const dd = ddCheck(S.month - R.ddWindowEarly), v = valuation(dd), arrestP = ddArrestP(dd); return { month: S.month, dd: dd.kind, arrestP, sale: v.adopted, dcf: v.dcf.point, comps: v.comps.point, liq: v.liq.point, cash: S.cash, debt: S.debt, amount: S.cash + v.adopted - S.debt }; },
   setStyle: (id) => { S.style = byId(STYLES, id); }, preview: (c, n) => drawPreview(c, n), raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);

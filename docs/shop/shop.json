@@ -265,9 +265,12 @@
     "heatWarn": 0.03,
     "raidNote": "立ち入りの人数（摘発＝機動隊20人、是正指摘＝5人と命令書）は演出。実際の捜査・行政手続の人数や手順を表すものではない。",
     "ddAlways": true,
-    "ddNote": "買収前調査は必ず行い、5年間で一度でも黒・グレーの営業をしていれば必ず見つかる（ユーザー指定）。黒はハコの価値だけ、グレーは styles[].dd.cut まで減額。調査期間中（ddStart以降）に黒の営業をしていた場合は ddArrestIfLate の確率で摘発エンド。",
+    "ddNote": "買収前調査は必ず行い、黒・グレーの営業歴は必ず見つかる。売却額はハコの価値だけ（案1、v1.3）。摘発の確率：黒＝調査期間中も続けていれば ddArrestIfLate、それより前にやめていれば ddArrestIfPast。グレー＝調査期間中も続けていれば ddGrayArrestIfLate。調査期間は5年目の終わりなら最後の6か月、途中で売るなら売る直前の ddWindowEarly か月。",
     "curveNote": "v1.2：摘発＝基礎＋growth×u＋growth2×u²、是正指摘＝基礎＋orderGrowth×u（uはそのスタイルを続けた月数）。黒は1年目は低く2年目から急に上がる。グレーは是正指摘が年々増える。架空値。",
-    "ddArrestIfPast": 0.8
+    "ddArrestIfPast": 0.8,
+    "ddWindowEarly": 6,
+    "ddGrayArrestIfLate": 0.3,
+    "ddGrayArrestText": "買収前調査で、調査期間中も続けていたグレーの営業が問題になり、摘発に至った（ゲーム上の処理）。"
   },
   "valuation": {
     "discountBase": 0.25,
@@ -878,8 +881,7 @@
         "arrestGrowth": 0.0,
         "order": 0.04,
         "dd": {
-          "result": "cut",
-          "cut": 0.3
+          "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
@@ -900,8 +902,7 @@
         "arrestGrowth": 0,
         "order": 0.02,
         "dd": {
-          "result": "cut",
-          "cut": 0.5
+          "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
@@ -922,8 +923,7 @@
         "arrestGrowth": 0,
         "order": 0.012,
         "dd": {
-          "result": "cut",
-          "cut": 0.7
+          "result": "shell"
         },
         "provisionIds": [
           "fueiho23-2"
