@@ -108,13 +108,15 @@
         "from": 5,
         "to": 12,
         "w": 0.2,
-        "name": "朝"
+        "name": "朝",
+        "growMax": 2.0
       },
       {
         "from": 12,
         "to": 17,
         "w": 0.5,
-        "name": "昼"
+        "name": "昼",
+        "growMax": 1.2
       },
       {
         "from": 17,
@@ -187,7 +189,10 @@
       24
     ],
     "utilityPerTableHour": 0.02,
-    "utilityNote": "光熱費＝卓数×営業時間×営業日数×0.02万円。営業時間を延ばすと人件費と光熱費が増える。"
+    "utilityNote": "光熱費＝卓数×営業時間×営業日数×0.02万円。営業時間を延ばすと人件費と光熱費が増える。",
+    "offpeakNote": "朝・昼の客入りは、店が続くほど・知名度が上がるほど増える（v1.5）。帯の重み × (1 + growMax × 成熟度)。成熟度＝min(1, 開業からの月数÷48) × min(1.2, 知名度÷60)。架空値。",
+    "offpeakYears": 48,
+    "offpeakFame": 60
   },
   "indicators": {
     "start": {
@@ -783,48 +788,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "contact",
-      "title": "スタッフと常連の、店の外でのやり取り",
-      "when": {
-        "minMonth": 8,
-        "contact": "allow"
-      },
-      "omen": "スタッフが常連と個人的に連絡を取り合い、店の外で賭けに誘われていたことが分かった。",
-      "choices": [
-        {
-          "label": "連絡先の交換を禁止にする",
-          "effects": {
-            "trust": 4,
-            "demand": {
-              "mult": 0.95,
-              "months": 6
-            },
-            "contactBan": true
-          },
-          "text": "今後は個人的な連絡先の交換を禁止した。常連の一部は不満そうだ。"
-        },
-        {
-          "label": "当事者のスタッフを処分する",
-          "effects": {
-            "trust": 2,
-            "slack": -8
-          },
-          "text": "当事者を処分した。現場は人手が足りなくなった。"
-        },
-        {
-          "label": "店の外のことなので関与しない",
-          "later": {
-            "months": 3,
-            "text": "店の外の賭けが、店の名前とともに噂になった。",
-            "effects": {
-              "trust": -12,
-              "fame": 2
-            }
-          }
-        }
-      ]
     }
   ],
   "eventChance": 0.3,
@@ -978,18 +941,6 @@
         "trouble": 1.1,
         "eduMult": 1.6,
         "slackTarget": -5
-      },
-      {
-        "id": "lean",
-        "name": "少人数で回す",
-        "desc": "人件費は一番安い。人が足りず、いつも余裕がない。",
-        "staffMult": 0.82,
-        "start": {
-          "slack": -20
-        },
-        "trouble": 1.25,
-        "eduMult": 1.0,
-        "slackTarget": -20
       }
     ],
     "policy": [
@@ -1016,24 +967,6 @@
         "trustTarget": 0,
         "comfortTarget": -8,
         "turns": 1.08
-      }
-    ],
-    "contact": [
-      {
-        "id": "ban",
-        "name": "禁止する",
-        "desc": "スタッフと常連の個人的なやり取りを禁じる。常連化は少し遅い。",
-        "demand": 1.0,
-        "start": {
-          "trust": 5
-        }
-      },
-      {
-        "id": "allow",
-        "name": "禁止しない",
-        "desc": "常連が定着しやすい。私的なやり取りから問題が起きることがある。",
-        "demand": 1.08,
-        "start": {}
       }
     ]
   },
@@ -2563,8 +2496,7 @@
         "slackTarget": -3
       },
       "eventBias": {
-        "neighbor": 2,
-        "contact": 2
+        "neighbor": 2
       }
     },
     {
@@ -2639,7 +2571,6 @@
   "staffSystem": {
     "note": "スタッフは架空の人物。名前はよくある名字から自動で付ける。",
     "perTable": 4,
-    "leanPerTable": 3,
     "hireCost": 10,
     "raiseRate": 0.15,
     "managerWageMult": 1.5,
@@ -2691,14 +2622,6 @@
         ],
         "wage": 0.92,
         "growth": 0.06
-      },
-      "lean": {
-        "skill": [
-          2,
-          4
-        ],
-        "wage": 0.82,
-        "growth": 0.03
       }
     },
     "quitBase": 0.004,
@@ -2818,7 +2741,11 @@
     "shakePerMonth": 0.025,
     "shakeMax": 0.3,
     "compExitP": 0.25,
-    "note": "5年目（48か月目以降）は業界の淘汰が進む：客数が毎月+2.5%ずつ戻り（最大+30%）、近くの競合が毎月25%で撤退し、新しい出店は減る（v1.4、ユーザー指定）。架空値。"
+    "note": "5年目（48か月目以降）は業界の淘汰が進む：客数が毎月+2.5%ずつ戻り（最大+30%）、近くの競合が毎月25%で撤退し、新しい出店は減る（v1.4、ユーザー指定）。架空値。",
+    "sizeAlpha": 0,
+    "sizeFrom": 5,
+    "bigRampBeta": 0,
+    "bigFrom": 5
   },
   "tax": {
     "corpSmallRate": 0.15,
