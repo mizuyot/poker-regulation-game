@@ -171,6 +171,8 @@ summary{cursor:pointer;color:var(--muted)}
 .slider{display:grid;grid-template-columns:4.5em 1fr 4.5em;gap:8px;align-items:center;font-size:13px;margin:6px 0}
 .slider input{width:100%;accent-color:var(--gray)}
 .slider.price{grid-template-columns:4.2em 1fr 4.2em;line-height:1.25;font-size:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media (max-width:720px){.grid3{grid-template-columns:1fr}}
+.rec{display:inline-block;background:var(--ink);color:var(--bg);font-size:10.5px;font-weight:700;padding:0 6px;border-radius:4px;vertical-align:1px}
 .pcbox{border:1.5px solid var(--soft);border-radius:12px;padding:8px 10px 6px;margin:6px 0 4px}
 .pchart{width:100%;height:auto;display:block;overflow:visible}
 .pchart .pc-t{font-size:12px;fill:var(--ink);font-weight:700}.pchart .pc-a{font-size:10.5px;fill:var(--muted)}
@@ -1152,7 +1154,7 @@ summary{cursor:pointer;color:var(--muted)}
         "tierLabel": "黒",
         "desc": "勝ったチップを現金に戻す。",
         "effect": {
-          "demand": 0.4,
+          "demand": 1.0,
           "spend": 5.0
         },
         "arrest": 0.003,
@@ -3799,7 +3801,7 @@ function sellConfirm(){
   show(`<div class="kicker">${S.month / 12}年目の決算</div><h1>いま店を売る？</h1>
     <p>買い手が買収前調査をして、評価額で買い取る。売ればゲームはここで終わり、手取り額がスコアになる。</p>
     <table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額（評価額）</td><td>${yen(v.adopted)}</td></tr>${S.debt ? `<tr><td>借入の返済</td><td>${yen(-S.debt)}</td></tr>` : ""}<tr class="total"><td>手取り額</td><td>${yen(amount)}</td></tr></table>
-    ${dd.kind === "shell" ? `<p class="warn">${dd.gray ? `グレーの営業（${esc(dd.name)}）` : "黒の営業"}の歴は、調査で必ず見つかる。売却額はハコとしての価値だけ。${ap ? `<b>${Math.round(ap * 100)}%の確率で摘発され、失格になる。</b>` : ""}</p>` : `<p class="muted" style="font-size:12.5px">5年目まで続けた場合と比べたいときは、評価レポートの成長率と割引率を見る。続けるほど実績が増え、値段も変わる。</p>`}
+    ${dd.kind === "shell" ? `<p class="warn">${dd.gray ? `グレーの営業（${esc(dd.name)}）` : "黒の営業"}の歴は、調査で必ず見つかる。売却額はハコとしての価値だけ。${ap ? `<b>${Math.round(ap * 100)}%の確率で摘発され、逮捕歴がつく（手元資金は残るが、売却額はなく、本命のランキングには載らない）。</b>` : ""}</p>` : `<p class="muted" style="font-size:12.5px">5年目まで続けた場合と比べたいときは、評価レポートの成長率と割引率を見る。続けるほど実績が増え、値段も変わる。</p>`}
     <div class="row stick"><button class="btn" id="backBtn">売らずに続ける</button><button class="btn primary" id="doSell">売る</button></div>`);
   $("backBtn").onclick = resume;
   $("doSell").onclick = () => { hide(); logEv("sellEarly", { month: S.month }); story(`${S.month / 12}年目の決算で、店を売ることにした。`); proposal(true); };
@@ -3891,10 +3893,11 @@ function finish(kind){
   const rank = saveRank(kind, amount);
   const title = { complete: "結果発表", arrest: R.labels.arrest, bankrupt: "資金が尽きた" }[kind];
   const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（3つの評価の中央値）";
-  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。店は売れないが、それまでに稼いだ手元資金は残る。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
+  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。稼いだ手元資金は残るが、店と売却額を失い、逮捕歴がつく。最終手取り額のランキング（本命）には載らず、「金額だけ」のランキングにだけ載る。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
   show(`
     <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓${S.branch ? ` ・ 2号店 ${esc(S.branch.loc.name)}` : ""}${S.fc && S.fc.count ? ` ・ FC${S.fc.count}店` : ""} ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
-    <div class="kicker" style="margin-top:12px">最終手取り額</div>
+    ${kind === "arrest" ? `<p style="margin:10px 0 0"><span class="rec" style="font-size:14px;padding:3px 10px">逮捕歴あり</span> <span class="muted" style="font-size:12.5px">お金は残っても、経営者としての記録は残る（ゲーム上の扱い）</span></p>` : ""}
+    <div class="kicker" style="margin-top:12px">${kind === "arrest" ? "残った手元資金（金額だけのランキング）" : "最終手取り額"}</div>
     <div class="big">${yen(amount)}<small class="${amount - M.fund >= 0 ? "pos" : "negc"}">元手${yen(M.fund)}から ${yen(amount - M.fund, true)}</small></div>
     ${kind === "complete" ? `<table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額${ddWord}</td><td>${yen(sale)}</td></tr>
       <tr><td>借入残高</td><td>${yen(-S.debt)}</td></tr><tr class="total"><td>最終手取り額</td><td>${yen(amount)}</td></tr></table>` : ""}
@@ -4067,7 +4070,7 @@ function diagnoseHTML(kind){
   if (S.orders) items.push([4, `${R.labels.order}を${S.orders}回受けた`, `是正対応費・風評（売上−25%）・店の値段の割引率+10%が重なった。営業スタイルを「預入のみ」に戻すと止まる。`]);
   if (S.dd && S.dd.gray) items.push([4, "グレーの営業で、店の値段がハコの価値だけになった", `買収前調査で「${S.dd.name}」が見つかった。`]);
   if (S.dd && S.dd.kind === "shell") items.push([5, "黒の営業で売却額がハコの価値だけになった", "継続的なキャッシュフローと認められなかった。"]);
-  if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業は1年目こそ一番稼げるが、半年を過ぎると摘発の確率が急に上がり、客も警戒して離れていく。稼いだ手元資金は残るが、店そのものと売却額を失う。健全な店を5年続けて売るほうが、平均では手取りが多い。"]);
+  if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業は1年目こそ一番稼げるが、半年を過ぎると摘発の確率が急に上がり、客も警戒して離れていく。金額だけなら健全より大きく残ることもあるが、店と売却額を失い、逮捕歴がつく。本命の「最終手取り額」のランキングに載るのは、逮捕歴のない店だけ。"]);
   if (S.mix && S.mix.regular < 0.25) items.push([3, "常連が育たなかった", `最後の客層は常連${Math.round(S.mix.regular * 100)}%。初心者は居心地しだいで常連に育ち、常連は居心地と信頼が低いと離れる。常連が厚いほど客数が安定し、競合に強く、店の値段も上がる。`]);
   if (S.ind.slack < 35) items.push([2, "スタッフが疲れていた", `余力 ${Math.round(S.ind.slack)}。満席が続くと余力は落ち、居心地とトラブルに響く。`]);
   if (S.ind.comfort < 40) items.push([2, "初心者が定着しなかった", `初心者の居心地 ${Math.round(S.ind.comfort)}。成長率（店の値段）と客数に効く。教育方針「おもてなし」や事件での判断で上げられる。`]);
@@ -4089,14 +4092,14 @@ async function makeShareImage(kind, amount, rank){
   g.strokeStyle = ink; g.lineWidth = 6; g.beginPath(); g.roundRect(28, 28, w - 56, h - 56, 36); g.stroke();
   g.fillStyle = ink; g.font = `700 44px ${F}`; g.fillText("ポーカー店経営 5年", 80, 120);
   g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText("5,000万円でポーカー店をつくり、5年後に売る", 80, 168);
-  const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で売却` : "5年経営して売却", arrest: "摘発エンド（失格）", bankrupt: "資金が尽きた" }[kind];
+  const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で売却` : "5年経営して売却", arrest: "摘発エンド（逮捕歴あり）", bankrupt: "資金が尽きた" }[kind];
   g.fillStyle = kind === "complete" ? ink : bad; g.font = `700 38px ${F}`; g.fillText(title, 80, 262);
-  g.fillStyle = muted; g.font = `500 30px ${F}`; g.fillText("最終手取り額", 80, 330);
+  g.fillStyle = muted; g.font = `500 30px ${F}`; g.fillText(kind === "arrest" ? "残った手元資金" : "最終手取り額", 80, 330);
   { const txt = yen(amount); let fs = 120; g.font = `500 ${fs}px ${MONO}, ${F}`; while (g.measureText(txt).width > w - 160 && fs > 60){ fs -= 4; g.font = `500 ${fs}px ${MONO}, ${F}`; } g.fillStyle = ink; g.fillText(txt, 76, 450); }
   const diff = amount - M.fund; g.fillStyle = diff >= 0 ? good : bad; g.font = `700 38px ${F}`; g.fillText(`元手5,000万円から ${yen(diff, true)}`, 80, 514);
   // 順位
   const fpos = rank.final.findIndex((x) => x.mine) + 1, ppos = rank.peak.findIndex((x) => x.mine) + 1;
-  g.fillStyle = ink; g.font = `700 52px ${F}`; g.fillText(fpos ? `ランキング ${fpos}位` : "ランキング 圏外", 80, 620);
+  g.fillStyle = ink; g.font = `700 52px ${F}`; g.fillText(kind === "arrest" ? "逮捕歴あり（金額だけのランキング）" : fpos ? `ランキング ${fpos}位` : "ランキング 圏外", 80, 620);
   g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText(`最終手取り額（この端末の上位10件）${ppos ? ` ・ 瞬間収益 ${ppos}位` : ""}`, 80, 664);
   // 店の情報
   const tier = S.style.tier, sw = { black: ink, gray, clean: good }[tier];
@@ -4333,7 +4336,7 @@ function saveRun(kind, amount){
 }
 function sameCodeHTML(){
   const runs = loadRuns().filter((x) => x.seed === S.seed);
-  const rows = runs.slice(-6).reverse().map((x, i) => `<tr><td>${i === 0 ? "今回" : "前回" + (i > 1 ? `（${i}つ前）` : "")}</td><td>${esc(x.loc)} ${x.tables}卓</td><td>${esc(x.style)}</td><td style="text-align:left">${esc((x.fac || []).join("・") || "—")}</td><td>${x.kind === "complete" ? yen(x.amount) : x.kind === "arrest" ? "失格" : "倒産"}</td></tr>`).join("");
+  const rows = runs.slice(-6).reverse().map((x, i) => `<tr><td>${i === 0 ? "今回" : "前回" + (i > 1 ? `（${i}つ前）` : "")}</td><td>${esc(x.loc)} ${x.tables}卓</td><td>${esc(x.style)}</td><td style="text-align:left">${esc((x.fac || []).join("・") || "—")}</td><td>${x.kind === "complete" ? yen(x.amount) : x.kind === "arrest" ? `${yen(x.amount)} <span class="rec">逮捕歴</span>` : "倒産"}</td></tr>`).join("");
   return `<p style="font-size:13px">条件コード <b class="num" style="font-size:18px">${esc(S.seed)}</b>　<button class="btn" id="retryBtn">同じ条件で再挑戦</button></p>
     ${runs.length > 1 ? `<table class="t" style="font-size:12px"><tr><th>回</th><th>店</th><th>スタイル</th><th>設備・企画</th><th>手取り</th></tr>${rows}</table>` : `<p class="muted" style="font-size:12px">同じ条件で遊ぶと、ここに前回との比較が出る。友だちに条件コードを渡せば、同じ条件で腕を比べられる。</p>`}`;
 }
@@ -4342,10 +4345,11 @@ async function loadGlobal(){
   try {
     const r = await fetch(`/api/shop/ranking?seed=${encodeURIComponent(S.seed)}`, { cache: "no-store" });
     if (!r.ok) throw 0; const j = await r.json();
-    const li = (x, k = "amount") => `<li>${yen(x[k])}${k === "peak" ? "／月" : ""} <span style="font-family:var(--font)">・ ${esc(x.name || "名無しの店主")} ・ ${esc(x.loc)} ${x.tables}卓 ・ ${esc(x.type || "")}</span></li>`;
-    box.innerHTML = `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額（全体）</div><ol class="rank">${j.final.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol></div>
+    const li = (x, k = "amount") => `<li>${yen(x[k])}${k === "peak" ? "／月" : ""} <span style="font-family:var(--font)">・ ${esc(x.name || "名無しの店主")} ・ ${esc(x.loc)} ${x.tables}卓 ・ ${esc(x.type || "")}</span>${x.kind === "arrest" ? ' <span class="rec">逮捕歴</span>' : ""}</li>`;
+    box.innerHTML = `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額（全体・逮捕歴なし）</div><ol class="rank">${j.final.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol></div>
       <div><div class="kicker">瞬間収益（全体）</div><ol class="rank">${j.peak.map((x) => li(x, "peak")).join("") || "<li>まだ記録がない</li>"}</ol></div></div>
-      <div class="kicker" style="margin-top:8px">条件コード ${esc(S.seed)} のランキング</div><ol class="rank">${j.seed.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol>`;
+      <div class="kicker" style="margin-top:8px">金額だけ（逮捕歴を含む・全体）</div><ol class="rank">${(j.money || []).map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol>
+      <div class="kicker" style="margin-top:8px">条件コード ${esc(S.seed)} のランキング（逮捕歴なし）</div><ol class="rank">${j.seed.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol>`;
   } catch { box.textContent = "全体ランキングは、ゲームのサーバー（python3 server.py）で遊んだときだけ使える。"; const b = $("submitBtn"); if (b) b.disabled = true; }
 }
 async function submitScore(kind, amount){
@@ -4355,23 +4359,24 @@ async function submitScore(kind, amount){
   catch { note("登録できなかった（サーバーで遊んでいないときは使えない）", "bad"); }
 }
 const RANK_KEY = "poker-shop-v07-rank";
-function loadRank(){ try { return JSON.parse(localStorage.getItem(RANK_KEY)) || { final: [], peak: [] }; } catch { return { final: [], peak: [] }; } }
+function loadRank(){ try { const r = JSON.parse(localStorage.getItem(RANK_KEY)) || {}; return { final: r.final || [], money: r.money || [], peak: r.peak || [] }; } catch { return { final: [], money: [], peak: [] }; } }
 function saveRank(kind, amount){
-  const r = loadRank();
+  const r = loadRank(); r.money = r.money || [];
   if (kind !== "bankrupt"){
-    const base = { loc: S.loc.name, tables: S.tables, tier: S.style.tier, date: new Date().toISOString().slice(0, 10) };
-    r.final.push({ ...base, amount: Math.round(amount), mine: true });
+    const base = { loc: S.loc.name, tables: S.tables, tier: S.style.tier, record: kind === "arrest", date: new Date().toISOString().slice(0, 10) };
+    if (kind !== "arrest") r.final.push({ ...base, amount: Math.round(amount), mine: true }); // 最終手取り額は逮捕歴なしだけ
+    r.money.push({ ...base, amount: Math.round(amount), mine: true });                       // 金額だけ（逮捕歴を含む）
     if (isFinite(S.peakMonth)) r.peak.push({ ...base, amount: Math.round(S.peakMonth), mine: true });
   }
-  r.final.sort((a, b) => b.amount - a.amount); r.peak.sort((a, b) => b.amount - a.amount);
-  const out = { final: r.final.slice(0, 10), peak: r.peak.slice(0, 10) };
-  try { localStorage.setItem(RANK_KEY, JSON.stringify({ final: out.final.map(({ mine, ...x }) => x), peak: out.peak.map(({ mine, ...x }) => x) })); } catch {}
+  for (const k of ["final", "money", "peak"]) r[k].sort((a, b) => b.amount - a.amount);
+  const out = { final: r.final.slice(0, 10), money: r.money.slice(0, 10), peak: r.peak.slice(0, 10) };
+  try { localStorage.setItem(RANK_KEY, JSON.stringify(Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.map(({ mine, ...x }) => x)])))); } catch {}
   return out;
 }
 function rankHTML(r){
-  const li = (x) => `<li${x.mine ? ' style="font-weight:700"' : ""}>${yen(x.amount)} <span style="font-family:var(--font)">・ ${esc(x.loc)} ${x.tables}卓</span>${x.tier ? ` <span class="tsw ${esc(x.tier)}"></span>` : ""}</li>`;
-  return `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額</div><ol class="rank">${r.final.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div>
-    <div><div class="kicker">瞬間収益（一番稼いだ月）</div><ol class="rank">${r.peak.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div></div>`;
+  const li = (x) => `<li${x.mine ? ' style="font-weight:700"' : ""}>${yen(x.amount)} <span style="font-family:var(--font)">・ ${esc(x.loc)} ${x.tables}卓</span>${x.tier ? ` <span class="tsw ${esc(x.tier)}"></span>` : ""}${x.record ? ` <span class="rec">逮捕歴</span>` : ""}</li>`;
+  const col = (t, a, n) => `<div><div class="kicker">${t}</div><ol class="rank">${(a || []).map(li).join("") || "<li>まだ記録がない</li>"}</ol>${n ? `<p class="muted" style="font-size:11px;margin:2px 0 0">${n}</p>` : ""}</div>`;
+  return `<div class="grid3" style="align-items:start">${col("最終手取り額（逮捕歴なし）", r.final, "本命のランキング。摘発された店は載らない")}${col("金額だけ（逮捕歴を含む）", r.money, "お金だけで並べる。摘発されても稼いだ分は残る")}${col("瞬間収益（一番稼いだ月）", r.peak)}</div>`;
 }
 function exportLog(){
   const meta = { type: "run", game: "poker-shop", version: M.version, cfg: S.cfg, outcome: S.over, dd: S.dd ? S.dd.kind : null, at: new Date().toISOString(), note: "ゲームの架空パラメータによるプレイログ。実データではない。" };

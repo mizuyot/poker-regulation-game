@@ -850,7 +850,7 @@
         "tierLabel": "黒",
         "desc": "勝ったチップを現金に戻す。",
         "effect": {
-          "demand": 0.4,
+          "demand": 1.0,
           "spend": 5.0
         },
         "arrest": 0.003,
