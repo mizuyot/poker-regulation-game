@@ -35,7 +35,7 @@ const strategies = [
         window.__cash0 = __shop.state().cash;
       }, [j.st, j.seed]);
       await p.waitForFunction(() => __shop.state().over && (__shop.state().over !== 'complete' || __shop.state().sale != null), null, { timeout: 180000 });
-      const r = await p.evaluate(() => { const S = __shop.state(); return { over: S.over, month: S.month, cash0: window.__cash0, cashEnd: S.cash, debtEnd: S.debt, sale5: S.sale || 0, tax: S.taxPaid || 0, snap: window.__snap }; });
+      const r = await p.evaluate(() => { const S = __shop.state(); return { over: S.over, month: S.month, cash0: window.__cash0, cashEnd: S.cash, debtEnd: S.debt, sale5: S.sale || 0, tax: S.taxPaid || 0, finalAmount: S.finalAmount || 0, fine: S.penalty ? S.penalty.total : 0, prison: S.penalty ? S.penalty.prisonMonths : 0, snap: window.__snap }; });
       (res[j.st.name] ||= []).push(r);
     }
   }
@@ -49,15 +49,15 @@ const strategies = [
       if (y === 0) return { cash: r.cash0, amount: r.cash0 };
       const endY = Math.ceil(r.month / 12);
       if (r.over === 'complete' && y === 5) return { cash: r.cashEnd, amount: r.cashEnd + r.sale5 - r.debtEnd, alive: true };
-      if (y < 5 && r.snap[y]) { const s = r.snap[y], kept = Math.max(0, s.cash - s.debt); return { cash: s.cash, amount: (1 - s.arrestP) * Math.max(0, s.amount) + s.arrestP * kept, alive: true }; }
-      if (r.over === 'arrest') return { cash: r.cashEnd, amount: Math.max(0, r.cashEnd - r.debtEnd) };
+      if (y < 5 && r.snap[y]) { const s = r.snap[y], kept = s.kept; return { cash: s.cash, amount: (1 - s.arrestP) * Math.max(0, s.amount) + s.arrestP * kept, alive: true }; }
+      if (r.over === 'arrest') return { cash: r.cashEnd, amount: r.finalAmount };
       return { cash: 0, amount: 0 }; // 倒産
     };
     for (let y = 1; y <= 5; y++){
       const alive = runs.filter((r) => at(r, y).alive).length;
       rows.push({ year: y, alive, annual: Math.round(mean(runs.map((r) => at(r, y).cash - at(r, y - 1).cash))), cumulative: Math.round(mean(runs.map((r) => at(r, y).cash - r.cash0))), totalReturn: Math.round(mean(runs.map((r) => at(r, y).amount - FUND))), roi: Math.round(mean(runs.map((r) => at(r, y).amount - FUND)) / FUND * 100) });
     }
-    out[st.name] = { n: runs.length, cash0: Math.round(mean(runs.map((r) => r.cash0))), arrested: runs.filter((r) => r.over === 'arrest').length, bankrupt: runs.filter((r) => r.over === 'bankrupt').length, tax: Math.round(mean(runs.map((r) => r.tax))), rows };
+    out[st.name] = { n: runs.length, cash0: Math.round(mean(runs.map((r) => r.cash0))), arrested: runs.filter((r) => r.over === 'arrest').length, bankrupt: runs.filter((r) => r.over === 'bankrupt').length, tax: Math.round(mean(runs.map((r) => r.tax))), penalty: Math.round(mean(runs.filter((r) => r.over === 'arrest').map((r) => r.fine))), prisonMonths: +mean(runs.filter((r) => r.over === 'arrest' && r.prison).map((r) => r.prison)).toFixed(1), rows };
   }
   console.log(JSON.stringify(out, null, 1));
   await b.close();

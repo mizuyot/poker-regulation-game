@@ -3170,6 +3170,32 @@ summary{cursor:pointer;color:var(--muted)}
       "tokubetsu7"
     ],
     "note": "店は資本金1千万円以下の中小法人（普通法人）として計算する。税率は法令の標準税率（e-Gov法令API、2026年11月時点の版）。条例による超過税率、事業税の翌年の損金算入、中間申告、外形標準課税は扱わない。決算のたびに1年分を納める（実際は決算から2か月以内）。単位は万円。"
+  },
+  "penalty": {
+    "black": {
+      "prisonBaseMonths": 12,
+      "prisonPerBlackYearMonths": 12,
+      "prisonMinMonths": 3,
+      "prisonMaxMonths": 60,
+      "forfeitRate": 0.2,
+      "provisionIds": [
+        "keiho186",
+        "keiho19",
+        "keiho19_2",
+        "keiho12"
+      ]
+    },
+    "unlicensed": {
+      "fine": 300,
+      "provisionIds": [
+        "fueiho49"
+      ]
+    },
+    "gray": {
+      "fine": 100,
+      "missingSource": "グレーの営業（チケット・コイン、商品、店内飲食割引）で摘発された場合の罰則条文は正本に未収録。罰金額はゲーム上の値。"
+    },
+    "note": "刑の重さ・罰金・追徴の額は、法定刑の範囲内で決めたゲーム上の値。実際の量刑の平均は、司法統計などの一次資料では確認していない。拘禁刑は2025年6月施行の改正刑法で懲役・禁錮が一本化されたもの（画面では「拘禁刑（旧・懲役）」と書く）。黒：拘禁刑＝1年＋黒の営業1年ごとに1年（3か月〜5年、刑法186条2項の範囲）、黒の営業中に得た利益の20%を追徴（刑法19条・19条の2）。無許可営業：罰金300万円（風営法49条の上限は1千万円）。"
   }
 }
     </script>
@@ -3206,9 +3232,11 @@ summary{cursor:pointer;color:var(--muted)}
   "keiho186": {
     "id": "keiho186",
     "name": "刑法186条（常習賭博・賭博場開張等図利）",
-    "text": "",
-    "verified": false,
-    "url": "https://laws.e-gov.go.jp/law/140AC0000000045#Mp-At_186"
+    "text": "常習として賭博をした者は、三年以下の拘禁刑に処する。\n２賭博場を開張し、又は博徒を結合して利益を図った者は、三月以上五年以下の拘禁刑に処する。",
+    "verified": true,
+    "url": "https://laws.e-gov.go.jp/law/140AC0000000045#Mp-At_186",
+    "note": "2項：賭博場を開張して利益を図った者は3月以上5年以下の拘禁刑。罰金刑の定めはない。2025年6月施行の改正で「懲役」は「拘禁刑」になった。",
+    "source": "{'api': 'https://laws.e-gov.go.jp/api/2/law_data/140AC0000000045', 'law_title': '刑法', 'law_revision_id': '140AC0000000045_20260521_507AC0000000039', 'amendment_enforcement_date': '2026-05-21', 'retrieved': '2026-11-16'}"
   },
   "fueiho23-2": {
     "id": "fueiho23-2",
@@ -3515,13 +3543,14 @@ function monthTick(){
   const p = wasOpen ? project() : { demand: 0, occ: 0, guests: 0, rev: 0, op: -S.rent, interest: 0, net: -S.rent, rent: S.rent, varCost: 0, other: 0, staff: 0 };
   expansionTick(wasOpen);
   S.cash += p.net; S.last = p; S.year.net = (S.year.net || 0) + p.net;
+  if (wasOpen && riskSources().some((a) => a.tier === "black")) S.blackNet = (S.blackNet || 0) + p.net; // 追徴の対象（黒の営業中の利益）
   if (wasOpen){ S.ops.push(p.op); S.year.rev += p.rev; S.year.op += p.op; S.peakMonth = Math.max(S.peakMonth, p.net); }
   logEv("month", { net: Math.round(p.net), guests: Math.round(p.guests), occ: +p.occ.toFixed(3), style: styleNow().id });
 
   if (wasOpen){
     const rk = risks();
     for (const a of rk.active){ S.used[a.id] = (S.used[a.id] || 0) + 1; S.lastUsed[a.id] = S.month; S.riskMonths.push({ t: S.month, id: a.id, tier: a.tier }); }
-    if (hr("arrest") < rk.arrest){ logEv("arrest", {}); story("摘発された。"); S.month++; rec(p, wasOpen); return stageRaid("arrest", () => finish("arrest")); }
+    if (hr("arrest") < rk.arrest){ S.arrestCause = rk.active.some((a) => a.tier === "black") ? "black" : "gray"; logEv("arrest", {}); story("摘発された。"); S.month++; rec(p, wasOpen); return stageRaid("arrest", () => finish("arrest")); }
     // 予兆：摘発の確率が高い月は、赤いアラートで先に知らせる（6か月に1回まで）
     if (rk.arrest >= R.heatWarn && S.month - (S.heatWarnAt ?? -99) >= 6){ S.heatWarnAt = S.month; story("店の前に、見慣れない車が何日も停まっている。"); note("捜査の気配：店の前に見慣れない車が停まっている", "bad"); if (!TEST) showAlert("捜査の気配", `今月の摘発の確率 ${pct(rk.arrest)}。このまま続けると、ある日踏み込まれる`, true, 4); }
     if (rk.active.length && hr("order") < rk.order) orderActs = rk.active;
@@ -3801,7 +3830,7 @@ function sellConfirm(){
   show(`<div class="kicker">${S.month / 12}年目の決算</div><h1>いま店を売る？</h1>
     <p>買い手が買収前調査をして、評価額で買い取る。売ればゲームはここで終わり、手取り額がスコアになる。</p>
     <table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額（評価額）</td><td>${yen(v.adopted)}</td></tr>${S.debt ? `<tr><td>借入の返済</td><td>${yen(-S.debt)}</td></tr>` : ""}<tr class="total"><td>手取り額</td><td>${yen(amount)}</td></tr></table>
-    ${dd.kind === "shell" ? `<p class="warn">${dd.gray ? `グレーの営業（${esc(dd.name)}）` : "黒の営業"}の歴は、調査で必ず見つかる。売却額はハコとしての価値だけ。${ap ? `<b>${Math.round(ap * 100)}%の確率で摘発され、逮捕歴がつく（手元資金は残るが、売却額はなく、本命のランキングには載らない）。</b>` : ""}</p>` : `<p class="muted" style="font-size:12.5px">5年目まで続けた場合と比べたいときは、評価レポートの成長率と割引率を見る。続けるほど実績が増え、値段も変わる。</p>`}
+    ${dd.kind === "shell" ? `<p class="warn">${dd.gray ? `グレーの営業（${esc(dd.name)}）` : "黒の営業"}の歴は、調査で必ず見つかる。売却額はハコとしての価値だけ。${ap ? `<b>${Math.round(ap * 100)}%の確率で摘発され、逮捕歴がつく（売却額はなく、罰金・追徴を払った残りの手元資金だけ。本命のランキングには載らない）。</b>` : ""}</p>` : `<p class="muted" style="font-size:12.5px">5年目まで続けた場合と比べたいときは、評価レポートの成長率と割引率を見る。続けるほど実績が増え、値段も変わる。</p>`}
     <div class="row stick"><button class="btn" id="backBtn">売らずに続ける</button><button class="btn primary" id="doSell">売る</button></div>`);
   $("backBtn").onclick = resume;
   $("doSell").onclick = () => { hide(); logEv("sellEarly", { month: S.month }); story(`${S.month / 12}年目の決算で、店を売ることにした。`); proposal(true); };
@@ -3834,7 +3863,7 @@ const ddArrestP = (dd) => dd.kind !== "shell" ? 0 : dd.gray ? (dd.late > 0 ? R.d
 function proposal(early){
   const dd = ddCheck(early ? S.month - R.ddWindowEarly : R.ddStart);
   // 黒の営業歴は必ず見つかり、刑事事件になりうる。調査期間中も続けていれば確率は高い（v1.2）。グレーは調査期間中も続けていた場合（v1.3）
-  if (hr("dd", 9) < ddArrestP(dd)){ logEv("arrest", { dd: true, gray: !!dd.gray }); story(dd.gray ? R.ddGrayArrestText : R.ddArrestText); return stageRaid("arrest", () => finish("arrest")); }
+  if (hr("dd", 9) < ddArrestP(dd)){ S.arrestCause = dd.gray ? "gray" : "black"; logEv("arrest", { dd: true, gray: !!dd.gray }); story(dd.gray ? R.ddGrayArrestText : R.ddArrestText); return stageRaid("arrest", () => finish("arrest")); }
   const v = valuation(dd), sale = v.adopted;
   logEv("proposal", { dd: dd.kind, sale: Math.round(sale), dcf: Math.round(v.dcf.point), comps: Math.round(v.comps.point), liq: Math.round(v.liq.point) });
   story(dd.kind === "shell" ? (dd.gray ? `買収前調査で、グレーの営業（${dd.name}）が見つかった。` : "買収前調査で、黒の営業が見つかった。") : "買収提案がまとまった。");
@@ -3845,6 +3874,25 @@ function proposal(early){
     ${valuationReport(v, { kicker: "バリュエーション・レポート", bridge: true, open: true })}
     <div class="row stick"><button class="btn primary" id="okBtn">結果発表へ</button></div>`, () => { $("okBtn").onclick = () => finish("complete"); }));
 }
+
+/* ---------- 摘発の罰則（v1.4.2）：罰金・追徴と拘禁刑（旧・懲役）。値は shop.json の penalty、根拠は条文の正本 ---------- */
+const PN = D.penalty;
+function penaltyOf(){
+  const blackMonths = S.riskMonths.filter((x) => x.tier === "black").length, unl = S.riskMonths.some((x) => x.id === "unlicensed");
+  const out = { fine: 0, forfeit: 0, prisonMonths: 0, items: [], provisionIds: [] };
+  if (S.arrestCause !== "gray" && blackMonths){
+    const b = PN.black;
+    out.prisonMonths = clamp(Math.round(b.prisonBaseMonths + b.prisonPerBlackYearMonths * blackMonths / 12), b.prisonMinMonths, b.prisonMaxMonths);
+    out.forfeit = Math.max(0, (S.blackNet || 0) * b.forfeitRate);
+    out.items.push(["追徴金（黒の営業で得た利益の" + Math.round(b.forfeitRate * 100) + "%）", out.forfeit]);
+    out.provisionIds.push(...b.provisionIds);
+  }
+  if (unl){ out.fine += PN.unlicensed.fine; out.items.push(["罰金（無許可営業）", PN.unlicensed.fine]); out.provisionIds.push(...PN.unlicensed.provisionIds); }
+  if (S.arrestCause === "gray"){ out.fine += PN.gray.fine; out.items.push(["罰金（グレーの営業）", PN.gray.fine]); out.missing = PN.gray.missingSource; }
+  out.total = out.fine + out.forfeit;
+  return out;
+}
+const prisonText = (m) => m >= 12 ? `${Math.floor(m / 12)}年${m % 12 ? `${m % 12}か月` : ""}` : `${m}か月`;
 
 /* ---------- 税金（法人の税、v1.4）----------
    税率は docs/questions.json の条文（e-Gov 法令APIから取得）にもとづく標準税率。shop.json の tax に値と条文IDを置く。
@@ -3887,16 +3935,20 @@ function finish(kind){
   S.over = kind; S.paused = true; clearSave();
   if (kind === "arrest" && ((S.year.net || 0) + (S.year.adj || 0)) !== 0) payTax("摘発までの期間");
   const sale = kind === "complete" ? S.sale : 0;
-  // 摘発：店は失うが、それまでに稼いだ手元資金は残る（借入は返す）。倒産は0
-  const amount = kind === "complete" ? S.cash + sale - S.debt : kind === "arrest" ? Math.max(0, S.cash - S.debt) : 0;
+  // 摘発：店は失い、罰金・追徴を払うが、残りの手元資金は残る（借入は返す）。倒産は0
+  const pen = kind === "arrest" ? penaltyOf() : null; S.penalty = pen;
+  const amount = kind === "complete" ? S.cash + sale - S.debt : kind === "arrest" ? Math.max(0, S.cash - S.debt - pen.total) : 0;
+  S.finalAmount = amount;
   logEv("end", { kind, amount: Math.round(amount), sale: Math.round(sale), peak: Math.round(S.peakMonth) });
   const rank = saveRank(kind, amount);
   const title = { complete: "結果発表", arrest: R.labels.arrest, bankrupt: "資金が尽きた" }[kind];
   const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（3つの評価の中央値）";
-  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。稼いだ手元資金は残るが、店と売却額を失い、逮捕歴がつく。最終手取り額のランキング（本命）には載らず、「金額だけ」のランキングにだけ載る。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
+  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。店と売却額を失い、罰金・追徴を払い、逮捕歴がつく。残った手元資金は「金額だけ」のランキングに載る（本命の最終手取り額には載らない）。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
   show(`
     <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓${S.branch ? ` ・ 2号店 ${esc(S.branch.loc.name)}` : ""}${S.fc && S.fc.count ? ` ・ FC${S.fc.count}店` : ""} ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
-    ${kind === "arrest" ? `<p style="margin:10px 0 0"><span class="rec" style="font-size:14px;padding:3px 10px">逮捕歴あり</span> <span class="muted" style="font-size:12.5px">お金は残っても、経営者としての記録は残る（ゲーム上の扱い）</span></p>` : ""}
+    ${kind === "arrest" ? `<p style="margin:10px 0 0"><span class="rec" style="font-size:14px;padding:3px 10px">逮捕歴あり</span>${pen.prisonMonths ? ` <b>拘禁刑（旧・懲役）${prisonText(pen.prisonMonths)}</b>` : ""} <span class="muted" style="font-size:12.5px">お金は残っても、経営者としての記録は残る（ゲーム上の扱い）</span></p>
+      <table class="t" style="margin-top:6px"><tr><td style="text-align:left">摘発時の手元資金</td><td>${yen(S.cash)}</td></tr>${S.debt ? `<tr><td style="text-align:left">借入の返済</td><td>${yen(-S.debt)}</td></tr>` : ""}${pen.items.map(([n, v]) => `<tr><td style="text-align:left">${n}</td><td>${yen(-v)}</td></tr>`).join("")}<tr class="total"><td style="text-align:left">残った手元資金</td><td>${yen(amount)}</td></tr></table>
+      <details><summary>刑と罰金の根拠</summary><p class="muted" style="font-size:12px">${esc(PN.note)}</p>${pen.missing ? `<p class="muted" style="font-size:12px">未収録：${esc(pen.missing)}</p>` : ""}${provHTML([...new Set(pen.provisionIds)])}</details>` : ""}
     <div class="kicker" style="margin-top:12px">${kind === "arrest" ? "残った手元資金（金額だけのランキング）" : "最終手取り額"}</div>
     <div class="big">${yen(amount)}<small class="${amount - M.fund >= 0 ? "pos" : "negc"}">元手${yen(M.fund)}から ${yen(amount - M.fund, true)}</small></div>
     ${kind === "complete" ? `<table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額${ddWord}</td><td>${yen(sale)}</td></tr>
@@ -5202,7 +5254,7 @@ window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.s
 window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
   fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG,
   // 検証用：いま売ったらいくらか（売却時点の直前6か月を「調査期間」とみなす）と、営業スタイルの切り替え
-  sellNow: () => { const dd = ddCheck(S.month - R.ddWindowEarly), v = valuation(dd), arrestP = ddArrestP(dd); return { month: S.month, dd: dd.kind, arrestP, sale: v.adopted, dcf: v.dcf.point, comps: v.comps.point, liq: v.liq.point, cash: S.cash, debt: S.debt, amount: S.cash + v.adopted - S.debt }; },
+  sellNow: () => { const dd = ddCheck(S.month - R.ddWindowEarly), v = valuation(dd), arrestP = ddArrestP(dd); const kc = S.arrestCause; S.arrestCause = dd.gray ? "gray" : "black"; const pen = penaltyOf(); S.arrestCause = kc; return { kept: Math.max(0, S.cash - S.debt - pen.total), month: S.month, dd: dd.kind, arrestP, sale: v.adopted, dcf: v.dcf.point, comps: v.comps.point, liq: v.liq.point, cash: S.cash, debt: S.debt, amount: S.cash + v.adopted - S.debt }; },
   setStyle: (id) => { S.style = byId(STYLES, id); }, preview: (c, n) => drawPreview(c, n), raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
 readColors(); buildTimeBar(); resize(); syncHUD(); openTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
