@@ -1152,8 +1152,9 @@ summary{cursor:pointer;color:var(--muted)}
           "keiho185",
           "keiho186"
         ],
-        "arrestGrowth2": 0.00012,
-        "orderGrowth": 0.001
+        "arrestGrowth2": 0.001,
+        "orderGrowth": 0.001,
+        "arrestDelay": 6.0
       },
       {
         "id": "token",
@@ -3292,7 +3293,7 @@ function project(legalOnly){
 function riskSources(){
   if (!isOpen()) return [];
   const out = [], st = styleNow();
-  if (st.tier !== "clean") out.push({ id: st.id, short: st.name, tier: st.tier, arrest: st.arrest, growth: st.arrestGrowth, growth2: st.arrestGrowth2 || 0, order: st.order, orderGrowth: st.orderGrowth || 0, prov: st.provisionIds, style: st });
+  if (st.tier !== "clean") out.push({ id: st.id, short: st.name, tier: st.tier, arrest: st.arrest, growth: st.arrestGrowth, growth2: st.arrestGrowth2 || 0, delay: st.arrestDelay || 0, order: st.order, orderGrowth: st.orderGrowth || 0, prov: st.provisionIds, style: st });
   if (isLate(S.open, S.close)){ const a = byId(D.illegal, "latenight"); out.push({ id: "latenight", short: a.short, tier: "black", arrest: a.arrest, growth: 0, order: a.order, prov: a.provisionIds }); }
   if (!S.licensed && S.unlicensed){ const a = byId(D.illegal, "unlicensed"); out.push({ id: "unlicensed", short: a.short, tier: "black", arrest: a.arrest, growth: 0, order: a.order, prov: a.provisionIds }); }
   return out;
@@ -3303,7 +3304,7 @@ function risks(){
   const jumpOf = (tier) => Math.pow(tier === "black" ? R.orderJump : R.orderJumpGray, S.orders); // グレーは是正指摘が中心で、摘発率の上がり方は穏やか
   const rm = FX().riskMult;
   // 続けた月数 u で上がる：摘発＝基礎＋growth×u＋growth2×u²、是正指摘＝基礎＋orderGrowth×u（v1.2）
-  for (const a of act){ const u = S.used[a.id] || 0; arrest += (a.arrest + a.growth * u + (a.growth2 || 0) * u * u) * jumpOf(a.tier) * rm; order += (a.order + (a.orderGrowth || 0) * u) * rm; }
+  for (const a of act){ const u = S.used[a.id] || 0, uu = Math.max(0, u - (a.delay || 0)); arrest += (a.arrest + a.growth * u + (a.growth2 || 0) * uu * uu) * jumpOf(a.tier) * rm; order += (a.order + (a.orderGrowth || 0) * u) * rm; }
   for (const [id, lu] of Object.entries(S.lastUsed)){
     if (act.some((a) => a.id === id)) continue;
     if (S.month - lu <= R.tailMonths){ const base = byId(STYLES, id) || byId(D.illegal, id); arrest += base.arrest * R.tailFactor * jumpOf(base.tier || "black"); }
@@ -4289,8 +4290,8 @@ function openTitle(){
   if (sv) $("contBtn").onclick = () => resumeGame(sv);
 }
 /* 続けた年数で上がるリスク（1年目の初め → 3年目の初め。是正指摘を受けると摘発はさらに上がる） */
-const riskAt = (s, u) => ({ arrest: s.arrest + (s.arrestGrowth || 0) * u + (s.arrestGrowth2 || 0) * u * u, order: s.order + (s.orderGrowth || 0) * u });
-const styleRiskText = (s) => { const a = riskAt(s, 0), b = riskAt(s, 24); return `摘発 ${pct(a.arrest)}→${pct(b.arrest)}/月<br>${R.labels.order} ${pct(a.order, 0)}→${pct(b.order, 0)}/月<br><span style="font-size:10.5px">開業時→3年目</span>`; };
+const riskAt = (s, u) => ({ arrest: Math.min(0.9, s.arrest + (s.arrestGrowth || 0) * u + (s.arrestGrowth2 || 0) * Math.max(0, u - (s.arrestDelay || 0)) ** 2), order: s.order + (s.orderGrowth || 0) * u });
+const styleRiskText = (s) => { const a = riskAt(s, 0), b = riskAt(s, 24); return `摘発 ${pct(a.arrest)}→${pct(b.arrest, b.arrest >= 0.1 ? 0 : 1)}/月<br>${R.labels.order} ${pct(a.order, 0)}→${pct(b.order, 0)}/月<br><span style="font-size:10.5px">開業時→3年目</span>`; };
 function styleList(sel){
   return `<div class="stylelist" data-k="style">${STYLES.map((s) => `<button class="opt" data-v="${s.id}" aria-pressed="${s.id === sel}" aria-label="${esc(s.name)}（${esc(s.tierLabel)}）">
     <span><b>${esc(s.name)}</b><small>${esc(s.desc)}${s.effect.spend !== 1 ? ` 客単価×${s.effect.spend}` : ""}${s.effect.demand !== 1 ? ` 客数×${s.effect.demand}` : ""}</small></span>

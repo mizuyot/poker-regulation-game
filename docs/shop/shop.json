@@ -860,8 +860,9 @@
           "keiho185",
           "keiho186"
         ],
-        "arrestGrowth2": 0.00012,
-        "orderGrowth": 0.001
+        "arrestGrowth2": 0.001,
+        "orderGrowth": 0.001,
+        "arrestDelay": 6.0
       },
       {
         "id": "token",
