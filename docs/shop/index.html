@@ -3482,7 +3482,8 @@ function storeCalc(st, legalOnly){
   let rev = guests * O.days * spend;
   if (S.rumor > 0) rev *= 1 - R.orderRumor;
   if (S.shock > 0) rev *= 1 - O.trouble.shock;
-  const staff = st.main && S.staffList ? S.staffList.reduce((a, x) => a + x.wage, 0) * hoursLen() / O.baseHours : st.loc.staffPerTable * S.hiring.staffMult * st.tables * hoursLen() / O.baseHours;
+  // 人件費：本店はスタッフ一人ひとりの給与の合計（営業時間が長いほど必要な人数が増える＝人数の側で効く。v1.4.3で時間の二重計上を修正）
+  const staff = st.main && S.staffList ? S.staffList.reduce((a, x) => a + x.wage, 0) : st.loc.staffPerTable * S.hiring.staffMult * st.tables * hoursLen() / O.baseHours;
   return { demand, occ, guests, rev, staff, lost, lostSeat: Math.max(0, demand - cap), svc };
 }
 function project(legalOnly){
@@ -4294,7 +4295,7 @@ function openStaff(){
   const render = () => {
     const ss = staffStats();
     show(`<div class="kicker">人材 ・ ${esc(phaseNow().name)}（${esc(phaseNow().focus)}）</div><h1>スタッフ ${ss.count}人</h1>
-      <p style="font-size:13px">必要な目安 ${Math.round(ss.need)}人（${S.tables}卓×${SS.perTable}人×営業${hoursLen()}時間）。給与の合計 ${yen(ss.wage * hoursLen() / O.baseHours)}/月。${ss.manager ? `店長：${esc(ss.manager.name)}さん` : `<span class="warn">店長がいない（売るとき「オーナー依存」で割り引かれる）</span>`}</p>
+      <p style="font-size:13px">必要な目安 ${Math.round(ss.need)}人（${S.tables}卓×${SS.perTable}人×営業${hoursLen()}時間）。給与の合計 ${yen(ss.wage)}/月。${ss.manager ? `店長：${esc(ss.manager.name)}さん` : `<span class="warn">店長がいない（売るとき「オーナー依存」で割り引かれる）</span>`}</p>
       <div style="max-height:300px;overflow:auto;border:1px solid var(--soft);border-radius:10px"><table class="t" style="font-size:12px;margin:0">
         <tr><th>名前</th><th>進行</th><th>教える</th><th>接客</th><th>給与</th><th>士気</th><th>勤続</th><th></th></tr>
         ${S.staffList.map((x, i) => `<tr><td style="text-align:left">${esc(x.name)}${x.manager ? "（店長）" : ""}</td><td>${dots(x.skill)}</td><td>${dots(x.teach)}</td><td>${dots(x.host)}</td><td>${x.wage}</td><td class="${x.morale < 35 ? "negc" : ""}">${Math.round(x.morale)}</td><td>${x.months}か月</td>
@@ -4599,7 +4600,7 @@ function costTableNow(cfg){
   const h = cfg.close - cfg.open;
   return costTableHTML([
     ["家賃", p.rent, "広さで決まる"],
-    ["人件費", p.staff, `スタッフの給与 × 営業${h}時間 ÷ 標準${O.baseHours}時間`],
+    ["人件費", p.staff, `スタッフ${S.staffList ? S.staffList.length : 0}人の給与（必要な人数は 卓×${SS.perTable}人×営業${h}時間÷${O.baseHours}時間）`],
     ["光熱費", p.utility, `卓 × 営業${h}時間 × ${O.days}日`],
     ["原価・決済", p.varCost, `売上の${Math.round((O.variableRate + FX(cfg.fac).varRate) * 100)}%`],
     ["設備・企画の維持費", p.facOps, cfg.fac.length ? cfg.fac.map((id) => byId(FAC, id).name).join("・") : "なし"],
@@ -5252,7 +5253,7 @@ function frame(now){
 }
 window.__dbg = () => ({ n: people.length, states: people.reduce((a, p) => (a[p.state] = (a[p.state] || 0) + 1, a), {}), sample: people.slice(0, 3).map((p) => [p.x.toFixed(2), p.y.toFixed(2), p.tx && p.tx.toFixed(2), p.ty && p.ty.toFixed(2), p.state]), lit: shopLit(), want: targetSeated() });
 window.__shop = { openBranch: (locId, t) => { const loc = byId(D.locations, locId), b = build(loc, t), cost = b.invest + D.license.fee; if (branchWhyNot() || S.branch || S.cash < cost) return false; S.cash -= cost; S.branch = { loc, tables: t, share: Math.max(0.3, 1 + hgauss(`branch:${loc.id}`) * loc.demandSd), openedAt: null, wait: EXB.waitMonths, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost }; logEv("branch", {}); return true; },
-  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG,
+  fcOn: () => { if (!S.fc) S.fc = { recruiting: false, count: 0 }; S.fc.recruiting = true; }, state: () => S, cfg: CFG, project: () => project(),
   // 検証用：いま売ったらいくらか（売却時点の直前6か月を「調査期間」とみなす）と、営業スタイルの切り替え
   sellNow: () => { const dd = ddCheck(S.month - R.ddWindowEarly), v = valuation(dd), arrestP = ddArrestP(dd); const kc = S.arrestCause; S.arrestCause = dd.gray ? "gray" : "black"; const pen = penaltyOf(); S.arrestCause = kc; return { kept: Math.max(0, S.cash - S.debt - pen.total), month: S.month, dd: dd.kind, arrestP, sale: v.adopted, dcf: v.dcf.point, comps: v.comps.point, liq: v.liq.point, cash: S.cash, debt: S.debt, amount: S.cash + v.adopted - S.debt }; },
   setStyle: (id) => { S.style = byId(STYLES, id); }, preview: (c, n) => drawPreview(c, n), raid: (k) => stageRaid(k, () => k === "arrest" ? finish("arrest") : resume()), start: (cfg) => startGame({ ...CFG, ...cfg }) };
