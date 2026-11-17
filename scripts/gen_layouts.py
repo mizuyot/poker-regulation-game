@@ -7,7 +7,7 @@
 - 内装（v1.8、ユーザー指定）
   - ほぼなし：卓と受付の机だけ
   - シンプル：＋ソファセット（ソファと低いテーブル）とバーカウンター
-  - 豪華：シンプルの全部＋大きなLEDモニター、壇上のファイナルテーブル（FT）、ガラスで仕切ったVIPテーブル
+  - 豪華：シンプルの全部＋大きなLEDモニター、壇上のファイナルテーブル（FT）、ガラスで仕切ったVIPテーブル、シャンデリア（通路の上）
 - 色をつけるのは卓のラシャだけ（描画側）。観葉植物・ポスターなどの飾りは置かない
 """
 from __future__ import annotations
@@ -111,6 +111,12 @@ def layout(n: int, tier: str) -> dict:
             cw = (x1 - x0) / len(rows[-1])
             deco.append({"t": "vip", "x0": round(vt[0] - cw / 2 + 0.1, 2), "y0": round(vt[1] - ch / 2 + 0.1, 2), "x1": round(vt[0] + cw / 2 - 0.1, 2), "y1": round(min(d - 0.1, vt[1] + ch / 2), 2)})
             special["vip"] = list(vt)
+        # シャンデリア：卓の行と行の間の通路の上（行が1つなら卓の区画の手前寄り）。卓数が多いほど増やす
+        aisles = [round((rows[i][0][1] + rows[i + 1][0][1]) / 2, 2) for i in range(len(rows) - 1)] or [round(min(y1 - 0.4, rows[0][0][1] + ch / 2), 2)]
+        cols = 1 if n <= 4 else 2
+        for ay in aisles:
+            for c in range(cols):
+                deco.append({"t": "chandelier", "x": round(x0 + (x1 - x0) * (c + 1) / (cols + 1), 2), "y": ay})
     return {
         "w": w, "d": d, "tsubo": tsubo, "m2": round(m2, 1), "interior": tier,
         "tables": [[x, y] for x, y in tables],
