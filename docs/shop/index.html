@@ -4677,7 +4677,7 @@ function newState(cfg){
   const ind = { ...IND.start };
   for (const src of [hiring.start]) for (const [k, v] of Object.entries(src || {})) ind[k] = clamp(ind[k] + v, 0, 100);
   const st = {
-    cfg, loc, hiring, policy, edu: cfg.edu || "10", interior: cfg.interior || "simple", fac: [...(cfg.fac || [])], mix: { ...D.mixStart }, mixStart: { ...D.mixStart }, choke: [], chokeCount: { seat: 0, staff: 0, demand: 0, retain: 0 }, lostGuests: 0, style: byId(STYLES, cfg.style),
+    cfg, loc, hiring, policy, edu: cfg.edu || "10", interior: cfg.interior || "simple", fac: (cfg.fac || []).filter((id) => byId(FAC, id)) /* 設備・企画は v1.9 で削除。古いセーブや設定に残っていても無視する */, mix: { ...D.mixStart }, mixStart: { ...D.mixStart }, choke: [], chokeCount: { seat: 0, staff: 0, demand: 0, retain: 0 }, lostGuests: 0, style: byId(STYLES, cfg.style),
     tables: cfg.tables, capacity: cfg.tables, area: b.area, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost,
     open: cfg.open, close: cfg.close, price: cfg.price, ad: 0,
     cash: M.fund - b.invest - (cfg.unlicensed ? 0 : D.license.fee), debt: 0,
@@ -5474,7 +5474,7 @@ function loadSave(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } 
 function clearSave(){ try { localStorage.removeItem(SAVE_KEY); } catch {} }
 function resumeGame(o){
   clearInterval(titleTimer); card.classList.remove("titlecard");
-  S = { ...o, loc: byId(D.locations, o.loc), hiring: byId(ST.hiring, o.hiring), policy: byId(ST.policy, o.policy), style: byId(STYLES, o.style), fac: o.fac || [], mix: o.mix || { ...D.mixStart }, branch: o.branch ? { ...o.branch, loc: byId(D.locations, o.branch.loc) } : null,
+  S = { ...o, loc: byId(D.locations, o.loc), hiring: byId(ST.hiring, o.hiring), policy: byId(ST.policy, o.policy), style: byId(STYLES, o.style), fac: (o.fac || []).filter((id) => byId(FAC, id)), hiring: byId(ST.hiring, o.hiring) || byId(ST.hiring, "exp"), policy: byId(ST.policy, o.policy) || byId(ST.policy, "hospitality"), mix: o.mix || { ...D.mixStart }, branch: o.branch ? { ...o.branch, loc: byId(D.locations, o.branch.loc) } : null,
     eventsSeen: new Set(o.eventsSeen), q: [], peakMonth: o.peakMonth == null ? -Infinity : o.peakMonth, paused: false, over: null };
   hide(); resetScene();
   if (S.month >= M.months){ enqueue(proposal); S.q.shift()(); }

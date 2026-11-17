@@ -15,11 +15,11 @@ const configs = [
   ['営業4時間（20-24時）', { open: 20, close: 24 }], ['昼から（12-24時）', { open: 12, close: 24 }], ['朝6時から（6-24時）', { open: 6, close: 24 }],
   ['24時間（5-29時・深夜営業）', { open: 5, close: 29 }], ['12卓・24時間', { tables: 12, open: 5, close: 29 }],
   ['未経験採用', { hiring: 'rookie' }],
-  ['設備・企画すべて', { fac: ALLFAC }], ['1卓・設備すべて', { tables: 1, fac: ALLFAC }], ['12卓・設備すべて・東京', { tables: 12, fac: ALLFAC, loc: 'tokyo' }],
+  ['内装ほぼなし・教育0円', { interior: 'none', edu: '0' }], ['内装豪華・教育30万円', { interior: 'lux', edu: '30' }], ['12卓・豪華・東京', { tables: 12, interior: 'lux', loc: 'tokyo' }],
   ['無許可ですぐ開く', { unlicensed: true }],
   ['黒・12卓', { style: 'cashout', tables: 12 }], ['黒・1卓', { style: 'cashout', tables: 1 }], ['黒・24時間・無許可', { style: 'cashout', open: 5, close: 29, unlicensed: true }],
   ['コイン・12卓・130%', { style: 'token', tables: 12, price: 1.3 }],
-  ['全部盛り：黒・12卓・東京・24時間・無許可・設備すべて・130%', { style: 'cashout', tables: 12, loc: 'tokyo', open: 5, close: 29, unlicensed: true, fac: ALLFAC, price: 1.3 }],
+  ['全部盛り：黒・12卓・東京・24時間・無許可・豪華・130%', { style: 'cashout', tables: 12, loc: 'tokyo', open: 5, close: 29, unlicensed: true, interior: 'lux', price: 1.3 }],
 ];
 (async () => {
   const b = await chromium.launch();
