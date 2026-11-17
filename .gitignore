@@ -7,3 +7,4 @@ __pycache__/
 .venv/
 .env
 /internal/
+data/shop_scores.jsonl
