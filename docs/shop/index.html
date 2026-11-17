@@ -171,6 +171,8 @@ summary{cursor:pointer;color:var(--muted)}
 .slider{display:grid;grid-template-columns:4.5em 1fr 4.5em;gap:8px;align-items:center;font-size:13px;margin:6px 0}
 .slider input{width:100%;accent-color:var(--gray)}
 .slider.price{grid-template-columns:4.2em 1fr 4.2em;line-height:1.25;font-size:12px}
+.fineBox{border:3px solid var(--danger);border-radius:14px;padding:12px 14px;margin:12px 0 4px;background:color-mix(in srgb,var(--danger) 7%,transparent)}
+.fineAmt{font-family:var(--mono);font-size:clamp(30px,5vw,44px);font-weight:700;color:var(--danger);line-height:1.1}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media (max-width:720px){.grid3{grid-template-columns:1fr}}
 .rec{display:inline-block;background:var(--ink);color:var(--bg);font-size:10.5px;font-weight:700;padding:0 6px;border-radius:4px;vertical-align:1px}
 .pcbox{border:1.5px solid var(--soft);border-radius:12px;padding:8px 10px 6px;margin:6px 0 4px}
@@ -3134,30 +3136,21 @@ summary{cursor:pointer;color:var(--muted)}
     "note": "店は資本金1千万円以下の中小法人（普通法人）として計算する。税率は法令の標準税率（e-Gov法令API、2026年11月時点の版）。条例による超過税率、事業税の翌年の損金算入、中間申告、外形標準課税は扱わない。決算のたびに1年分を納める（実際は決算から2か月以内）。単位は万円。"
   },
   "penalty": {
+    "rule": "yearRevenue",
+    "provisionIds": [
+      "keiho186",
+      "keiho19",
+      "keiho19_2",
+      "keiho12",
+      "fueiho49"
+    ],
     "black": {
       "prisonBaseMonths": 12,
       "prisonPerBlackYearMonths": 12,
       "prisonMinMonths": 3,
-      "prisonMaxMonths": 60,
-      "forfeitRate": 0.2,
-      "provisionIds": [
-        "keiho186",
-        "keiho19",
-        "keiho19_2",
-        "keiho12"
-      ]
+      "prisonMaxMonths": 60
     },
-    "unlicensed": {
-      "fine": 300,
-      "provisionIds": [
-        "fueiho49"
-      ]
-    },
-    "gray": {
-      "fine": 100,
-      "missingSource": "グレーの営業（チケット・コイン、商品、店内飲食割引）で摘発された場合の罰則条文は正本に未収録。罰金額はゲーム上の値。"
-    },
-    "note": "刑の重さ・罰金・追徴の額は、法定刑の範囲内で決めたゲーム上の値。実際の量刑の平均は、司法統計などの一次資料では確認していない。拘禁刑は2025年6月施行の改正刑法で懲役・禁錮が一本化されたもの（画面では「拘禁刑（旧・懲役）」と書く）。黒：拘禁刑＝1年＋黒の営業1年ごとに1年（3か月〜5年、刑法186条2項の範囲）、黒の営業中に得た利益の20%を追徴（刑法19条・19条の2）。無許可営業：罰金300万円（風営法49条の上限は1千万円）。"
+    "note": "摘発された年度の売上はすべて罰金・追徴として持っていかれ、前の年度までに稼いだお金は残る（ゲーム上のルール、v1.7、ユーザー指定）。実際の罰金・没収・追徴の額は事件ごとに裁判所が決め、法定刑の範囲内である（刑法186条2項は3月以上5年以下の拘禁刑で罰金刑はない。没収・追徴は刑法19条・19条の2。無許可営業は風営法49条で1千万円以下の罰金など）。拘禁刑（旧・懲役）＝1年＋黒の営業1年ごとに1年（3か月〜5年、ゲーム上の値）。"
   }
 }
     </script>
@@ -3784,7 +3777,7 @@ function annual(){
     <p style="font-size:13px">${fin.ok ? `借入できます（上限 ${yen(fin.limit)}）。ドックの「借入」から。` : `借入はまだできません：${esc(fin.why)}`}</p>
     <h2>どうする？</h2>
     <div class="row stick"><button class="btn" id="sellBtn">いま売る</button><button class="btn" id="polBtn">方針を変える</button><button class="btn primary" id="okBtn">${y + 1}年目へ</button></div>`, () => {
-      S.year = { rev: 0, op: 0 };
+      S.prevYearRev = S.year.rev; S.year = { rev: 0, op: 0 };
       $("okBtn").onclick = resume;
       $("polBtn").onclick = () => openSettings(resume);
       $("sellBtn").onclick = sellConfirm;
@@ -3796,7 +3789,7 @@ function sellConfirm(){
   show(`<div class="kicker">${S.month / 12}年目の決算</div><h1>いま店を売る？</h1>
     <p>買い手が買収前調査をして、評価額で買い取る。売ればゲームはここで終わり、手取り額がスコアになる。</p>
     <table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額（評価額）</td><td>${yen(v.adopted)}</td></tr>${S.debt ? `<tr><td>借入の返済</td><td>${yen(-S.debt)}</td></tr>` : ""}<tr class="total"><td>手取り額</td><td>${yen(amount)}</td></tr></table>
-    ${dd.kind === "shell" ? `<p class="warn">${dd.gray ? `グレーの営業（${esc(dd.name)}）` : "黒の営業"}の歴は、調査で必ず見つかる。売却額はハコとしての価値だけ。${ap ? `<b>${Math.round(ap * 100)}%の確率で摘発され、逮捕歴がつく（売却額はなく、罰金・追徴を払った残りの手元資金だけ。本命のランキングには載らない）。</b>` : ""}</p>` : `<p class="muted" style="font-size:12.5px">5年目まで続けた場合と比べたいときは、評価レポートの成長率と割引率を見る。続けるほど実績が増え、値段も変わる。</p>`}
+    ${dd.kind === "shell" ? `<p class="warn">${dd.gray ? `グレーの営業（${esc(dd.name)}）` : "黒の営業"}の歴は、調査で必ず見つかる。売却額はハコとしての価値だけ。${ap ? `<b>${Math.round(ap * 100)}%の確率で摘発される。摘発されると売却額はなく、締めたばかりの年度の売上（${yen(S.year.rev || S.prevYearRev || 0)}）がすべて罰金・追徴として持っていかれる。</b>` : ""}</p>` : `<p class="muted" style="font-size:12.5px">5年目まで続けた場合と比べたいときは、評価レポートの成長率と割引率を見る。続けるほど実績が増え、値段も変わる。</p>`}
     <div class="row stick"><button class="btn" id="backBtn">売らずに続ける</button><button class="btn primary" id="doSell">売る</button></div>`);
   $("backBtn").onclick = resume;
   $("doSell").onclick = () => { hide(); logEv("sellEarly", { month: S.month }); story(`${S.month / 12}年目の決算で、店を売ることにした。`); proposal(true); };
@@ -3844,18 +3837,13 @@ function proposal(early){
 /* ---------- 摘発の罰則（v1.4.2）：罰金・追徴と拘禁刑（旧・懲役）。値は shop.json の penalty、根拠は条文の正本 ---------- */
 const PN = D.penalty;
 function penaltyOf(){
-  const blackMonths = S.riskMonths.filter((x) => x.tier === "black").length, unl = S.riskMonths.some((x) => x.id === "unlicensed");
-  const out = { fine: 0, forfeit: 0, prisonMonths: 0, items: [], provisionIds: [] };
-  if (S.arrestCause !== "gray" && blackMonths){
-    const b = PN.black;
-    out.prisonMonths = clamp(Math.round(b.prisonBaseMonths + b.prisonPerBlackYearMonths * blackMonths / 12), b.prisonMinMonths, b.prisonMaxMonths);
-    out.forfeit = Math.max(0, (S.blackNet || 0) * b.forfeitRate);
-    out.items.push(["追徴金（黒の営業で得た利益の" + Math.round(b.forfeitRate * 100) + "%）", out.forfeit]);
-    out.provisionIds.push(...b.provisionIds);
-  }
-  if (unl){ out.fine += PN.unlicensed.fine; out.items.push(["罰金（無許可営業）", PN.unlicensed.fine]); out.provisionIds.push(...PN.unlicensed.provisionIds); }
-  if (S.arrestCause === "gray"){ out.fine += PN.gray.fine; out.items.push(["罰金（グレーの営業）", PN.gray.fine]); out.missing = PN.gray.missingSource; }
-  out.total = out.fine + out.forfeit;
+  // v1.7（ユーザー指定）：摘発された年度の売上はすべて罰金・追徴として持っていかれる。前の年度までに稼いだお金は残る
+  // 年度の切れ目（決算の直後、売却の調査など）で摘発されたときは、締めたばかりの年度を「摘発された年度」とみなす
+  const blackMonths = S.riskMonths.filter((x) => x.tier === "black").length;
+  const yearRev = (S.year && S.year.rev) || S.prevYearRev || 0, yNo = (S.year && S.year.rev) ? Math.floor(S.month / 12) + (S.month % 12 ? 1 : 0) : Math.max(1, S.month / 12);
+  const out = { fine: yearRev, forfeit: 0, prisonMonths: 0, yearRev, yearNo: yNo, items: [[`罰金・追徴（${yNo}年目の売上すべて）`, yearRev]], provisionIds: [...PN.provisionIds] };
+  if (S.arrestCause !== "gray" && blackMonths){ const b = PN.black; out.prisonMonths = clamp(Math.round(b.prisonBaseMonths + b.prisonPerBlackYearMonths * blackMonths / 12), b.prisonMinMonths, b.prisonMaxMonths); }
+  out.total = out.fine;
   return out;
 }
 const prisonText = (m) => m >= 12 ? `${Math.floor(m / 12)}年${m % 12 ? `${m % 12}か月` : ""}` : `${m}か月`;
@@ -3909,13 +3897,14 @@ function finish(kind){
   const rank = saveRank(kind, amount);
   const title = { complete: "結果発表", arrest: R.labels.arrest, bankrupt: "資金が尽きた" }[kind];
   const ddWord = S.dd && S.dd.kind === "shell" ? "（ハコとしての価値）" : S.dd && S.dd.kind === "cut" ? "（グレーで減額）" : "（3つの評価の中央値）";
-  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。店と売却額を失い、罰金・追徴を払い、逮捕歴がつく。残った手元資金は「金額だけ」のランキングに載る（本命の最終手取り額には載らない）。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
+  const lead = { complete: S.dd && S.dd.kind !== "none" ? "店は売れたが、ハコとしての値段しかつかなかった。" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で店を売却した。` : "5年の経営を終え、店を売却した。", arrest: "摘発され、店は続けられなくなった。店と売却額を失い、摘発された年度の売上はすべて罰金・追徴として持っていかれる。前の年度までに稼いだお金だけが残る。", bankrupt: `${monthLabel(Math.max(0, S.month - 1))}に資金が尽きた。` }[kind];
   show(`
     <div class="kicker">${esc(S.loc.name)} ・ ${S.tables}卓${S.branch ? ` ・ 2号店 ${esc(S.branch.loc.name)}` : ""}${S.fc && S.fc.count ? ` ・ FC${S.fc.count}店` : ""} ・ ${esc(S.style.name)} ・ ${S.month}か月</div><h1>${esc(title)}</h1><p>${esc(lead)}</p>
-    ${kind === "arrest" ? `<p style="margin:10px 0 0"><span class="rec" style="font-size:14px;padding:3px 10px">逮捕歴あり</span>${pen.prisonMonths ? ` <b>拘禁刑（旧・懲役）${prisonText(pen.prisonMonths)}</b>` : ""} <span class="muted" style="font-size:12.5px">お金は残っても、経営者としての記録は残る（ゲーム上の扱い）</span></p>
-      <table class="t" style="margin-top:6px"><tr><td style="text-align:left">摘発時の手元資金</td><td>${yen(S.cash)}</td></tr>${S.debt ? `<tr><td style="text-align:left">借入の返済</td><td>${yen(-S.debt)}</td></tr>` : ""}${pen.items.map(([n, v]) => `<tr><td style="text-align:left">${n}</td><td>${yen(-v)}</td></tr>`).join("")}<tr class="total"><td style="text-align:left">残った手元資金</td><td>${yen(amount)}</td></tr></table>
-      <details><summary>刑と罰金の根拠</summary><p class="muted" style="font-size:12px">${esc(PN.note)}</p>${pen.missing ? `<p class="muted" style="font-size:12px">未収録：${esc(pen.missing)}</p>` : ""}${provHTML([...new Set(pen.provisionIds)])}</details>` : ""}
-    <div class="kicker" style="margin-top:12px">${kind === "arrest" ? "残った手元資金（金額だけのランキング）" : "最終手取り額"}</div>
+    ${kind === "arrest" ? `<div class="fineBox"><div class="kicker">罰金・追徴</div><div class="fineAmt">${yen(-pen.total)}</div>
+      <p style="margin:2px 0 8px;font-size:13.5px">${pen.yearNo}年目の売上 <b>${yen(pen.yearRev)}</b> が、すべて持っていかれた。前の年度までに稼いだお金は残る。${pen.prisonMonths ? `<br><span class="muted" style="font-size:12.5px">ほかに 拘禁刑（旧・懲役）${prisonText(pen.prisonMonths)}（ゲーム上の扱い）</span>` : ""}</p>
+      <table class="t"><tr><td style="text-align:left">摘発時の手元資金</td><td>${yen(S.cash)}</td></tr>${S.debt ? `<tr><td style="text-align:left">借入の返済</td><td>${yen(-S.debt)}</td></tr>` : ""}${pen.items.map(([n, v]) => `<tr><td style="text-align:left">${n}</td><td>${yen(-v)}</td></tr>`).join("")}<tr class="total"><td style="text-align:left">残った手元資金</td><td>${yen(amount)}</td></tr></table>
+      <details><summary>罰金・追徴と刑の根拠</summary><p class="muted" style="font-size:12px">${esc(PN.note)}</p>${provHTML([...new Set(pen.provisionIds)])}</details></div>` : ""}
+    <div class="kicker" style="margin-top:12px">${kind === "arrest" ? "残った手元資金" : "最終手取り額"}</div>
     <div class="big">${yen(amount)}<small class="${amount - M.fund >= 0 ? "pos" : "negc"}">元手${yen(M.fund)}から ${yen(amount - M.fund, true)}</small></div>
     ${kind === "complete" ? `<table class="t"><tr><td>手元資金</td><td>${yen(S.cash)}</td></tr><tr><td>売却額${ddWord}</td><td>${yen(sale)}</td></tr>
       <tr><td>借入残高</td><td>${yen(-S.debt)}</td></tr><tr class="total"><td>最終手取り額</td><td>${yen(amount)}</td></tr></table>` : ""}
@@ -4088,7 +4077,7 @@ function diagnoseHTML(kind){
   if (S.orders) items.push([4, `${R.labels.order}を${S.orders}回受けた`, `是正対応費・風評（売上−25%）・店の値段の割引率+10%が重なった。営業スタイルを「預入のみ」に戻すと止まる。`]);
   if (S.dd && S.dd.gray) items.push([4, "グレーの営業で、店の値段がハコの価値だけになった", `買収前調査で「${S.dd.name}」が見つかった。`]);
   if (S.dd && S.dd.kind === "shell") items.push([5, "黒の営業で売却額がハコの価値だけになった", "継続的なキャッシュフローと認められなかった。"]);
-  if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業は1年目こそ一番稼げるが、半年を過ぎると摘発の確率が急に上がり、客も警戒して離れていく。金額だけなら健全より大きく残ることもあるが、店と売却額を失い、逮捕歴がつく。本命の「最終手取り額」のランキングに載るのは、逮捕歴のない店だけ。"]);
+  if (kind === "arrest") items.push([5, "摘発エンド", "黒の営業は1年目こそ一番稼げるが、半年を過ぎると摘発の確率が急に上がり、客も警戒して離れていく。摘発されると、その年度の売上はすべて罰金・追徴で持っていかれ、店と売却額も失う。稼ぐなら、年度の途中で捕まるリスクと引き換えだと考える。"]);
   if (S.mix && S.mix.regular < 0.25) items.push([3, "常連が育たなかった", `最後の客層は常連${Math.round(S.mix.regular * 100)}%。初心者は居心地しだいで常連に育ち、常連は居心地と信頼が低いと離れる。常連が厚いほど客数が安定し、競合に強く、店の値段も上がる。`]);
   if (S.ind.slack < 35) items.push([2, "スタッフが疲れていた", `余力 ${Math.round(S.ind.slack)}。満席が続くと余力は落ち、居心地とトラブルに響く。`]);
   if (S.ind.comfort < 40) items.push([2, "初心者が定着しなかった", `初心者の居心地 ${Math.round(S.ind.comfort)}。成長率（店の値段）と客数に効く。教育方針「おもてなし」や事件での判断で上げられる。`]);
@@ -4110,14 +4099,14 @@ async function makeShareImage(kind, amount, rank){
   g.strokeStyle = ink; g.lineWidth = 6; g.beginPath(); g.roundRect(28, 28, w - 56, h - 56, 36); g.stroke();
   g.fillStyle = ink; g.font = `700 44px ${F}`; g.fillText("ポーカー屋を作ろう！", 80, 120);
   g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText("5,000万円でポーカー店をつくり、5年後に売る", 80, 168);
-  const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で売却` : "5年経営して売却", arrest: "摘発エンド（逮捕歴あり）", bankrupt: "資金が尽きた" }[kind];
+  const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で売却` : "5年経営して売却", arrest: "摘発エンド（罰金）", bankrupt: "資金が尽きた" }[kind];
   g.fillStyle = kind === "complete" ? ink : bad; g.font = `700 38px ${F}`; g.fillText(title, 80, 262);
   g.fillStyle = muted; g.font = `500 30px ${F}`; g.fillText(kind === "arrest" ? "残った手元資金" : "最終手取り額", 80, 330);
   { const txt = yen(amount); let fs = 120; g.font = `500 ${fs}px ${MONO}, ${F}`; while (g.measureText(txt).width > w - 160 && fs > 60){ fs -= 4; g.font = `500 ${fs}px ${MONO}, ${F}`; } g.fillStyle = ink; g.fillText(txt, 76, 450); }
   const diff = amount - M.fund; g.fillStyle = diff >= 0 ? good : bad; g.font = `700 38px ${F}`; g.fillText(`元手5,000万円から ${yen(diff, true)}`, 80, 514);
   // 順位
   const fpos = rank.final.findIndex((x) => x.mine) + 1, ppos = rank.peak.findIndex((x) => x.mine) + 1;
-  g.fillStyle = ink; g.font = `700 52px ${F}`; g.fillText(kind === "arrest" ? "逮捕歴あり（金額だけのランキング）" : fpos ? `ランキング ${fpos}位` : "ランキング 圏外", 80, 620);
+  g.fillStyle = ink; g.font = `700 52px ${F}`; g.fillText(kind === "arrest" ? `摘発・罰金 ${yen(-(S.penalty ? S.penalty.total : 0))}` : fpos ? `ランキング ${fpos}位` : "ランキング 圏外", 80, 620);
   g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText(`最終手取り額（この端末の上位10件）${ppos ? ` ・ 瞬間収益 ${ppos}位` : ""}`, 80, 664);
   // 店の情報
   const tier = S.style.tier, sw = { black: ink, gray, clean: good }[tier];
@@ -4354,7 +4343,7 @@ function saveRun(kind, amount){
 }
 function sameCodeHTML(){
   const runs = loadRuns().filter((x) => x.seed === S.seed);
-  const rows = runs.slice(-6).reverse().map((x, i) => `<tr><td>${i === 0 ? "今回" : "前回" + (i > 1 ? `（${i}つ前）` : "")}</td><td>${esc(x.loc)} ${x.tables}卓</td><td>${esc(x.style)}</td><td style="text-align:left">${esc((x.fac || []).join("・") || "—")}</td><td>${x.kind === "complete" ? yen(x.amount) : x.kind === "arrest" ? `${yen(x.amount)} <span class="rec">逮捕歴</span>` : "倒産"}</td></tr>`).join("");
+  const rows = runs.slice(-6).reverse().map((x, i) => `<tr><td>${i === 0 ? "今回" : "前回" + (i > 1 ? `（${i}つ前）` : "")}</td><td>${esc(x.loc)} ${x.tables}卓</td><td>${esc(x.style)}</td><td style="text-align:left">${esc((x.fac || []).join("・") || "—")}</td><td>${x.kind === "complete" ? yen(x.amount) : x.kind === "arrest" ? `${yen(x.amount)}（摘発）` : "倒産"}</td></tr>`).join("");
   return `<p style="font-size:13px">条件コード <b class="num" style="font-size:18px">${esc(S.seed)}</b>　<button class="btn" id="retryBtn">同じ条件で再挑戦</button></p>
     ${runs.length > 1 ? `<table class="t" style="font-size:12px"><tr><th>回</th><th>店</th><th>スタイル</th><th>設備・企画</th><th>手取り</th></tr>${rows}</table>` : `<p class="muted" style="font-size:12px">同じ条件で遊ぶと、ここに前回との比較が出る。友だちに条件コードを渡せば、同じ条件で腕を比べられる。</p>`}`;
 }
@@ -4363,11 +4352,10 @@ async function loadGlobal(){
   try {
     const r = await fetch(`/api/shop/ranking?seed=${encodeURIComponent(S.seed)}`, { cache: "no-store" });
     if (!r.ok) throw 0; const j = await r.json();
-    const li = (x, k = "amount") => `<li>${yen(x[k])}${k === "peak" ? "／月" : ""} <span style="font-family:var(--font)">・ ${esc(x.name || "名無しの店主")} ・ ${esc(x.loc)} ${x.tables}卓 ・ ${esc(x.type || "")}</span>${x.kind === "arrest" ? ' <span class="rec">逮捕歴</span>' : ""}</li>`;
-    box.innerHTML = `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額（全体・逮捕歴なし）</div><ol class="rank">${j.final.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol></div>
+    const li = (x, k = "amount") => `<li>${yen(x[k])}${k === "peak" ? "／月" : ""} <span style="font-family:var(--font)">・ ${esc(x.name || "名無しの店主")} ・ ${esc(x.loc)} ${x.tables}卓 ・ ${esc(x.type || "")}</span>${x.kind === "arrest" ? ' <span class="muted" style="font-size:11px">（摘発）</span>' : ""}</li>`;
+    box.innerHTML = `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額（全体）</div><ol class="rank">${j.final.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol></div>
       <div><div class="kicker">瞬間収益（全体）</div><ol class="rank">${j.peak.map((x) => li(x, "peak")).join("") || "<li>まだ記録がない</li>"}</ol></div></div>
-      <div class="kicker" style="margin-top:8px">金額だけ（逮捕歴を含む・全体）</div><ol class="rank">${(j.money || []).map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol>
-      <div class="kicker" style="margin-top:8px">条件コード ${esc(S.seed)} のランキング（逮捕歴なし）</div><ol class="rank">${j.seed.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol>`;
+      <div class="kicker" style="margin-top:8px">条件コード ${esc(S.seed)} のランキング</div><ol class="rank">${j.seed.map((x) => li(x)).join("") || "<li>まだ記録がない</li>"}</ol>`;
   } catch { box.textContent = "全体ランキングは、ゲームのサーバー（python3 server.py）で遊んだときだけ使える。"; const b = $("submitBtn"); if (b) b.disabled = true; }
 }
 async function submitScore(kind, amount){
@@ -4377,24 +4365,23 @@ async function submitScore(kind, amount){
   catch { note("登録できなかった（サーバーで遊んでいないときは使えない）", "bad"); }
 }
 const RANK_KEY = "poker-shop-v07-rank";
-function loadRank(){ try { const r = JSON.parse(localStorage.getItem(RANK_KEY)) || {}; return { final: r.final || [], money: r.money || [], peak: r.peak || [] }; } catch { return { final: [], money: [], peak: [] }; } }
+function loadRank(){ try { const r = JSON.parse(localStorage.getItem(RANK_KEY)) || {}; return { final: [...(r.final || []), ...(r.money || []).filter((x) => x.record)].map(({ record, ...x }) => ({ ...x, arrest: x.arrest || record })), peak: r.peak || [] }; } catch { return { final: [], peak: [] }; } }
 function saveRank(kind, amount){
-  const r = loadRank(); r.money = r.money || [];
+  const r = loadRank();
   if (kind !== "bankrupt"){
-    const base = { loc: S.loc.name, tables: S.tables, tier: S.style.tier, record: kind === "arrest", date: new Date().toISOString().slice(0, 10) };
-    if (kind !== "arrest") r.final.push({ ...base, amount: Math.round(amount), mine: true }); // 最終手取り額は逮捕歴なしだけ
-    r.money.push({ ...base, amount: Math.round(amount), mine: true });                       // 金額だけ（逮捕歴を含む）
+    const base = { loc: S.loc.name, tables: S.tables, tier: S.style.tier, arrest: kind === "arrest", date: new Date().toISOString().slice(0, 10) };
+    r.final.push({ ...base, amount: Math.round(amount), mine: true });
     if (isFinite(S.peakMonth)) r.peak.push({ ...base, amount: Math.round(S.peakMonth), mine: true });
   }
-  for (const k of ["final", "money", "peak"]) r[k].sort((a, b) => b.amount - a.amount);
-  const out = { final: r.final.slice(0, 10), money: r.money.slice(0, 10), peak: r.peak.slice(0, 10) };
+  for (const k of ["final", "peak"]) r[k].sort((a, b) => b.amount - a.amount);
+  const out = { final: r.final.slice(0, 10), peak: r.peak.slice(0, 10) };
   try { localStorage.setItem(RANK_KEY, JSON.stringify(Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.map(({ mine, ...x }) => x)])))); } catch {}
   return out;
 }
 function rankHTML(r){
-  const li = (x) => `<li${x.mine ? ' style="font-weight:700"' : ""}>${yen(x.amount)} <span style="font-family:var(--font)">・ ${esc(x.loc)} ${x.tables}卓</span>${x.tier ? ` <span class="tsw ${esc(x.tier)}"></span>` : ""}${x.record ? ` <span class="rec">逮捕歴</span>` : ""}</li>`;
-  const col = (t, a, n) => `<div><div class="kicker">${t}</div><ol class="rank">${(a || []).map(li).join("") || "<li>まだ記録がない</li>"}</ol>${n ? `<p class="muted" style="font-size:11px;margin:2px 0 0">${n}</p>` : ""}</div>`;
-  return `<div class="grid3" style="align-items:start">${col("最終手取り額（逮捕歴なし）", r.final, "本命のランキング。摘発された店は載らない")}${col("金額だけ（逮捕歴を含む）", r.money, "お金だけで並べる。摘発されても稼いだ分は残る")}${col("瞬間収益（一番稼いだ月）", r.peak)}</div>`;
+  const li = (x) => `<li${x.mine ? ' style="font-weight:700"' : ""}>${yen(x.amount)} <span style="font-family:var(--font)">・ ${esc(x.loc)} ${x.tables}卓</span>${x.tier ? ` <span class="tsw ${esc(x.tier)}"></span>` : ""}${x.arrest ? ' <span class="muted" style="font-family:var(--font);font-size:11px">（摘発）</span>' : ""}</li>`;
+  return `<div class="grid2" style="align-items:start"><div><div class="kicker">最終手取り額</div><ol class="rank">${r.final.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div>
+    <div><div class="kicker">瞬間収益（一番稼いだ月）</div><ol class="rank">${r.peak.map(li).join("") || "<li>まだ記録がない</li>"}</ol></div></div>`;
 }
 function exportLog(){
   const meta = { type: "run", game: "poker-shop", version: M.version, cfg: S.cfg, outcome: S.over, dd: S.dd ? S.dd.kind : null, at: new Date().toISOString(), note: "ゲームの架空パラメータによるプレイログ。実データではない。" };
@@ -4593,7 +4580,7 @@ function openTitle(){
     <div class="routes">
       <button class="route clean" data-route="deposit"><div class="who">コツコツ型</div><div class="nm"><span class="ph">健全に育てる。</span><span class="ph">コツコツが勝つコツ</span></div><div class="ds">預入だけの真っ当な店。最初の1年は赤字に耐える。常連と知名度が育つほど、売るときの値段が上がる。</div><div class="meter"><span>リスク 低</span><span>5年後に強い</span></div><div class="go">この道で始める →</div></button>
       <button class="route gray" data-route="token"><div class="who">ちゃっかり型</div><div class="nm"><span class="ph">法的根拠はないけど、</span><span class="ph">みんなで渡れば怖くない</span></div><div class="ds">チケット・コイン・商品・飲食割引。最初は健全より儲かる。でも是正指摘が年々増え、売るときはハコの値段だけ。</div><div class="meter"><span>リスク 中</span><span>短期に強い</span></div><div class="go">この道で始める →</div></button>
-      <button class="route black" data-route="cashout"><div class="who">一発逆転型</div><div class="nm"><span class="ph">リスクは承知。</span><span class="ph">荒稼ぎしたい</span></div><div class="ds">換金あり。1年目は誰よりも稼ぐ。半年を過ぎると摘発が近づき、捕まれば罰金・追徴・拘禁刑と逮捕歴。</div><div class="meter"><span>リスク 最大</span><span>金額だけなら最大</span></div><div class="go">この道で始める →</div></button>
+      <button class="route black" data-route="cashout"><div class="who">一発逆転型</div><div class="nm"><span class="ph">リスクは承知。</span><span class="ph">荒稼ぎしたい</span></div><div class="ds">換金あり。1年目は誰よりも稼ぐ。半年を過ぎると摘発が近づき、捕まればその年の売上は全部、罰金で持っていかれる。</div><div class="meter"><span>リスク 最大</span><span>金額だけなら最大</span></div><div class="go">この道で始める →</div></button>
     </div>
     <div class="flowline" aria-label="5年の流れ"><span>営業スタイルを選ぶ</span><i>→</i><span>物件と卓数</span><i>→</i><span>開業・立ち上がり</span><i>→</i><span>毎年の決算：売る？続ける？</span><i>→</i><span>5年目に売却</span></div>
     <div class="feats">

@@ -88,12 +88,11 @@ def read_scores():
 
 def ranking(seed, limit=10):
     scores = read_scores()
-    clean = [x for x in scores if x.get("kind") == "complete"]            # 本命：逮捕歴なし
-    money = [x for x in scores if x.get("kind") in ("complete", "arrest")]  # 金額だけ：逮捕歴を含む
-    final = sorted(clean, key=lambda x: -x.get("amount", 0))[:limit]
+    done = [x for x in scores if x.get("kind") in ("complete", "arrest")]  # 摘発は罰金・追徴後の手元資金
+    final = sorted(done, key=lambda x: -x.get("amount", 0))[:limit]
     peak = sorted(scores, key=lambda x: -x.get("peak", 0))[:limit]
-    same = sorted([x for x in clean if x.get("seed") == seed], key=lambda x: -x.get("amount", 0))[:limit]
-    return {"ok": True, "count": len(scores), "final": final, "money": sorted(money, key=lambda x: -x.get("amount", 0))[:limit], "peak": peak, "seed": same}
+    same = sorted([x for x in done if x.get("seed") == seed], key=lambda x: -x.get("amount", 0))[:limit]
+    return {"ok": True, "count": len(scores), "final": final, "peak": peak, "seed": same}
 
 
 def load_questions():
