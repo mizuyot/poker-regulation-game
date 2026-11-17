@@ -206,19 +206,26 @@ summary{cursor:pointer;color:var(--muted)}
 .hook b{font-family:var(--mono);font-size:1.15em}
 .heroCap{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-top:4px}
 .heroCap .n{font-family:var(--mono);font-size:22px;font-weight:700}
-.routes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
-.route{position:relative;border:1.5px solid var(--soft);border-radius:14px;padding:12px 14px 12px 14px;overflow:hidden}
-.route::after{content:"";position:absolute;top:0;right:0;bottom:0;width:8px}
+.routes{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(5,auto);column-gap:14px;row-gap:0;margin-top:20px}
+.route{grid-row:span 5;display:grid;grid-template-rows:subgrid;row-gap:6px;position:relative;text-align:left;font:inherit;color:inherit;cursor:pointer;
+  background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:16px 26px 16px 16px;overflow:hidden;box-shadow:4px 5px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
+.route:hover,.route:focus-visible{transform:translate(-2px,-2px);box-shadow:6px 8px 0 var(--shadow);outline:none}
+.route::after{content:"";position:absolute;top:0;right:0;bottom:0;width:12px}
 .route.clean::after{background:var(--good)}.route.gray::after{background:var(--gray)}.route.black::after{background:var(--ink)}
-.route .who{font-size:12px;color:var(--muted)}.route .nm{font-size:17px;font-weight:700;margin:2px 0 4px}
-.route .meter{display:flex;gap:6px;font-size:11.5px;margin-top:6px;flex-wrap:wrap}
+.route .who{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.route .nm{font-size:19px;font-weight:800;line-height:1.35;align-self:start}.route .nm .ph{display:inline-block}
+.route .ds{font-size:12.5px;line-height:1.65;align-self:start}
+.route .meter{display:flex;gap:6px;font-size:11.5px;flex-wrap:wrap;align-self:end}
 .route .meter span{border:1px solid var(--soft);border-radius:99px;padding:1px 8px}
+.route .go{font-size:12.5px;font-weight:700;align-self:end;padding-top:4px;border-top:1px dashed var(--soft)}
+@supports not (grid-template-rows:subgrid){.routes{grid-template-rows:none}.route{display:flex;flex-direction:column}.route .nm{min-height:2.7em}.route .meter{margin-top:auto}}
+@media (max-width:720px){.routes{grid-template-columns:1fr;grid-template-rows:none;row-gap:12px}.route{grid-row:auto;display:flex;flex-direction:column}.route .meter,.route .go{align-self:stretch}}
 .flowline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:16px;font-size:12.5px}
 .flowline span{border:1.5px solid var(--line);border-radius:99px;padding:3px 10px;background:var(--bg)}
 .flowline i{font-style:normal;color:var(--muted)}
 .feats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
 .feat{font-size:12px;line-height:1.5;color:var(--muted)}.feat b{display:block;color:var(--ink);font-size:13px}
-@media (max-width:720px){.routes{grid-template-columns:1fr}.feats{grid-template-columns:1fr 1fr}.titlecard .hero canvas{height:170px}}
+@media (max-width:720px){.feats{grid-template-columns:1fr 1fr}.titlecard .hero canvas{height:170px}}
 .hero{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;align-items:center}
 .hero h1{font-size:clamp(26px,3.3vw,38px);line-height:1.25;margin:6px 0 10px}
 .hero .lead{font-size:15px;line-height:1.8}
@@ -4584,9 +4591,9 @@ function openTitle(){
         <div class="heroCap"><span class="muted" id="heroLux">内装「素朴」</span><span><span class="n" id="heroN">1</span> 卓</span></div></div>
     </div>
     <div class="routes">
-      <div class="route clean"><div class="who">コツコツ型</div><div class="nm">健全に育てる</div><div style="font-size:12.5px;line-height:1.6">預入だけの真っ当な店。最初の1年は赤字に耐える。常連と知名度が育つほど、売るときの値段が上がる。</div><div class="meter"><span>リスク 低</span><span>5年後に強い</span></div></div>
-      <div class="route gray"><div class="who">ちゃっかり型</div><div class="nm">法的根拠はないけど、みんなで渡れば怖くない</div><div style="font-size:12.5px;line-height:1.6">チケット・コイン・商品・飲食割引。最初は健全より儲かる。でも是正指摘が年々増え、売るときはハコの値段だけ。</div><div class="meter"><span>リスク 中</span><span>短期に強い</span></div></div>
-      <div class="route black"><div class="who">一発逆転型</div><div class="nm">リスクは承知。荒稼ぎしたい</div><div style="font-size:12.5px;line-height:1.6">換金あり。1年目は誰よりも稼ぐ。半年を過ぎると摘発が近づき、捕まれば罰金・追徴・拘禁刑と逮捕歴。</div><div class="meter"><span>リスク 最大</span><span>金額だけなら最大</span></div></div>
+      <button class="route clean" data-route="deposit"><div class="who">コツコツ型</div><div class="nm">健全に育てる</div><div class="ds">預入だけの真っ当な店。最初の1年は赤字に耐える。常連と知名度が育つほど、売るときの値段が上がる。</div><div class="meter"><span>リスク 低</span><span>5年後に強い</span></div><div class="go">この道で始める →</div></button>
+      <button class="route gray" data-route="token"><div class="who">ちゃっかり型</div><div class="nm"><span class="ph">法的根拠はないけど、</span><span class="ph">みんなで渡れば怖くない</span></div><div class="ds">チケット・コイン・商品・飲食割引。最初は健全より儲かる。でも是正指摘が年々増え、売るときはハコの値段だけ。</div><div class="meter"><span>リスク 中</span><span>短期に強い</span></div><div class="go">この道で始める →</div></button>
+      <button class="route black" data-route="cashout"><div class="who">一発逆転型</div><div class="nm"><span class="ph">リスクは承知。</span><span class="ph">荒稼ぎしたい</span></div><div class="ds">換金あり。1年目は誰よりも稼ぐ。半年を過ぎると摘発が近づき、捕まれば罰金・追徴・拘禁刑と逮捕歴。</div><div class="meter"><span>リスク 最大</span><span>金額だけなら最大</span></div><div class="go">この道で始める →</div></button>
     </div>
     <div class="flowline" aria-label="5年の流れ"><span>営業スタイルを選ぶ</span><i>→</i><span>物件と卓数</span><i>→</i><span>開業・立ち上がり</span><i>→</i><span>毎年の決算：売る？続ける？</span><i>→</i><span>5年目に売却</span></div>
     <div class="feats">
@@ -4607,6 +4614,7 @@ function openTitle(){
   let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } const n = seq[k % seq.length]; drawPreview(c, n, 11 + k * 7, false, 0.5 + 0.3 * Math.abs(Math.sin(k / 3))); $("heroN").textContent = n; $("heroLux").textContent = `内装「${D.layoutLux[layoutFor(n).lux]}」`; k++; };
   clearInterval(titleTimer); paint(); titleTimer = setInterval(paint, 900);
   $("goBtn").onclick = () => { CFG.seed = null; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
+  card.querySelectorAll("[data-route]").forEach((b) => b.onclick = () => { CFG.seed = null; CFG.style = b.dataset.route; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); });
   $("codeBtn").onclick = () => { const c = ($("codeIn").value || "").trim().toUpperCase(); if (!/^[0-9A-Z]{4,6}$/.test(c)) return note("条件コードは英数字4〜6文字", "bad"); CFG.seed = c; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
   if (sv) $("contBtn").onclick = () => resumeGame(sv);
 }
