@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ポーカー店経営 5年</title>
+<title>ポーカー屋を作ろう！</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -199,7 +199,27 @@ summary{cursor:pointer;color:var(--muted)}
 .grid2 span:nth-child(even){text-align:right;font-family:var(--mono)}
 .rank{font-size:12.5px;line-height:1.7;margin:0;padding-left:1.4em}
 .rank li{font-family:var(--mono)}
-.card.titlecard{width:min(860px,100%);padding:30px 30px 22px}
+.card.titlecard{width:min(900px,100%);padding:28px 30px 22px}
+/* タイトル画面（v1.6） */
+.ttl{font-size:clamp(34px,6vw,58px);line-height:1.1;margin:4px 0 8px;letter-spacing:.02em;font-weight:800}
+.suits{font-size:20px;letter-spacing:.35em;color:var(--muted);margin:-2px 0 8px}
+.hook{font-size:clamp(16px,2vw,19px);line-height:1.7;margin:0 0 6px}
+.hook b{font-family:var(--mono);font-size:1.15em}
+.heroCap{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-top:4px}
+.heroCap .n{font-family:var(--mono);font-size:22px;font-weight:700}
+.routes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.route{position:relative;border:1.5px solid var(--soft);border-radius:14px;padding:12px 14px 12px 14px;overflow:hidden}
+.route::after{content:"";position:absolute;top:0;right:0;bottom:0;width:8px}
+.route.clean::after{background:var(--good)}.route.gray::after{background:var(--gray)}.route.black::after{background:var(--ink)}
+.route .who{font-size:12px;color:var(--muted)}.route .nm{font-size:17px;font-weight:700;margin:2px 0 4px}
+.route .meter{display:flex;gap:6px;font-size:11.5px;margin-top:6px;flex-wrap:wrap}
+.route .meter span{border:1px solid var(--soft);border-radius:99px;padding:1px 8px}
+.flowline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:16px;font-size:12.5px}
+.flowline span{border:1.5px solid var(--line);border-radius:99px;padding:3px 10px;background:var(--bg)}
+.flowline i{font-style:normal;color:var(--muted)}
+.feats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.feat{font-size:12px;line-height:1.5;color:var(--muted)}.feat b{display:block;color:var(--ink);font-size:13px}
+@media (max-width:720px){.routes{grid-template-columns:1fr}.feats{grid-template-columns:1fr 1fr}.titlecard .hero canvas{height:170px}}
 .hero{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;align-items:center}
 .hero h1{font-size:clamp(26px,3.3vw,38px);line-height:1.25;margin:6px 0 10px}
 .hero .lead{font-size:15px;line-height:1.8}
@@ -304,7 +324,7 @@ summary{cursor:pointer;color:var(--muted)}
 <script type="application/json" id="shop-data">
 {
   "meta": {
-    "title": "ポーカー店経営 5年",
+    "title": "ポーカー屋を作ろう！",
     "version": "1.0.0",
     "unit": "万円",
     "disclaimer": "このゲームは適法性の判断・法的助言ではありません。確率・処分の段階・金額・立地の数値はすべてゲーム用の架空の値です。",
@@ -345,7 +365,7 @@ summary{cursor:pointer;color:var(--muted)}
       "staffPerTable": 50,
       "note": "当たれば一番大きい。家賃が高く、競合の出店も多い。",
       "sizeAlpha": 0.5,
-      "bigRampBeta": 0.3
+      "bigRampBeta": 0.42
     },
     {
       "id": "metro",
@@ -3058,10 +3078,7 @@ summary{cursor:pointer;color:var(--muted)}
     "sizeFrom": 5,
     "bigRampBeta": 0.5,
     "bigFrom": 5,
-    "bigNote": "大型店（6卓以上）：客は遠くからも来る（需要×(卓数÷5)^sizeAlpha）が、客が埋まるまで時間がかかる（立ち上がりの出発点÷(卓数÷5)^bigRampBeta、期間×同じ倍率）。どちらも立地ごと（locations[].sizeAlpha・bigRampBeta）。都会ほど難しく、東京都心は11卓で約5〜8%、12卓は0%しか5年残らないように合わせた（v1.5.1）。架空値。 郊外は人口が少ないので、卓を増やしても客はほとんど増えない（sizeAlpha 0.1、v1.5.2）。 平均では8卓より5卓が有利になるよう、大都市 0.6→0.3、地方 0.6→0.45（v1.5.3）。 地方の8卓が強すぎ・郊外は5卓から8卓で崖になっていたので、地方 0.45→0.3、郊外 0.1→0.4（v1.5.4）。",
-    "bigOverheadBase": 25,
-    "bigOverheadPerTable": 8,
-    "bigOverheadNote": "5卓を超える店は「大型店の管理費」を毎月払う：25万円＋超えた卓ごとに8万円（6卓33万・8卓49万・12卓81万）。フロア責任者・警備・経理など。どの立地でも平均で5卓が一番になるように置いた架空値（v1.5.5）。"
+    "bigNote": "大型店（6卓以上）：客は遠くからも来る（需要×(卓数÷5)^sizeAlpha）が、客が埋まるまで時間がかかる（立ち上がりの出発点÷(卓数÷5)^bigRampBeta、期間×同じ倍率）。どちらも立地ごと（locations[].sizeAlpha・bigRampBeta）。都会ほど難しく、東京都心は11卓で約5〜8%、12卓は0%しか5年残らないように合わせた（v1.5.1）。架空値。 郊外は人口が少ないので、卓を増やしても客はほとんど増えない（sizeAlpha 0.1、v1.5.2）。 平均では8卓より5卓が有利になるよう、大都市 0.6→0.3、地方 0.6→0.45（v1.5.3）。 地方の8卓が強すぎ・郊外は5卓から8卓で崖になっていたので、地方 0.45→0.3、郊外 0.1→0.4（v1.5.4）。"
   },
   "tax": {
     "corpSmallRate": 0.15,
@@ -3403,8 +3420,6 @@ function demandMult(legalOnly){
   return m;
 }
 const MK = D.market;
-/* 大型店（基準の卓数を超える店）の管理費：フロア責任者・警備・経理など。1か月あたり 基本＋超えた卓ごと（v1.5.5） */
-const bigOverhead = (tables) => tables > MK.bigFrom ? MK.bigOverheadBase + MK.bigOverheadPerTable * (tables - MK.bigFrom) : 0;
 const shakeOf = (month) => 1 + Math.min(MK.shakeMax, MK.shakePerMonth * Math.max(0, month - MK.shakeStart));
 function ramp(){ const t = S.openedAt == null ? 0 : S.month - S.openedAt; return Math.min(1, O.rampStart + (1 - O.rampStart) * t / O.rampMonths); }
 const hoursLen = () => S.close - S.open;
@@ -3439,11 +3454,10 @@ function project(legalOnly){
   const storeRev = main.rev + (b ? b.rev : 0), varCost = storeRev * (O.variableRate + FX().varRate);
   const rent = S.rent + (br ? br.rent : 0), staff = main.staff + (b ? b.staff : 0);
   const utility = utilityOf(S.tables + (b ? br.tables : 0), S.open, S.close);
-  const bigOver = bigOverhead(S.tables); // 大型店の管理費（v1.5.5）
-  const other = O.otherFixed * (b ? 2 : 1) + O.ads[S.ad].cost + FX().opsCost + utility + bigOver;
+  const other = O.otherFixed * (b ? 2 : 1) + O.ads[S.ad].cost + FX().opsCost + utility;
   const op = storeRev - varCost + fcRoy - rent - staff - other;
   const interest = S.debt * F.rate / 12;
-  return { demand: main.demand, occ: main.occ, guests: main.guests, lostSeat: main.lostSeat, svc: main.svc, rev: storeRev + fcRoy, storeRev, fcRoy, branchRev: b ? b.rev : 0, varCost, rent, staff, other, utility, bigOver, ads: O.ads[S.ad].cost, facOps: FX().opsCost, op, interest, net: op - interest };
+  return { demand: main.demand, occ: main.occ, guests: main.guests, lostSeat: main.lostSeat, svc: main.svc, rev: storeRev + fcRoy, storeRev, fcRoy, branchRev: b ? b.rev : 0, varCost, rent, staff, other, utility, ads: O.ads[S.ad].cost, facOps: FX().opsCost, op, interest, net: op - interest };
 }
 /* リスクの源：営業スタイル（黒・グレー）、深夜営業、無許可 */
 function riskSources(){
@@ -4088,7 +4102,7 @@ async function makeShareImage(kind, amount, rank){
   const ink = "#111", muted = "#6b6b6b", good = "#2e6b45", bad = "#b3261e", gray = "#9a9a9a", F = "'Zen Kaku Gothic New', sans-serif", MONO = "'IBM Plex Mono', monospace";
   g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
   g.strokeStyle = ink; g.lineWidth = 6; g.beginPath(); g.roundRect(28, 28, w - 56, h - 56, 36); g.stroke();
-  g.fillStyle = ink; g.font = `700 44px ${F}`; g.fillText("ポーカー店経営 5年", 80, 120);
+  g.fillStyle = ink; g.font = `700 44px ${F}`; g.fillText("ポーカー屋を作ろう！", 80, 120);
   g.fillStyle = muted; g.font = `500 28px ${F}`; g.fillText("5,000万円でポーカー店をつくり、5年後に売る", 80, 168);
   const title = { complete: S.dd && S.dd.kind !== "none" ? "売却（調査で減額）" : S.soldAt && S.soldAt < M.months ? `${S.soldAt / 12}年で売却` : "5年経営して売却", arrest: "摘発エンド（逮捕歴あり）", bankrupt: "資金が尽きた" }[kind];
   g.fillStyle = kind === "complete" ? ink : bad; g.font = `700 38px ${F}`; g.fillText(title, 80, 262);
@@ -4481,7 +4495,7 @@ function buildEst(loc, price){
     const b = build(loc, CFG.tables), hiring = byId(ST.hiring, CFG.hiring), policy = byId(ST.policy, CFG.policy), style = byId(STYLES, CFG.style), fx = FX(CFG.fac);
     const seats = CFG.tables * 9 - fx.seatsLoss, turns = turnsFor(CFG.open, CFG.close, policy);
     const staff = loc.staffPerTable * hiring.staffMult * CFG.tables * (CFG.close - CFG.open) / O.baseHours;
-    const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utilityOf(CFG.tables, CFG.open, CFG.close) + bigOverhead(CFG.tables);
+    const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utilityOf(CFG.tables, CFG.open, CFG.close);
     const segSpend = SEG.list.reduce((a, g) => a + D.mixStart[g.id] * g.spend, 0);
     const perOcc = seats * turns * O.days * loc.spend * price * style.effect.spend * (1 - O.variableRate - fx.varRate) * fx.spend * segSpend;
     const want = loc.demand * Math.pow(price, -O.price.elasticity) * (bandWeight(CFG.open, CFG.close) / BASE_W) * style.effect.demand * fx.demand * (1 - SEG.regularDemandBonus / 2 + SEG.regularDemandBonus * D.mixStart.regular) / (seats * turns);
@@ -4551,7 +4565,6 @@ function costTableNow(cfg){
     ["設備・企画の維持費", p.facOps, cfg.fac.length ? cfg.fac.map((id) => byId(FAC, id).name).join("・") : "なし"],
     ["広告", p.ads, `Lv${S.ad}`],
     ["その他の固定費", O.otherFixed * (S.branch ? 2 : 1), "通信・事務・保険など"],
-    ...(p.bigOver ? [["大型店の管理費", p.bigOver, `${MK.bigFrom}卓を超える店：フロア責任者・警備・経理など`]] : []),
   ], S.openedAt == null ? null : p.rev) + (S.openedAt == null ? `<p class="muted" style="font-size:12px">開業前なので売上の見込みは出さない。</p>` : "");
 }
 
@@ -4564,30 +4577,36 @@ function openTitle(){
   const sv = loadSave();
   card.classList.add("titlecard");
   show(`<div class="hero">
-      <div><div class="kicker">ポーカー店経営 5年</div>
-        <h1><span style="white-space:nowrap">5,000万円で、</span><br><span style="white-space:nowrap">ポーカー店をつくる。</span></h1>
-        <p class="lead">立地と卓数と営業スタイルを決めて、5年経営したら店を売る。<br><b>最後に手元に残った金額</b>が、あなたのスコア。</p></div>
-      <canvas id="heroCv" aria-label="店のイメージ"></canvas>
+      <div><div class="kicker">5,000万円 ・ 5年 ・ 最後にいくら残せる？</div>
+        <h1 class="ttl">ポーカー屋を<br>作ろう！</h1><div class="suits" aria-hidden="true">♠ ♥ ♦ ♣</div>
+        <p class="hook">物件を選んで、卓を並べて、スタッフを雇って、<b style="white-space:nowrap">5年後に店を売る</b>。<br>手元に残ったお金が、あなたのスコア。</p>
+        <p class="muted" style="font-size:12.5px;margin:0">1卓の小さな店から、12卓の旗艦店まで。東京・大都市・地方・郊外。</p></div>
+      <div><canvas id="heroCv" aria-label="卓が増えていく店のイメージ"></canvas>
+        <div class="heroCap"><span class="muted" id="heroLux">内装「素朴」</span><span><span class="n" id="heroN">1</span> 卓</span></div></div>
     </div>
-    <div class="tiles">
-      <div class="tile"><div class="k">資金</div><div class="v">5,000万円</div><div class="s">初期投資の目安は1,500〜2,000万円。残りは赤字とトラブルへの備え。</div></div>
-      <div class="tile"><div class="k">期間</div><div class="v">60か月</div><div class="s">1か月は6秒。事件が起きたら時間が止まり、判断を迫られる。</div></div>
-      <div class="tile"><div class="k">スコア</div><div class="v">手取り額</div><div class="s">手元資金＋売却額。売却額は店の将来の稼ぎ（DCF）で決まる。</div></div>
+    <div class="routes">
+      <div class="route clean"><div class="who">コツコツ型</div><div class="nm">健全に育てて売る</div><div style="font-size:12.5px;line-height:1.6">預入だけの真っ当な店。最初の1年は赤字に耐える。常連と知名度が育つほど、売るときの値段が上がる。</div><div class="meter"><span>リスク 低</span><span>5年後に強い</span></div></div>
+      <div class="route gray"><div class="who">ちゃっかり型</div><div class="nm">グレーで稼ぐ</div><div style="font-size:12.5px;line-height:1.6">チケット・コイン・商品・飲食割引。最初は健全より儲かる。でも是正指摘が年々増え、売るときはハコの値段だけ。</div><div class="meter"><span>リスク 中</span><span>短期に強い</span></div></div>
+      <div class="route black"><div class="who">一発逆転型</div><div class="nm">黒で荒稼ぎ</div><div style="font-size:12.5px;line-height:1.6">換金あり。1年目は誰よりも稼ぐ。半年を過ぎると摘発が近づき、捕まれば罰金・追徴・拘禁刑と逮捕歴。</div><div class="meter"><span>リスク 最大</span><span>金額だけなら最大</span></div></div>
     </div>
-    <ul class="traps">
-      <li><b>突っ込みすぎ</b>：開業直後の客は見込みの3割。立ち上がりの赤字に耐えられないと倒産する。</li>
-      <li><b>都心の競合</b>：当たれば一番大きいが、家賃が高く、競合の出店で客を取られる。</li>
-      <li><b>黒とグレー</b>：一時的には儲かるが、摘発されれば終わり。売るときの調査で必ず見つかり、値段がつかない。</li>
-    </ul>
+    <div class="flowline" aria-label="5年の流れ"><span>営業スタイルを選ぶ</span><i>→</i><span>物件と卓数</span><i>→</i><span>開業・立ち上がり</span><i>→</i><span>毎年の決算：売る？続ける？</span><i>→</i><span>5年目に売却</span></div>
+    <div class="feats">
+      <div class="feat"><b>1か月6秒</b>事件が起きると時間が止まり、判断を迫られる</div>
+      <div class="feat"><b>店の値段は3通り</b>DCF・類似取引・清算価値で評価して売る</div>
+      <div class="feat"><b>税金と罰則は本物</b>法人の税や刑法の条文は、法令の原文から</div>
+      <div class="feat"><b>友だちと勝負</b>条件コードで、同じ運のもとで腕を比べる</div>
+    </div>
     <div class="best"><div><div class="kicker">この端末の最高記録</div>
       ${best ? `<div class="amt">${yen(best.amount)}</div><div class="muted" style="font-size:12px">${esc(best.loc)} ${best.tables}卓${bestPeak ? ` ・ 瞬間収益の最高 ${yen(bestPeak.amount)}` : ""}</div>` : `<div style="font-size:15px">まだ記録がない。最初の店を開こう。</div>`}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${sv ? `<button class="btn primary start" id="contBtn">つづきから（${monthLabel(sv.month)}・${esc(byId(D.locations, sv.loc).name)}）</button>` : ""}
-        <button class="btn ${sv ? "" : "primary start"}" id="goBtn">新しく始める</button></div></div>
+        <button class="btn ${sv ? "" : "primary start"}" id="goBtn">${sv ? "新しく始める" : "店を作る"}</button></div></div>
     <details><summary>条件コードで挑戦する（友だちと同じ条件で比べる）</summary><div style="display:flex;gap:8px;align-items:center;margin-top:6px"><input id="codeIn" maxlength="6" placeholder="例：7F3A21" style="font-family:var(--mono);font-size:16px;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;width:9em;text-transform:uppercase;background:var(--bg);color:var(--ink)"><button class="btn" id="codeBtn">この条件で始める</button></div><p class="muted" style="font-size:12px">物件の当たり外れ・競合・トラブル・事件・調査の出方が同じになる。設計だけを変えて比べられる。</p></details>
     ${best ? `<details><summary>ランキングを見る</summary>${rankHTML(r)}</details>` : ""}
     <div class="foot">${esc(M.disclaimer)}</div>`);
-  let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } drawPreview(c, 6, 11 + (k++ % 6) * 7, false, 0.45 + 0.35 * Math.abs(Math.sin(k / 2))); };
-  clearInterval(titleTimer); paint(); titleTimer = setInterval(paint, 1400);
+  // 店が1卓から12卓へ育っていくアニメーション（最後は少し止まってから最初に戻る）
+  const seq = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 12];
+  let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } const n = seq[k % seq.length]; drawPreview(c, n, 11 + k * 7, false, 0.5 + 0.3 * Math.abs(Math.sin(k / 3))); $("heroN").textContent = n; $("heroLux").textContent = `内装「${D.layoutLux[layoutFor(n).lux]}」`; k++; };
+  clearInterval(titleTimer); paint(); titleTimer = setInterval(paint, 900);
   $("goBtn").onclick = () => { CFG.seed = null; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
   $("codeBtn").onclick = () => { const c = ($("codeIn").value || "").trim().toUpperCase(); if (!/^[0-9A-Z]{4,6}$/.test(c)) return note("条件コードは英数字4〜6文字", "bad"); CFG.seed = c; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
   if (sv) $("contBtn").onclick = () => resumeGame(sv);
@@ -4628,7 +4647,7 @@ function buildCalc(loc){
   const seats = CFG.tables * 9, turns = turnsFor(CFG.open, CFG.close, policy);
   const staff = loc.staffPerTable * hiring.staffMult * CFG.tables * (CFG.close - CFG.open) / O.baseHours;
   const utility = utilityOf(CFG.tables, CFG.open, CFG.close);
-  const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utility + bigOverhead(CFG.tables);
+  const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utility;
   const segSpend = SEG.list.reduce((a, g) => a + D.mixStart[g.id] * g.spend, 0);
   const perOcc = (seats - fx.seatsLoss) * turns * O.days * loc.spend * CFG.price * style.effect.spend * (1 - O.variableRate - fx.varRate) * fx.spend * segSpend;
   const be = perOcc ? fixed / perOcc : 1;
@@ -4648,7 +4667,6 @@ function buildCalc(loc){
       ["原価・決済", rev * (O.variableRate + fx.varRate), `売上の${Math.round((O.variableRate + fx.varRate) * 100)}%`],
       ["設備・企画の維持費", fx.opsCost, CFG.fac.length ? CFG.fac.map((id) => byId(FAC, id).name).join("・") : "なし"],
       ["その他の固定費", O.otherFixed, "通信・事務・保険など"],
-      ...(bigOverhead(CFG.tables) ? [["大型店の管理費", bigOverhead(CFG.tables), `${MK.bigFrom}卓を超える店：フロア責任者・警備・経理など`]] : []),
     ], rev, "売上（満席率100%）"); })()}
     <div class="grid2"><span>損益分岐の満席率</span><span>${be > 1 ? "100%超" : pct(be, 0)}</span>
       <span>成熟時の満席率の見込み</span><span>${pct(expOcc, 0)}（±${Math.round(loc.demandSd * 100)}%）</span>
