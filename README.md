@@ -22,9 +22,11 @@ python3 scripts/build_rag.py   # docs/questions.json → data/questions_rag.json
 
 手で `questions_rag.jsonl` を編集しないこと。正本は常に `docs/questions.json`。ACT 2 の出来事は `events`。旧設問（q00 以降）は解説・条文の参照元として残す。
 
-## 姉妹作：ポーカー店経営 5年（v1.0）
+## 姉妹作：ポーカー屋を作ろう！（v1.9）
 
-5,000万円で立地と卓数を決めてポーカー店をつくり、5年経営して売却する。スコアは最終的な手取り額（円）。売却額はDCFで決まり、違法営業が買収前調査で見つかると「ハコとしての価値」だけになる。設計は `docs/shop/DESIGN.md`。
+5,000万円で営業スタイル・立地・卓数・内装・営業時間・料金・スタッフ教育の予算を決めてポーカー屋をつくり、毎年の決算で「売る／方針を変える／続ける」を選びながら最長5年経営して売却する。スコアは最終的な手取り額（税引後、円）。売却額はDCF・類似取引・清算価値で評価し、黒・グレーの営業歴は買収前調査で必ず見つかって「ハコとしての価値」だけになる。摘発されると追徴・罰金を払った残りの手元資金がスコア。設計と検証の経緯は `docs/shop/DESIGN.md`。
+
+公開ページ：https://mizuyot.github.io/poker-regulation-game/shop/ （GitHub Pages。全体ランキングはサーバーがないので使えず、この端末のランキングだけ）
 
 ```bash
 python3 scripts/build_shop.py               # docs/shop/shop.json + 条文（questions.json）→ docs/shop/index.html と data/shop_rag.jsonl
@@ -32,6 +34,10 @@ python3 scripts/sim_v05.py                  # 立地×卓数ごとの手取り�
 python3 scripts/sim_buyout.py               # 違法戦略が健全営業に勝てないかの検証
 python3 server.py                           # http://127.0.0.1:8765/shop/
 node scripts/sim_autoplay.js 16             # 実ゲームの自動プレイで釣り合いを測る（server.py 起動中に）
+node scripts/sim_returns.js 40              # 戦略別の各年の手取り・累計・売却込みのトータルリターン
+node scripts/sim_survival.js 40             # 立地×卓数の生き残り率と平均手取り（INTERIOR・EDU で内装と教育予算）
+node scripts/sim_extremes.js 16             # 極端な設定での実験（エラー・NaNの検出）
+python3 scripts/gen_layouts.py              # 卓数×内装の店舗レイアウトを shop.json に生成
 ```
 
 ### ローカルで遊ぶ
