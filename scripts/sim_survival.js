@@ -1,5 +1,5 @@
 // 立地×卓数ごとの生き残り率（5年目に売却できた割合）と平均手取り。健全（預入のみ）、事件の選択はランダム
-// INTERIOR=none|simple|lux で内装を選ぶ（既定 simple）
+// INTERIOR=none|simple|lux で内装、EDU=0|10|30 でスタッフ教育の予算を選ぶ（既定 simple・10）
 // 使い方: node scripts/sim_survival.js [各条件の回数=40] [HTMLのパス（省略時は docs/shop/index.html）]
 const { chromium } = require('playwright');
 const path = require('path');
@@ -13,7 +13,7 @@ const TABLES = (process.env.TABLES || '3,5,8,11,12').split(',').map(Number);
   const res = {}; let k = 0;
   async function w(){ const p = await b.newPage(); while (k < jobs.length){ const j = jobs[k++];
     await p.goto('file://' + FILE + '?test=1'); await p.waitForFunction(() => window.__shop);
-    await p.evaluate(([c, s]) => __shop.start({ style: 'deposit', ...c, seed: s }), [{ loc: j.loc, tables: j.t, interior: process.env.INTERIOR || 'simple' }, j.seed]);
+    await p.evaluate(([c, s]) => __shop.start({ style: 'deposit', ...c, seed: s }), [{ loc: j.loc, tables: j.t, interior: process.env.INTERIOR || 'simple', edu: process.env.EDU || '10' }, j.seed]);
     await p.waitForFunction(() => __shop.state().over && (__shop.state().over !== 'complete' || __shop.state().sale != null), null, { timeout: 120000 });
     const r = await p.evaluate(() => ({ over: __shop.state().over, amt: __shop.state().finalAmount || 0, cash0: 0 }));
     ((res[j.loc] ||= {})[j.t] ||= []).push(r); } }

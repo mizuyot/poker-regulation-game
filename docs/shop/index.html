@@ -130,6 +130,13 @@ button{font-family:inherit;color:inherit}
 .kicker{font-size:12px;color:var(--muted);letter-spacing:.08em}
 .muted{color:var(--muted)}
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.opt small,.opt b,.route .ds{word-break:keep-all;overflow-wrap:anywhere;line-break:strict}
+/* 内装・教育予算：横長のボタンを縦に並べ、左に名前、右に説明（v1.9） */
+.opts[data-k="interior"],.opts[data-k="edu"]{grid-template-columns:1fr}
+.opts[data-k="interior"] .opt,.opts[data-k="edu"] .opt{display:grid;grid-template-columns:8.5em 1fr;column-gap:14px;align-items:center;padding:10px 14px}
+.opts[data-k="interior"] .opt b,.opts[data-k="edu"] .opt b{margin:0;font-size:15px}
+.calcbox{border:2px solid var(--line);border-radius:14px;padding:12px 14px 6px;box-shadow:3px 4px 0 var(--shadow)}
+@media (max-width:520px){.opts[data-k="interior"] .opt,.opts[data-k="edu"] .opt{grid-template-columns:1fr}}
 .opt{position:relative;border:1.5px solid var(--soft);border-radius:12px;padding:10px 12px;background:var(--bg);text-align:left;cursor:pointer;font-size:13px;line-height:1.55;transition:box-shadow .1s,transform .1s}
 .opt:hover{border-color:var(--line)}
 .opt b{display:block;font-size:14px;margin-bottom:2px}
@@ -1308,7 +1315,43 @@ summary{cursor:pointer;color:var(--muted)}
         "comfortTarget": -8,
         "turns": 1.08
       }
-    ]
+    ],
+    "eduBudget": [
+      {
+        "id": "0",
+        "name": "0円",
+        "cost": 0,
+        "desc": "教育しない。スタッフは育たず、現場は疲れやすく、初心者は居つかない。",
+        "growth": 0.3,
+        "slackTarget": -8,
+        "comfortTarget": -10,
+        "trustTarget": -4,
+        "trouble": 1.3
+      },
+      {
+        "id": "10",
+        "name": "月10万円",
+        "cost": 10,
+        "desc": "基本の研修。少しずつ育ち、標準の接客ができる。",
+        "growth": 1.2,
+        "slackTarget": 4,
+        "comfortTarget": 5,
+        "trustTarget": 4,
+        "trouble": 0.9
+      },
+      {
+        "id": "30",
+        "name": "月30万円",
+        "cost": 30,
+        "desc": "しっかり教える。早く育ち、余力と居心地と信頼が上がり、トラブルが減る。",
+        "growth": 1.8,
+        "slackTarget": 7,
+        "comfortTarget": 8,
+        "trustTarget": 7,
+        "trouble": 0.8
+      }
+    ],
+    "eduNote": "v1.9：採用方式と教育方針の選択をやめ、スタッフ教育の予算（月0／10／30万円）で決める（ユーザー指定）。採用は経験者中心・方針は初心者へのおもてなしで固定し、そこからの差を予算で決める。効果は架空値。"
   },
   "layouts": {
     "none": {
@@ -4083,102 +4126,7 @@ summary{cursor:pointer;color:var(--muted)}
       ]
     }
   },
-  "facilities": [
-    {
-      "id": "stream",
-      "name": "配信卓",
-      "desc": "配信で認知を広げ、大会客を呼ぶ。担当が要り、情報漏えいの事件が起きうる。",
-      "setup": 300,
-      "monthly": 15,
-      "fx": {
-        "fameGain": 1,
-        "tourney": 0.12,
-        "spend": 1.03,
-        "slackTarget": -3
-      },
-      "eventBias": {
-        "leak": 3,
-        "cheat": 2
-      }
-    },
-    {
-      "id": "lesson",
-      "name": "初心者講習スペース",
-      "desc": "初心者が来やすく、常連に育ちやすい。講師代がかかり、卓を置ける席が2席減る。",
-      "setup": 150,
-      "monthly": 5,
-      "fx": {
-        "convert": 2.0,
-        "comfortTarget": 8,
-        "seatsLoss": 2,
-        "demand": 1.03
-      },
-      "eventBias": {
-        "whale": 2
-      }
-    },
-    {
-      "id": "tournament",
-      "name": "大型大会（月1回）",
-      "desc": "知名度と大会客が増える。通常営業の常連が座りにくくなり、準備でスタッフが疲れる。",
-      "setup": 50,
-      "monthly": 20,
-      "fx": {
-        "fameGain": 1.5,
-        "tourney": 0.2,
-        "demand": 1.12,
-        "comfortTarget": -4,
-        "slackTarget": -5
-      },
-      "eventBias": {
-        "tournament": 4,
-        "pro": 2
-      }
-    },
-    {
-      "id": "bar",
-      "name": "飲食の強化",
-      "desc": "単価と交流の魅力が上がる。原価と業務が増え、帰り道の苦情も出やすい。",
-      "setup": 250,
-      "monthly": 10,
-      "fx": {
-        "spend": 1.1,
-        "varRate": 0.04,
-        "comfortTarget": 4,
-        "slackTarget": -3
-      },
-      "eventBias": {
-        "neighbor": 2
-      }
-    },
-    {
-      "id": "camera",
-      "name": "監視カメラ",
-      "desc": "不正の疑いに強くなり、信頼が育つ。",
-      "setup": 80,
-      "monthly": 3,
-      "fx": {
-        "trustTarget": 6
-      },
-      "eventBias": {
-        "cheat": 0.5
-      }
-    },
-    {
-      "id": "vip",
-      "name": "高レート卓・VIPルーム",
-      "desc": "単価が上がる。初心者の居心地が下がって常連に育ちにくくなり、黒・グレーの営業の摘発・是正指摘の確率が1.3倍になる。",
-      "setup": 300,
-      "monthly": 20,
-      "fx": {
-        "spend": 1.06,
-        "tourney": 0.05,
-        "comfortTarget": -6,
-        "riskMult": 1.3,
-        "convert": 0.85
-      }
-    }
-  ],
+  "facilities": [],
   "mixStart": {
     "regular": 0.3,
     "newbie": 0.55,
@@ -4496,7 +4444,8 @@ summary{cursor:pointer;color:var(--muted)}
       }
     }
   ],
-  "interiorsNote": "内装の効果と費用はゲーム用の架空値（v1.8、ユーザー指定：ほぼなし／シンプル／豪華）。内装費＝坪あたりの内装費×広さ×倍率。"
+  "interiorsNote": "内装の効果と費用はゲーム用の架空値（v1.8、ユーザー指定：ほぼなし／シンプル／豪華）。内装費＝坪あたりの内装費×広さ×倍率。",
+  "facilitiesNote": "設備・企画は v1.9 で削除（ユーザー指定）。"
 }
     </script>
 <script type="application/json" id="provisions-data">
@@ -4724,11 +4673,11 @@ function hgauss(tag){ let u = hr(tag, 1, -1) || 1e-9, v = hr(tag, 2, -1); return
 const newCode = () => Math.floor(Math.random() * 36 ** 6).toString(36).toUpperCase().padStart(6, "0");
 function newState(cfg){
   const loc = byId(D.locations, cfg.loc), b = build(loc, cfg.tables, cfg.interior || "simple");
-  const hiring = byId(ST.hiring, cfg.hiring) || ST.hiring[0], policy = byId(ST.policy, cfg.policy);
+  const hiring = byId(ST.hiring, "exp"), policy = byId(ST.policy, "hospitality");
   const ind = { ...IND.start };
   for (const src of [hiring.start]) for (const [k, v] of Object.entries(src || {})) ind[k] = clamp(ind[k] + v, 0, 100);
   const st = {
-    cfg, loc, hiring, policy, interior: cfg.interior || "simple", fac: [...(cfg.fac || [])], mix: { ...D.mixStart }, mixStart: { ...D.mixStart }, choke: [], chokeCount: { seat: 0, staff: 0, demand: 0, retain: 0 }, lostGuests: 0, style: byId(STYLES, cfg.style),
+    cfg, loc, hiring, policy, edu: cfg.edu || "10", interior: cfg.interior || "simple", fac: [...(cfg.fac || [])], mix: { ...D.mixStart }, mixStart: { ...D.mixStart }, choke: [], chokeCount: { seat: 0, staff: 0, demand: 0, retain: 0 }, lostGuests: 0, style: byId(STYLES, cfg.style),
     tables: cfg.tables, capacity: cfg.tables, area: b.area, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost,
     open: cfg.open, close: cfg.close, price: cfg.price, ad: 0,
     cash: M.fund - b.invest - (cfg.unlicensed ? 0 : D.license.fee), debt: 0,
@@ -4799,10 +4748,11 @@ function project(legalOnly){
   const storeRev = main.rev + (b ? b.rev : 0), varCost = storeRev * (O.variableRate + FX().varRate);
   const rent = S.rent + (br ? br.rent : 0), staff = main.staff + (b ? b.staff : 0);
   const utility = utilityOf(S.tables + (b ? br.tables : 0), S.open, S.close);
-  const other = O.otherFixed * (b ? 2 : 1) + O.ads[S.ad].cost + FX().opsCost + utility;
+  const eduCost = EDU().cost;
+  const other = O.otherFixed * (b ? 2 : 1) + O.ads[S.ad].cost + FX().opsCost + utility + eduCost;
   const op = storeRev - varCost + fcRoy - rent - staff - other;
   const interest = S.debt * F.rate / 12;
-  return { demand: main.demand, occ: main.occ, guests: main.guests, lostSeat: main.lostSeat, svc: main.svc, rev: storeRev + fcRoy, storeRev, fcRoy, branchRev: b ? b.rev : 0, varCost, rent, staff, other, utility, ads: O.ads[S.ad].cost, facOps: FX().opsCost, op, interest, net: op - interest };
+  return { demand: main.demand, occ: main.occ, guests: main.guests, lostSeat: main.lostSeat, svc: main.svc, rev: storeRev + fcRoy, storeRev, fcRoy, branchRev: b ? b.rev : 0, varCost, rent, staff, other, utility, eduCost, ads: O.ads[S.ad].cost, facOps: FX().opsCost, op, interest, net: op - interest };
 }
 /* リスクの源：営業スタイル（黒・グレー）、深夜営業、無許可 */
 function riskSources(){
@@ -4867,10 +4817,10 @@ function monthTick(){
     i.fame = clamp(i.fame + O.ads[S.ad].fame + FX().fameGain * 0.5 + (p.occ > 0.8 ? 0.5 : 0), 0, 100);
     // 採用方式（経験者＋10／未経験−5、教育で育つ）を毎月の余力の戻り先に入れる
     const ssx = staffStats(), fill = ssx.need ? ssx.count / ssx.need : 1;
-    const slackTarget = 85 + clamp((fill - 1) * 60, -30, 15) + (ssx.skill - 3) * 5 + (ssx.manager ? 5 : 0) + FX().slackTarget - 70 * Math.max(0, p.occ - 0.5) / 0.4 - Math.max(0, hoursLen() - 10) * 3;
+    const slackTarget = 85 + clamp((fill - 1) * 60, -30, 15) + (ssx.skill - 3) * 5 + (ssx.manager ? 5 : 0) + FX().slackTarget + EDU().slackTarget - 70 * Math.max(0, p.occ - 0.5) / 0.4 - Math.max(0, hoursLen() - 10) * 3;
     i.slack = clamp(i.slack + (slackTarget - i.slack) * 0.2, 0, 100);
-    i.comfort = clamp(i.comfort + ((50 + (i.slack - 50) * 0.4 + S.policy.comfortTarget + FX().comfortTarget + (staffStats().host - 3) * 4 - S.mix.tourney * 10) - i.comfort) * 0.1, 0, 100);
-    i.trust = clamp(i.trust + ((50 + S.policy.trustTarget + FX().trustTarget) - i.trust) * 0.04, 0, 100);
+    i.comfort = clamp(i.comfort + ((50 + (i.slack - 50) * 0.4 + S.policy.comfortTarget + FX().comfortTarget + EDU().comfortTarget + (staffStats().host - 3) * 4 - S.mix.tourney * 10) - i.comfort) * 0.1, 0, 100);
+    i.trust = clamp(i.trust + ((50 + S.policy.trustTarget + FX().trustTarget + EDU().trustTarget) - i.trust) * 0.04, 0, 100);
     updateMix();
     staffMonthly();
   }
@@ -4882,7 +4832,7 @@ function monthTick(){
   if (wasOpen && S.month >= MK.shakeStart && S.competitors > 0 && hr("comp", 7) < MK.compExitP){ S.competitors--; S.share = Math.min(S.share / (1 - S.loc.competition.hit * 0.6), S.share * 1.15); note("近くの競合店が撤退した（業界の淘汰）", "good"); story("近くの競合店が撤退した。業界の淘汰が進んでいる。"); }
   if (S.month === MK.shakeStart && wasOpen){ note("業界の淘汰が始まった。弱い店が撤退し、残った店に客が集まる", "good"); story("5年目に入り、業界の淘汰が始まった。"); }
   if (wasOpen && hr("comp") < S.loc.competition.p * (S.month >= MK.shakeStart ? 0.3 : 1)){ S.competitors++; S.share *= 1 - S.loc.competition.hit * (1 - SEG.regularCompShield * S.mix.regular); note(`近くに競合店が開業した（需要 −${Math.round(S.loc.competition.hit * 100)}%）`, "bad"); story("近くに競合店が開業した。"); }
-  const trP = S.loc.troubleP * S.hiring.trouble * (i.slack < 30 ? 1.5 : 1);
+  const trP = S.loc.troubleP * S.hiring.trouble * EDU().trouble * (i.slack < 30 ? 1.5 : 1);
   if (wasOpen && hr("trouble") < trP){
     if (hr("trouble", 1) < 0.5){ const c = (O.trouble.costMin + hr("trouble", 2) * (O.trouble.costMax - O.trouble.costMin)) * (1 + S.tables / 10); S.cash -= c; taxAdj(-c); const t = D.troubleTexts[Math.floor(hr("trouble", 3) * D.troubleTexts.length)]; note(`${t}（${yen(-c)}）`, "bad"); story(`${t}。${yen(c)}かかった。`); logEv("trouble", { cost: Math.round(c) }); }
     else { S.shock = O.trouble.shockMonths; const t = D.shockTexts[Math.floor(hr("trouble", 3) * D.shockTexts.length)]; note(`${t}（3か月 売上−30%）`, "bad"); story(`${t}。`); logEv("shock", {}); }
@@ -5560,7 +5510,7 @@ function staffMonthly(){
   st.forEach((x, i) => {
     x.months++;
     x.morale = clamp(x.morale + ((58 + (S.ind.slack - 50) * 0.5 + (x.manager ? 15 : 0)) - x.morale) * 0.15, 0, 100);
-    if (hr(`grow${i}`) < x.growth){ const k = ["skill", "teach", "host"][Math.floor(hr(`growk${i}`) * 3)]; if (x[k] < 5){ x[k]++; } }
+    if (hr(`grow${i}`) < x.growth * EDU().growth){ const k = ["skill", "teach", "host"][Math.floor(hr(`growk${i}`) * 3)]; if (x[k] < 5){ x[k]++; } }
   });
   // 退職：士気が低いほど辞めやすい。育ったエースは「退職相談」の事件になる
   for (const [i, x] of [...st].entries()){
@@ -5840,7 +5790,7 @@ function buildEst(loc, price){
     const b = build(loc, CFG.tables), hiring = byId(ST.hiring, CFG.hiring), policy = byId(ST.policy, CFG.policy), style = byId(STYLES, CFG.style), fx = FX(CFG.fac);
     const seats = CFG.tables * 9 - fx.seatsLoss, turns = turnsFor(CFG.open, CFG.close, policy);
     const staff = loc.staffPerTable * hiring.staffMult * CFG.tables * (CFG.close - CFG.open) / O.baseHours;
-    const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utilityOf(CFG.tables, CFG.open, CFG.close);
+    const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utilityOf(CFG.tables, CFG.open, CFG.close) + EDU(CFG.edu).cost;
     const segSpend = SEG.list.reduce((a, g) => a + D.mixStart[g.id] * g.spend, 0);
     const perOcc = seats * turns * O.days * loc.spend * price * style.effect.spend * (1 - O.variableRate - fx.varRate) * fx.spend * segSpend;
     const want = loc.demand * Math.pow(price, -O.price.elasticity) * (bandWeight(CFG.open, CFG.close) / BASE_W) * style.effect.demand * fx.demand * (1 - SEG.regularDemandBonus / 2 + SEG.regularDemandBonus * D.mixStart.regular) / (seats * turns);
@@ -5849,8 +5799,8 @@ function buildEst(loc, price){
   } finally { CFG.price = keep; }
 }
 function nowEst(cfg, price){
-  const keep = { open: S.open, close: S.close, price: S.price, style: S.style, fac: S.fac };
-  S.open = cfg.open; S.close = cfg.close; S.price = price; S.style = byId(STYLES, cfg.style); S.fac = cfg.fac;
+  const keep = { open: S.open, close: S.close, price: S.price, style: S.style, fac: S.fac, edu: S.edu };
+  S.open = cfg.open; S.close = cfg.close; S.price = price; S.style = byId(STYLES, cfg.style); S.fac = cfg.fac; S.edu = cfg.edu;
   try { const p = project(); return { p: price, occ: p.occ, want: p.occ, net: p.net, capped: p.occ >= S.loc.occCap - 1e-9 }; } finally { Object.assign(S, keep); }
 }
 function priceChartHTML(pts, cur, caption){
@@ -5898,8 +5848,8 @@ function costTableHTML(rows, rev, revLabel = "売上の見込み"){
 }
 /* 営業中：いまの店に設定案を当てはめて、1か月を見積もる */
 function costTableNow(cfg){
-  const keep = { open: S.open, close: S.close, price: S.price, style: S.style, fac: S.fac };
-  S.open = cfg.open; S.close = cfg.close; S.price = cfg.price; S.style = byId(STYLES, cfg.style); S.fac = cfg.fac;
+  const keep = { open: S.open, close: S.close, price: S.price, style: S.style, fac: S.fac, edu: S.edu };
+  S.open = cfg.open; S.close = cfg.close; S.price = cfg.price; S.style = byId(STYLES, cfg.style); S.fac = cfg.fac; S.edu = cfg.edu;
   let p; try { p = project(); } finally { Object.assign(S, keep); }
   const h = cfg.close - cfg.open;
   return costTableHTML([
@@ -5907,14 +5857,14 @@ function costTableNow(cfg){
     ["人件費", p.staff, `スタッフ${S.staffList ? S.staffList.length : 0}人の給与（必要な人数は 卓×${SS.perTable}人×営業${h}時間÷${O.baseHours}時間）`],
     ["光熱費", p.utility, `卓 × 営業${h}時間 × ${O.days}日`],
     ["原価・決済", p.varCost, `売上の${Math.round((O.variableRate + FX(cfg.fac).varRate) * 100)}%`],
-    ["設備・企画の維持費", p.facOps, cfg.fac.length ? cfg.fac.map((id) => byId(FAC, id).name).join("・") : "なし"],
+    ["スタッフ教育費", p.eduCost, EDU(cfg.edu).name],
     ["広告", p.ads, `Lv${S.ad}`],
     ["その他の固定費", O.otherFixed * (S.branch ? 2 : 1), "通信・事務・保険など"],
   ], S.openedAt == null ? null : p.rev) + (S.openedAt == null ? `<p class="muted" style="font-size:12px">開業前なので売上の見込みは出さない。</p>` : "");
 }
 
 /* ---------- 開始〜開業 ---------- */
-const CFG = { fac: [], interior: "simple", style: "deposit", loc: "metro", tables: 5, open: 17, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality" };
+const CFG = { fac: [], edu: "10", interior: "simple", style: "deposit", loc: "metro", tables: 5, open: 17, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality" };
 const stepsBar = (n) => `<div class="steps">${["営業スタイル", "物件", "店づくり"].map((s, i) => `<span class="${i === n ? "on" : ""}">${i + 1}. ${s}</span>`).join("<span>›</span>")}</div>`;
 let titleTimer = null;
 function openTitle(){
@@ -5994,38 +5944,43 @@ function openProperty(){
   $("backBtn").onclick = openStyle; $("goBtn").onclick = openBuild;
 }
 function buildCalc(loc){
-  const b = build(loc, CFG.tables), lic = !CFG.unlicensed, hiring = byId(ST.hiring, CFG.hiring), policy = byId(ST.policy, CFG.policy), style = byId(STYLES, CFG.style);
-  const fx = FX(CFG.fac), fc = facCost(CFG.fac);
-  const left = M.fund - b.invest - fc - (lic ? D.license.fee : 0);
-  const seats = CFG.tables * 9, turns = turnsFor(CFG.open, CFG.close, policy);
-  const staff = loc.staffPerTable * hiring.staffMult * CFG.tables * (CFG.close - CFG.open) / O.baseHours;
+  const b = build(loc, CFG.tables), lic = !CFG.unlicensed, hiring = byId(ST.hiring, "exp"), policy = byId(ST.policy, "hospitality"), style = byId(STYLES, CFG.style), edu = EDU(CFG.edu);
+  const fx = FX([]);
+  const invest = b.invest + (lic ? D.license.fee : 0), left = M.fund - invest;
+  const seats = CFG.tables * 9, turns = turnsFor(CFG.open, CFG.close, policy), h = CFG.close - CFG.open;
+  const staff = loc.staffPerTable * hiring.staffMult * CFG.tables * h / O.baseHours;
   const utility = utilityOf(CFG.tables, CFG.open, CFG.close);
-  const fixed = b.rent + staff + O.otherFixed + fx.opsCost + utility;
+  const fixed = b.rent + staff + utility + edu.cost + O.otherFixed;
   const segSpend = SEG.list.reduce((a, g) => a + D.mixStart[g.id] * g.spend, 0);
-  const perOcc = (seats - fx.seatsLoss) * turns * O.days * loc.spend * CFG.price * style.effect.spend * (1 - O.variableRate - fx.varRate) * fx.spend * segSpend;
+  const vr = O.variableRate + fx.varRate;
+  const perOcc = seats * turns * O.days * loc.spend * CFG.price * style.effect.spend * (1 - vr) * fx.spend * segSpend;
+  const rev = perOcc / (1 - vr), cogs = rev * vr, gross = rev - cogs, op = gross - fixed;
   const be = perOcc ? fixed / perOcc : 1;
   const hoursF = bandWeight(CFG.open, CFG.close) / BASE_W;
-  const expOcc = Math.min(loc.occCap, loc.demand * Math.pow(CFG.price, -O.price.elasticity) * hoursF * style.effect.demand * fx.demand * (1 - SEG.regularDemandBonus / 2 + SEG.regularDemandBonus * D.mixStart.regular) / ((seats - fx.seatsLoss) * turns));
-  return `<table class="t"><tr><td>敷金（家賃${L.depositMonths}か月）</td><td>${yen(b.deposit)}</td></tr><tr><td>内装「${IV(CFG.interior).name}」（${b.area}坪・${m2(b.area)}㎡ × 坪${Math.round(loc.fitoutPerTsubo * IV(CFG.interior).fitoutMult)}万円）</td><td>${yen(b.fitout)}</td></tr>
+  const expOcc = Math.min(loc.occCap, loc.demand * Math.pow(CFG.price, -O.price.elasticity) * hoursF * style.effect.demand * fx.demand * (1 - SEG.regularDemandBonus / 2 + SEG.regularDemandBonus * D.mixStart.regular) / (seats * turns));
+  const r = (n, v, note, cls) => `<tr class="${cls || ""}"><td style="text-align:left">${n}</td><td style="white-space:nowrap" class="${v < 0 ? "negc" : ""}">${yen(v)}</td><td style="text-align:left;font-size:11.5px" class="muted">${note || ""}</td></tr>`;
+  return `<div class="kicker">初期投資</div>
+    <table class="t"><tr><td>敷金（家賃${L.depositMonths}か月）</td><td>${yen(b.deposit)}</td></tr><tr><td>内装「${IV(CFG.interior).name}」（${b.area}坪・${m2(b.area)}㎡ × 坪${Math.round(loc.fitoutPerTsubo * IV(CFG.interior).fitoutMult)}万円）</td><td>${yen(b.fitout)}</td></tr>
       <tr><td>卓（${CFG.tables}台 × ${L.tablePrice}万円）</td><td>${yen(b.tablesCost)}</td></tr><tr><td>開業準備</td><td>${yen(L.openingCost)}</td></tr>
-      ${fc ? `<tr><td>設備・企画（${CFG.fac.map((id) => byId(FAC, id).name).join("・")}）</td><td>${yen(fc)}</td></tr>` : ""}
       ${lic ? `<tr><td>許可の申請費</td><td>${yen(D.license.fee)}</td></tr>` : ""}
-      <tr class="total"><td>初期投資</td><td>${yen(b.invest + fc + (lic ? D.license.fee : 0))}</td></tr><tr><td>残りの手元資金</td><td class="${left < 1500 ? "negc" : ""}">${yen(left)}</td></tr></table>
-    <h2 style="font-size:14px">月の経費と売上（満席率100%で回ったとき）</h2>
-    <p class="warn" style="font-size:12.5px;margin:2px 0 6px">この表の売上は、営業時間中ずっと全席が埋まる「満席率100%」の上限。実際の売上はこれより少ない（下の見込みを参照）。</p>
-    ${(() => { const h = CFG.close - CFG.open, rev = perOcc / (1 - O.variableRate - fx.varRate); return costTableHTML([
-      ["家賃", b.rent, `${b.area}坪（${m2(b.area)}㎡）× 坪${loc.tsuboRent}万円`],
-      ["人件費", staff, `${CFG.tables}卓 × 営業${h}時間（標準${O.baseHours}時間）`],
-      ["光熱費", utility, `${CFG.tables}卓 × ${h}時間 × ${O.days}日`],
-      ["原価・決済", rev * (O.variableRate + fx.varRate), `売上の${Math.round((O.variableRate + fx.varRate) * 100)}%`],
-      ["設備・企画の維持費", fx.opsCost, CFG.fac.length ? CFG.fac.map((id) => byId(FAC, id).name).join("・") : "なし"],
-      ["その他の固定費", O.otherFixed, "通信・事務・保険など"],
-    ], rev, "売上（満席率100%）"); })()}
+      <tr class="total"><td>初期投資</td><td>${yen(invest)}</td></tr><tr><td>残りの手元資金</td><td class="${left < 1500 ? "negc" : ""}">${yen(left)}</td></tr></table>
+    <div class="kicker" style="margin-top:14px">PL試算（月あたり・満席想定）</div>
+    <table class="t">
+      ${r("売上", rev, `${seats}席 × 1日${turns.toFixed(1)}回転 × ${O.days}日 × 満席`)}
+      ${r("原価・決済", -cogs, `売上の${Math.round(vr * 100)}%`)}
+      ${r("粗利", gross, "", "total")}
+      ${r("家賃", -b.rent, `${b.area}坪 × 坪${loc.tsuboRent}万円`)}
+      ${r("人件費", -staff, `${CFG.tables}卓 × 営業${h}時間`)}
+      ${r("光熱費", -utility, `${CFG.tables}卓 × ${h}時間 × ${O.days}日`)}
+      ${r("スタッフ教育費", -edu.cost, edu.name)}
+      ${r("その他の固定費", -O.otherFixed, "通信・事務・保険など")}
+      ${r("営業利益", op, "税金・借入の利息の前", "total")}
+    </table>
+    <p class="muted" style="font-size:12px;margin:4px 0 8px">満席（営業時間中ずっと全席が埋まる）は上限。実際はここまで入らない。</p>
     <div class="grid2"><span>損益分岐の満席率</span><span>${be > 1 ? "100%超" : pct(be, 0)}</span>
       <span>成熟時の満席率の見込み</span><span>${pct(expOcc, 0)}（±${Math.round(loc.demandSd * 100)}%）</span>
-      <span>見込みの満席率での売上</span><span>${yen(perOcc / (1 - O.variableRate - fx.varRate) * expOcc)}/月</span>
-      <span>見込みの満席率での差し引き</span><span class="${perOcc * expOcc - fixed < 0 ? "negc" : ""}">${yen(perOcc * expOcc - fixed)}/月</span>
-      <span>1日の客の見込み</span><span>${Math.round(seats * expOcc * turns)}人</span></div>
+      <span>見込みの満席率での売上</span><span>${yen(rev * expOcc)}/月</span>
+      <span>見込みの満席率での営業利益</span><span class="${perOcc * expOcc - fixed < 0 ? "negc" : ""}">${yen(perOcc * expOcc - fixed)}/月</span></div>
     <p class="muted" style="font-size:12px">開業直後の客は見込みの${Math.round(O.rampStart * 100)}%から始まり、${O.rampMonths}か月かけて増える。</p>`;
 }
 function openBuild(){
@@ -6042,13 +5997,11 @@ function openBuild(){
     <datalist id="priceTicks"><option value="100"></option></datalist>
     <div class="pticks"><span>${Math.round(O.price.min * 100)}%</span><span>100%＝競合店と同じ</span><span>${Math.round(O.price.max * 100)}%</span></div>
     <p id="priceNote" style="font-size:12.5px"></p><div id="priceChart"></div>
-    <h2>設備・企画（いくつでも）</h2>${facGroup(CFG.fac)}
-    <h2>スタッフの採用</h2>${optGroup(ST.hiring, CFG.hiring, "hiring", (h) => `${esc(h.desc)}<br>人件費 ×${h.staffMult}`)}
-    <h2>教育方針</h2>${optGroup(ST.policy, CFG.policy, "policy", (p) => esc(p.desc))}
+    <h2>スタッフ教育の予算</h2>${optGroup(ST.eduBudget, CFG.edu, "edu", (x) => esc(x.desc))}
     <h2>開業のしかた</h2>
     <label class="chk"><input type="radio" name="lic" value="0" ${CFG.unlicensed ? "" : "checked"}> <span>許可を待って開く（申請費 ${yen(D.license.fee)}・${D.license.waitMonths}か月待ち。その間も家賃はかかる）</span></label>
     <label class="chk"><input type="radio" name="lic" value="1" ${CFG.unlicensed ? "checked" : ""}> <span class="warn">許可を待たずにすぐ開く（黒：無許可）</span></label>
-    <h2>初期投資と見込み</h2><div id="calc"></div>
+    <h2>初期投資と見込み</h2><div id="calc" class="calcbox"></div>
     <div class="row"><button class="btn" id="backBtn">戻る</button><button class="btn primary" id="goBtn">この店で開業する</button></div>`);
   const refresh = () => {
     const b = build(loc, CFG.tables);
@@ -6063,7 +6016,6 @@ function openBuild(){
   wireGauge(CFG, refresh);
   $("priceR").oninput = (e) => { CFG.price = +e.target.value / 100; refresh(); };
   wireGroups(CFG, refresh);
-  wireFac(CFG.fac, refresh);
   card.querySelectorAll('input[name="lic"]').forEach((x) => x.onchange = () => { CFG.unlicensed = x.value === "1"; refresh(); });
   $("backBtn").onclick = openProperty;
   $("goBtn").onclick = () => startGame({ ...CFG });
@@ -6113,7 +6065,7 @@ function act(a){
 function openSettings(onDone){
   const was = S.paused; S.paused = true;
   const done = () => { if (onDone) onDone(); else { hide(); S.paused = was; } };
-  const cfg = { open: S.open, close: S.close, price: S.price, style: S.style.id, policy: S.policy.id, fac: [...S.fac] };
+  const cfg = { open: S.open, close: S.close, price: S.price, style: S.style.id, edu: S.edu || "10", fac: [...S.fac] };
   show(`<div class="kicker">営業設定</div><h1>店の運営を変える</h1>
     <h2>営業スタイル</h2>${styleList(cfg.style)}
     ${stopped(S.style.id) ? `<p class="warn">${R.labels.order}により、あと${S.stopUntil[S.style.id] - S.month}か月は「預入のみ」で営業する。</p>` : ""}
@@ -6124,8 +6076,7 @@ function openSettings(onDone){
     <div class="pticks"><span>${Math.round(O.price.min * 100)}%</span><span>100%＝競合店と同じ</span><span>${Math.round(O.price.max * 100)}%</span></div>
     <p id="priceNote" style="font-size:12.5px"></p><div id="priceChart"></div>
     <h2>月の経費の見込み（この設定で）</h2><div id="costBox"></div>
-    <h2>設備・企画（新しく入れると設置費。やめても戻らない）</h2>${facGroup(cfg.fac)}
-    <h2>教育方針</h2>${optGroup(ST.policy, cfg.policy, "policy", (p) => esc(p.desc))}
+    <h2>スタッフ教育の予算</h2>${optGroup(ST.eduBudget, cfg.edu, "edu", (x) => esc(x.desc))}
     ${S.licensed ? "" : S.unlicensed ? `<p class="warn">いまは無許可で営業中（黒）。${S.licenseWait > 0 ? `許可申請中（あと${S.licenseWait}か月）。` : `<button class="btn" id="applyBtn">許可を申請する（${yen(D.license.fee)}・${D.license.waitMonths}か月）</button>`}</p>` : `<p class="muted">許可待ち・休業中（あと${S.licenseWait}か月で開業）。</p>`}
     <details><summary>参考：実際の条文（このゲームの処分モデルの根拠ではない）</summary>${provHTML([...new Set([...STYLES.flatMap((s) => s.provisionIds), ...D.illegal.flatMap((a) => a.provisionIds)])])}
       ${D.illegal.filter((a) => a.missingSource).map((a) => `<p class="muted">未収録：${esc(a.missingSource)}</p>`).join("")}<p class="muted">${esc(R.note)}</p></details>
@@ -6136,7 +6087,6 @@ function openSettings(onDone){
   $("priceR").oninput = (e) => { cfg.price = +e.target.value / 100; refresh(); };
   wireGroups(cfg, refresh);
   card.querySelectorAll(".stylelist .opt").forEach((b) => b.onclick = () => { cfg.style = b.dataset.v; card.querySelectorAll(".stylelist .opt").forEach((o) => o.setAttribute("aria-pressed", o === b)); refresh(); });
-  wireFac(cfg.fac, refresh);
   if ($("applyBtn")) $("applyBtn").onclick = () => { S.cash -= D.license.fee; taxAdj(-D.license.fee); S.licenseWait = D.license.waitMonths; note("許可を申請した。"); story("許可を申請した。"); $("applyBtn").replaceWith(document.createTextNode(`許可申請中（あと${S.licenseWait}か月）。`)); };
   $("cancelBtn").onclick = done;
   $("okBtn").onclick = () => {
@@ -6144,12 +6094,12 @@ function openSettings(onDone){
     if (cfg.open !== S.open || cfg.close !== S.close) ch.push(`営業時間 ${hhLong(cfg.open)}〜${hhLong(cfg.close)}`);
     if (cfg.price !== S.price) ch.push(`料金 競合比${Math.round(cfg.price * 100)}%`);
     if (cfg.style !== S.style.id) ch.push(`営業スタイル「${byId(STYLES, cfg.style).name}」`);
-    if (cfg.policy !== S.policy.id) ch.push(`教育方針「${byId(ST.policy, cfg.policy).name}」`);
+    if (cfg.edu !== (S.edu || "10")) ch.push(`スタッフ教育の予算「${EDU(cfg.edu).name}」`);
     const added = cfg.fac.filter((id) => !S.fac.includes(id)), removed = S.fac.filter((id) => !cfg.fac.includes(id));
     if (added.length){ const c = facCost(added); S.cash -= c; ch.push(`${added.map((id) => byId(FAC, id).name).join("・")}を入れた（${yen(-c)}）`); }
     if (removed.length) ch.push(`${removed.map((id) => byId(FAC, id).name).join("・")}をやめた`);
     S.fac = [...cfg.fac];
-    S.open = cfg.open; S.close = cfg.close; S.price = cfg.price; S.style = byId(STYLES, cfg.style); S.policy = byId(ST.policy, cfg.policy);
+    S.open = cfg.open; S.close = cfg.close; S.price = cfg.price; S.style = byId(STYLES, cfg.style); S.edu = cfg.edu;
     if (ch.length){ note(ch.join("・")); story(`方針を変えた：${ch.join("、")}。`); logEv("settings", { ...cfg }); }
     syncHUD(); done();
   };
@@ -6267,6 +6217,8 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors
 const curInterior = () => (typeof S !== "undefined" && S && !S.over && S.interior) || (typeof CFG !== "undefined" && CFG.interior) || "simple";
 const layoutFor = (n, it) => D.layouts[it || curInterior()][String(clamp(n, 1, 12))];
 const IV = (id) => byId(D.interiors, id || curInterior()) || D.interiors[1];
+/* スタッフ教育の予算（v1.9）。採用・教育方針の選択の代わり */
+const EDU = (id) => byId(ST.eduBudget, id || (typeof S !== "undefined" && S && !S.over && S.edu) || (typeof CFG !== "undefined" && CFG.edu) || "10") || ST.eduBudget[1];
 const m2 = (tsubo) => (tsubo * 3.30578).toFixed(1);
 /* 卓まわりの席：ディーラー1＋客9 */
 function seatPos(t, k){ const a = -Math.PI / 2 + 0.5 + k / 8 * (2 * Math.PI - 1.0); return { x: t[0] + Math.cos(a) * 1.55, y: t[1] + Math.sin(a) * 1.0 }; }
