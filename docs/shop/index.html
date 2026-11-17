@@ -202,7 +202,6 @@ summary{cursor:pointer;color:var(--muted)}
 .card.titlecard{width:min(900px,100%);padding:28px 30px 22px}
 /* タイトル画面（v1.6） */
 .ttl{font-size:clamp(34px,6vw,58px);line-height:1.1;margin:4px 0 8px;letter-spacing:.02em;font-weight:800}
-.suits{font-size:20px;letter-spacing:.35em;color:var(--muted);margin:-2px 0 8px}
 .hook{font-size:clamp(16px,2vw,19px);line-height:1.7;margin:0 0 6px}
 .hook b{font-family:var(--mono);font-size:1.15em}
 .heroCap{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-top:4px}
@@ -4578,16 +4577,16 @@ function openTitle(){
   card.classList.add("titlecard");
   show(`<div class="hero">
       <div><div class="kicker">5,000万円 ・ 5年 ・ 最後にいくら残せる？</div>
-        <h1 class="ttl">ポーカー屋を<br>作ろう！</h1><div class="suits" aria-hidden="true">♠ ♥ ♦ ♣</div>
+        <h1 class="ttl">ポーカー屋を<br>作ろう！</h1>
         <p class="hook">物件を選んで、卓を並べて、スタッフを雇って、<b style="white-space:nowrap">5年後に店を売る</b>。<br>手元に残ったお金が、あなたのスコア。</p>
         <p class="muted" style="font-size:12.5px;margin:0">1卓の小さな店から、12卓の旗艦店まで。東京・大都市・地方・郊外。</p></div>
       <div><canvas id="heroCv" aria-label="卓が増えていく店のイメージ"></canvas>
         <div class="heroCap"><span class="muted" id="heroLux">内装「素朴」</span><span><span class="n" id="heroN">1</span> 卓</span></div></div>
     </div>
     <div class="routes">
-      <div class="route clean"><div class="who">コツコツ型</div><div class="nm">健全に育てて売る</div><div style="font-size:12.5px;line-height:1.6">預入だけの真っ当な店。最初の1年は赤字に耐える。常連と知名度が育つほど、売るときの値段が上がる。</div><div class="meter"><span>リスク 低</span><span>5年後に強い</span></div></div>
-      <div class="route gray"><div class="who">ちゃっかり型</div><div class="nm">グレーで稼ぐ</div><div style="font-size:12.5px;line-height:1.6">チケット・コイン・商品・飲食割引。最初は健全より儲かる。でも是正指摘が年々増え、売るときはハコの値段だけ。</div><div class="meter"><span>リスク 中</span><span>短期に強い</span></div></div>
-      <div class="route black"><div class="who">一発逆転型</div><div class="nm">黒で荒稼ぎ</div><div style="font-size:12.5px;line-height:1.6">換金あり。1年目は誰よりも稼ぐ。半年を過ぎると摘発が近づき、捕まれば罰金・追徴・拘禁刑と逮捕歴。</div><div class="meter"><span>リスク 最大</span><span>金額だけなら最大</span></div></div>
+      <div class="route clean"><div class="who">コツコツ型</div><div class="nm">健全に育てる</div><div style="font-size:12.5px;line-height:1.6">預入だけの真っ当な店。最初の1年は赤字に耐える。常連と知名度が育つほど、売るときの値段が上がる。</div><div class="meter"><span>リスク 低</span><span>5年後に強い</span></div></div>
+      <div class="route gray"><div class="who">ちゃっかり型</div><div class="nm">法的根拠はないけど、みんなで渡れば怖くない</div><div style="font-size:12.5px;line-height:1.6">チケット・コイン・商品・飲食割引。最初は健全より儲かる。でも是正指摘が年々増え、売るときはハコの値段だけ。</div><div class="meter"><span>リスク 中</span><span>短期に強い</span></div></div>
+      <div class="route black"><div class="who">一発逆転型</div><div class="nm">リスクは承知。荒稼ぎしたい</div><div style="font-size:12.5px;line-height:1.6">換金あり。1年目は誰よりも稼ぐ。半年を過ぎると摘発が近づき、捕まれば罰金・追徴・拘禁刑と逮捕歴。</div><div class="meter"><span>リスク 最大</span><span>金額だけなら最大</span></div></div>
     </div>
     <div class="flowline" aria-label="5年の流れ"><span>営業スタイルを選ぶ</span><i>→</i><span>物件と卓数</span><i>→</i><span>開業・立ち上がり</span><i>→</i><span>毎年の決算：売る？続ける？</span><i>→</i><span>5年目に売却</span></div>
     <div class="feats">
