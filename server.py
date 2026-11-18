@@ -3,7 +3,7 @@
 
 Stored fields only: session_id, question_id, selected, is_match, timestamp.
 Shop game scores (opt-in, /api/shop/score): name, kind, amount, peak, loc, tables,
-tier, type, seed, version, timestamp.
+tier, type, seed, version, timestamp, and optional evaluation for completed runs.
 Does not persist IP, User-Agent, Referer, or any other request metadata.
 """
 
@@ -45,6 +45,10 @@ def clean_text(value, limit):
     return CONTROL_RE.sub("", value).strip()[:limit]
 
 
+def valid_evaluation(value):
+    return type(value) is int and 0 <= value <= 100
+
+
 def validate_score(raw):
     kind = raw.get("kind")
     if kind not in ("complete", "bankrupt", "arrest"):
@@ -61,6 +65,11 @@ def validate_score(raw):
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not lo <= value <= hi:
             raise ValueError("invalid_" + key)
         nums[key] = int(round(value))
+    if "evaluation" in raw:
+        evaluation = raw["evaluation"]
+        if kind != "complete" or not valid_evaluation(evaluation):
+            raise ValueError("invalid_evaluation")
+        nums["evaluation"] = evaluation
     return {
         "name": clean_text(raw.get("name"), 12),
         "kind": kind,
@@ -92,7 +101,9 @@ def ranking(seed, limit=10):
     final = sorted(done, key=lambda x: -x.get("amount", 0))[:limit]
     peak = sorted(scores, key=lambda x: -x.get("peak", 0))[:limit]
     same = sorted([x for x in done if x.get("seed") == seed], key=lambda x: -x.get("amount", 0))[:limit]
-    return {"ok": True, "count": len(scores), "final": final, "peak": peak, "seed": same}
+    evaluated = [x for x in done if x["kind"] == "complete" and valid_evaluation(x.get("evaluation"))]
+    evaluation = sorted(evaluated, key=lambda x: (-x["evaluation"], -x.get("amount", 0)))[:limit]
+    return {"ok": True, "count": len(scores), "final": final, "peak": peak, "seed": same, "evaluation": evaluation}
 
 
 def load_questions():

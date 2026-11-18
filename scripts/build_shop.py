@@ -77,6 +77,7 @@ def main() -> None:
         write({"id": "shop_risk", "kind": "risk", **shop["risk"]})
         write({"id": "shop_valuation", "kind": "valuation", **shop["valuation"], "note_fictional": fictional})
         write({"id": "shop_finance", "kind": "finance", **shop["finance"], "note_fictional": fictional})
+        write({"id": "shop_annual_news", "kind": "annual_news", **shop["annualNews"], "note_fictional": fictional})
         for st in shop["styles"]["list"]:
             write({"id": f"shop_style_{st['id']}", "kind": "business_style", **st,
                    "provisions": prov_refs(st.get("provisionIds", [])), "note_fictional": shop["styles"]["note"]})

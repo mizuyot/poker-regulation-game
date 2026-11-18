@@ -52,8 +52,8 @@ const strategies = process.env.ONLY ? ALL.filter((x) => new RegExp(process.env.O
     if (!st.switchAt) for (let y = 1; y <= 4; y++){
       row[`alive@${y}y`] = r.filter((x) => x.snap[y]).length;
       row[`cash@${y}y`] = Math.round(mean(r.map((x) => x.snap[y] ? x.snap[y].cash : 0)));
-      // y年目の終わりに売った場合（その時点で摘発・倒産済みなら0。調査で摘発される確率は期待値に入れる）
-      const v = r.map((x) => { const s = x.snap[y]; return s ? Math.max(0, s.amount) * (1 - s.arrestP) + s.arrestP * s.kept : (x.over === 'arrest' ? x.final : 0); });
+      // y年目の終わりに売った場合。すでに摘発された回は摘発時の最終手取り額を使う。
+      const v = r.map((x) => x.snap[y]?.amount ?? (x.over === 'arrest' ? x.final : 0));
       row[`sell@${y}y_mean`] = Math.round(mean(v));
       row[`sell@${y}y_med`] = Math.round(med(v));
       const live = r.map((x) => x.snap[y]).filter(Boolean);

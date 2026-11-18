@@ -6,8 +6,7 @@
 //   年間の手取り     = その年末の手元資金 − 前の年末（開業時から）。全回の平均
 //   累計の手取り     = その年末の手元資金 − 開業時の手元資金。全回の平均
 //   トータルリターン = その年末に売った場合の 手元資金＋売却額−借入 − 元手5,000万円。
-//                      調査で摘発される確率 p は期待値に入れる（摘発されたら売却額なしで手元資金だけ残る）。
-//                      それより前に摘発されていれば、摘発時の手元資金−借入。5年目は実際の結果
+//                      すでに摘発されていれば摘発時の最終手取り額。5年目は実際の結果
 const { chromium } = require('playwright');
 const path = require('path');
 const URL = 'file://' + path.resolve(__dirname, '../docs/shop/index.html') + '?test=1';
@@ -44,12 +43,12 @@ const strategies = [
   const out = {};
   for (const st of strategies){
     const runs = res[st.name], rows = [];
-    // y年目末の状態：{ cash, amount }。amount＝その年末に売った場合の期待手取り
+    // y年目末の状態：{ cash, amount }。amount＝その年末に売った場合の手取り
     const at = (r, y) => {
       if (y === 0) return { cash: r.cash0, amount: r.cash0 };
       const endY = Math.ceil(r.month / 12);
       if (r.over === 'complete' && y === 5) return { cash: r.cashEnd, amount: r.cashEnd + r.sale5 - r.debtEnd, alive: true };
-      if (y < 5 && r.snap[y]) { const s = r.snap[y], kept = s.kept; return { cash: s.cash, amount: (1 - s.arrestP) * Math.max(0, s.amount) + s.arrestP * kept, alive: true }; }
+      if (y < 5 && r.snap[y]) { const s = r.snap[y]; return { cash: s.cash, amount: s.amount, alive: true }; }
       if (r.over === 'arrest') return { cash: r.cashEnd, amount: r.finalAmount };
       return { cash: 0, amount: 0 }; // 倒産
     };
