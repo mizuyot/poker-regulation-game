@@ -2,8 +2,9 @@
 """Serve the game and append anonymous answer logs as JSONL.
 
 Stored fields only: session_id, question_id, selected, is_match, timestamp.
-Shop game scores (opt-in, /api/shop/score): name, kind, amount, peak, loc, tables,
-tier, type, seed, version, timestamp, and optional evaluation for completed runs.
+Shop game scores (/api/shop/score): kind, amount, loc, tables, tier, style, type,
+seed, version, timestamp, optional styleHistory, and a private runId for retry
+deduplication. Legacy requests without runId can include a display name.
 Does not persist IP, User-Agent, Referer, or any other request metadata.
 """
 
@@ -23,10 +24,11 @@ DOCS = ROOT / "docs"
 DATA_DIR = ROOT / "data"
 ANSWERS_PATH = DATA_DIR / "answers.jsonl"
 QUESTIONS_PATH = DOCS / "questions.json"
+SHOP_PATH = DOCS / "shop" / "shop.json"
 HOST = "127.0.0.1"
 PORT = 8765
 
-SESSION_RE = re.compile(
+UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
 QUESTION_IDS = set()
@@ -37,6 +39,14 @@ SCORES_PATH = DATA_DIR / "shop_scores.jsonl"
 SCORES_LOCK = threading.Lock()
 SEED_RE = re.compile(r"^[0-9A-Z]{4,6}$")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f<>]")
+FINAL_SCORE_KINDS = ("complete", "arrest")
+SCORE_BODY_LIMIT = 4096
+SHOP_DATA = json.loads(SHOP_PATH.read_text(encoding="utf-8"))
+SCORE_MAX_MONTHS = SHOP_DATA["meta"]["months"]
+SCORE_STYLE_TIERS = {
+    style["id"]: style["tier"]
+    for style in SHOP_DATA["styles"]["list"]
+}
 
 
 def clean_text(value, limit):
@@ -45,8 +55,27 @@ def clean_text(value, limit):
     return CONTROL_RE.sub("", value).strip()[:limit]
 
 
-def valid_evaluation(value):
-    return type(value) is int and 0 <= value <= 100
+def validate_style_history(value):
+    if not isinstance(value, list) or not 0 < len(value) <= SCORE_MAX_MONTHS:
+        raise ValueError("invalid_style_history")
+    history = []
+    total_months = 0
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("invalid_style_history")
+        style, months = item.get("style"), item.get("months")
+        if (
+            not isinstance(style, str)
+            or style not in SCORE_STYLE_TIERS
+            or type(months) is not int
+            or months <= 0
+        ):
+            raise ValueError("invalid_style_history")
+        total_months += months
+        if total_months > SCORE_MAX_MONTHS:
+            raise ValueError("invalid_style_history")
+        history.append({"style": style, "months": months})
+    return history
 
 
 def validate_score(raw):
@@ -59,19 +88,24 @@ def validate_score(raw):
     tier = raw.get("tier")
     if tier not in ("black", "gray", "clean"):
         raise ValueError("invalid_tier")
+    style = raw.get("style")
+    if "style" in raw:
+        if not isinstance(style, str):
+            raise ValueError("invalid_style")
+        legacy_prize = style == "prize" and tier == "gray"
+        if SCORE_STYLE_TIERS.get(style) != tier and not legacy_prize:
+            raise ValueError("invalid_style")
     nums = {}
-    for key, lo, hi in (("amount", -1_000_000, 10_000_000), ("peak", -1_000_000, 10_000_000), ("tables", 1, 200)):
+    for key, lo, hi in (("amount", -1_000_000, 10_000_000), ("tables", 1, 200)):
         value = raw.get(key)
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not lo <= value <= hi:
             raise ValueError("invalid_" + key)
         nums[key] = int(round(value))
-    if "evaluation" in raw:
-        evaluation = raw["evaluation"]
-        if kind != "complete" or not valid_evaluation(evaluation):
-            raise ValueError("invalid_evaluation")
-        nums["evaluation"] = evaluation
-    return {
-        "name": clean_text(raw.get("name"), 12),
+    run_id = raw.get("runId")
+    if "runId" in raw and (not isinstance(run_id, str) or not UUID_RE.fullmatch(run_id)):
+        raise ValueError("invalid_run_id")
+    record = {
+        "name": "" if run_id else clean_text(raw.get("name"), 12),
         "kind": kind,
         **nums,
         "loc": clean_text(raw.get("loc"), 20),
@@ -81,29 +115,63 @@ def validate_score(raw):
         "version": clean_text(raw.get("version"), 12),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    if run_id:
+        record["runId"] = run_id.lower()
+    if style is not None:
+        record["style"] = style
+    if "styleHistory" in raw:
+        record["styleHistory"] = validate_style_history(raw["styleHistory"])
+    return record
 
 
-def read_scores():
-    with SCORES_LOCK:
-        lines = SCORES_PATH.read_text(encoding="utf-8").splitlines() if SCORES_PATH.exists() else []
+def read_score_log():
+    """Read the score log while the caller holds SCORES_LOCK."""
+    lines = SCORES_PATH.read_text(encoding="utf-8").splitlines() if SCORES_PATH.exists() else []
     out = []
     for line in lines:
         try:
-            out.append(json.loads(line))
+            record = json.loads(line)
         except json.JSONDecodeError:
             continue
+        if isinstance(record, dict):
+            out.append(record)
     return out
 
 
+def final_rank_at_registration(record, earlier):
+    if record["kind"] not in FINAL_SCORE_KINDS:
+        return None
+    done = [score for score in earlier if score.get("kind") in FINAL_SCORE_KINDS]
+    # 同額では先に登録した記録が上位なので、今回より前の同額も数える。
+    position = 1 + sum(score.get("amount", 0) >= record["amount"] for score in done)
+    return {"position": position, "total": len(done) + 1}
+
+
+def register_score(record):
+    with SCORES_LOCK:
+        earlier = read_score_log()
+        run_id = record.get("runId")
+        if run_id:
+            for index, existing in enumerate(earlier):
+                if existing.get("runId") == run_id:
+                    return final_rank_at_registration(existing, earlier[:index])
+        receipt = final_rank_at_registration(record, earlier)
+        SCORES_PATH.parent.mkdir(exist_ok=True)
+        with SCORES_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        return receipt
+
+
 def ranking(seed, limit=10):
-    scores = read_scores()
-    done = [x for x in scores if x.get("kind") in ("complete", "arrest")]  # 摘発は罰金・追徴後の手元資金
+    with SCORES_LOCK:
+        scores = read_score_log()
+    for score in scores:
+        for key in ("evaluation", "peak", "runId"):
+            score.pop(key, None)  # 過去の採点や月間利益と、再送識別子は公開しない。
+    done = [x for x in scores if x.get("kind") in FINAL_SCORE_KINDS]  # 摘発は罰金・追徴後の手元資金
     final = sorted(done, key=lambda x: -x.get("amount", 0))[:limit]
-    peak = sorted(scores, key=lambda x: -x.get("peak", 0))[:limit]
     same = sorted([x for x in done if x.get("seed") == seed], key=lambda x: -x.get("amount", 0))[:limit]
-    evaluated = [x for x in done if x["kind"] == "complete" and valid_evaluation(x.get("evaluation"))]
-    evaluation = sorted(evaluated, key=lambda x: (-x["evaluation"], -x.get("amount", 0)))[:limit]
-    return {"ok": True, "count": len(scores), "final": final, "peak": peak, "seed": same, "evaluation": evaluation}
+    return {"ok": True, "count": len(scores), "final": final, "seed": same}
 
 
 def load_questions():
@@ -271,7 +339,7 @@ class Handler(SimpleHTTPRequestHandler):
             self._json_error(400, "invalid_timestamp")
             return
 
-        if not isinstance(session_id, str) or not SESSION_RE.match(session_id):
+        if not isinstance(session_id, str) or not UUID_RE.match(session_id):
             self._json_error(400, "invalid_session")
             return
         if question_id not in QUESTION_IDS:
@@ -298,8 +366,11 @@ class Handler(SimpleHTTPRequestHandler):
         self._send(200, json.dumps({"ok": True}), "application/json; charset=utf-8")
 
     def _post_score(self):
-        length = int(self.headers.get("Content-Length") or "0")
-        if length <= 0 or length > 2048:
+        try:
+            length = int(self.headers.get("Content-Length") or "0")
+        except ValueError:
+            length = 0
+        if not 0 < length <= SCORE_BODY_LIMIT:
             self._json_error(400, "invalid_length")
             return
         try:
@@ -307,17 +378,14 @@ class Handler(SimpleHTTPRequestHandler):
             if not isinstance(raw, dict):
                 raise ValueError("invalid_json")
             record = validate_score(raw)
-        except (UnicodeDecodeError, json.JSONDecodeError):
+        except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
             self._json_error(400, "invalid_json")
             return
         except ValueError as exc:
             self._json_error(400, str(exc))
             return
-        DATA_DIR.mkdir(exist_ok=True)
-        with SCORES_LOCK:
-            with SCORES_PATH.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-        self._send(200, json.dumps({"ok": True}), "application/json; charset=utf-8")
+        receipt = register_score(record)
+        self._send(200, json.dumps({"ok": True, "finalRank": receipt}), "application/json; charset=utf-8")
 
 
 def main():
