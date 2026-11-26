@@ -715,8 +715,14 @@ summary{cursor:pointer;color:var(--muted)}
 .build-setup .build-finance-details{
   margin:0;
 }
-.build-setup .build-investment .build-finance-details{
-  border-top:1px solid var(--soft);
+.build-setup .build-investment .build-finance-details > summary{
+  padding-top:0;
+}
+.build-setup .build-investment-total{
+  float:inline-end;
+  font-size:18px;
+  line-height:1.5;
+  white-space:nowrap;
 }
 .build-setup .build-finance-details > summary{
   padding:10px 0;
@@ -727,7 +733,7 @@ summary{cursor:pointer;color:var(--muted)}
 .build-setup .build-full-pl .build-finance-details > summary{
   padding:0;
 }
-.build-setup .build-full-pl .build-finance-details > summary h2{
+.build-setup .build-finance-details > summary h2{
   display:inline;
   margin:0;
 }
@@ -8856,8 +8862,8 @@ function openTitle(){
           <p>営業スタイルと立地を選び、卓数・内装・料金・店長を決めます。</p></div></li>
         <li><div><h3>年末に方針を決める</h3>
           <p>営業は自動で進み、年末の決算で止まります。成績とニュースを見て、方針変更・改装・店長交代を選べます。</p></div></li>
-        <li><div><h3>売却して手取り額を競う</h3>
-          <p>毎年の決算で売却できます。続けた店は<span style="white-space:nowrap">5年目</span>の終わりに売却します。</p>
+        <li><div><h3>売却した後の手元現金総額を競う</h3>
+          <p>健全な営業で直近の利益が出ている店は、DCFなどで売却額を評価します。営業利益がゼロ以下の店や、グレー・ブラックの営業歴がある店は、ハコの価値で売却します。</p>
           <p class="guide-score"><span class="guide-score-label">売却時のスコア</span>手元資金 ＋ 売却額 − 借入残高</p></div></li>
       </ol>
     </section>
@@ -9082,13 +9088,8 @@ function buildCalc(loc){
     <td class="num${value < 0 ? " negc" : ""}">${yen(value)}</td>
   </tr>`;
   return `<section class="setup-finance build-investment" aria-labelledby="investmentHeading">
-    <h2 id="investmentHeading">初期投資</h2>
-    <dl class="build-finance-summary">
-      <div><dt>初期投資の合計</dt><dd class="num">${yen(invest)}</dd></div>
-      <div class="build-finance-result"><dt>残りの手元資金<small>元手 ${yen(M.fund)} − 初期投資</small></dt><dd class="num${left < 1500 ? " negc" : ""}">${yen(left)}</dd></div>
-    </dl>
     <details class="build-finance-details" id="buildInvestmentDetails">
-      <summary>初期投資の内訳</summary>
+      <summary><h2 id="investmentHeading">初期投資の合計</h2> <strong class="num build-investment-total">${yen(invest)}</strong></summary>
       <table class="build-finance-table" aria-label="初期投資の内訳">
         <tbody>
           ${moneyRow("敷金", b.deposit, `家賃 ${L.depositMonths}か月分`)}
@@ -9099,6 +9100,9 @@ function buildCalc(loc){
         </tbody>
       </table>
     </details>
+    <dl class="build-finance-summary">
+      <div class="build-finance-result"><dt>残りの手元資金<small>元手 ${yen(M.fund)} − 初期投資</small></dt><dd class="num${left < 1500 ? " negc" : ""}">${yen(left)}</dd></div>
+    </dl>
   </section>
   <section class="setup-outlook build-outlook" aria-labelledby="outlookHeading">
     <h2 id="outlookHeading">成熟時の営業見込み</h2>
@@ -10975,7 +10979,15 @@ function updatePeople(dt, sp){
     if (p.state === "leave"){ p.dead = true; continue; }
     p.state = "sit";
     p.sit = true;
-    if (pops.length < 5 && Math.random() < 0.34) pops.push({ x: p.x, y: p.y, t: 0, v: Math.round(customerSpend(styleNow(), S.price) * 10000) });
+    if (pops.length < 5){
+      const popChance = 0.34, roll = Math.random();
+      if (roll < popChance){
+        // 出現に使う乱数から、カードにだけ表示する客単価を作る。
+        const baseYen = Math.round(customerSpend(styleNow(), S.price) * 10000);
+        const displayYen = Math.ceil(baseYen * (0.3 + 1.4 * roll / popChance) / 1000) * 1000;
+        pops.push({ x: p.x, y: p.y, t: 0, v: displayYen });
+      }
+    }
   }
   people = people.filter((p) => !p.dead);
   // ディーラー（各卓1人）と、フロアスタッフ
