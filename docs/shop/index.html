@@ -251,7 +251,8 @@ button{font-family:inherit;color:inherit}
 .card .style-enforcement .style-enforcement-note{border-top:1px solid var(--soft);padding-top:7px;margin-top:0}
 .style-comparison-details{margin-top:8px;margin-bottom:0}
 .style-comparison-details summary{font-size:13px}
-.card .style-comparison-actions{margin-top:12px}
+.card .style-comparison-actions{display:grid;grid-template-columns:auto minmax(0,340px);margin-top:12px}
+.style-comparison-actions .btn{min-height:48px;padding-inline:16px}
 @media (max-width:350px){.style-comparison{--rate-columns:minmax(0,1fr) 3.3rem 3.85rem}.style-comparison-columns{padding-inline:7px;font-size:10px}.style-list-metrics{padding-inline:6px}.style-list-effects,.style-list-rate{font-size:11px}}
 .stepper{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .stepper button{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;font-size:18px}
@@ -395,8 +396,9 @@ summary{cursor:pointer;color:var(--muted)}
 .title-guide{font-family:"Helvetica Neue","Noto Sans JP","Hiragino Sans",sans-serif}
 .card .guide-intro h1{font-size:clamp(20px,6.5vw,36px);line-height:1.4;letter-spacing:.015em;margin:0;white-space:nowrap}
 .card .guide-intro .guide-lead{margin:10px 0 0;font-size:15px;line-height:1.65}
-.guide-flow{margin-top:18px}
-.card .guide-flow h2{font-size:18px;letter-spacing:.02em;line-height:1.5;margin:0 0 8px}
+.guide-flow{margin-top:18px;padding-top:0}
+.guide-flow > summary{min-height:44px;padding:8px 0;color:var(--ink)}
+.card .guide-flow h2{display:inline;font-size:18px;letter-spacing:.02em;line-height:1.5;margin:0}
 .guide-steps{margin:0;padding:0;list-style:none;counter-reset:guide-step}
 .guide-steps li{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:start;column-gap:10px;border-top:1px solid var(--soft);padding:7px 0;counter-increment:guide-step}
 .guide-steps li::before{content:counter(guide-step);display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line);border-radius:50%;font:700 13px/1 var(--mono)}
@@ -406,22 +408,29 @@ summary{cursor:pointer;color:var(--muted)}
 .guide-score .guide-score-label{display:block;font-size:12px;font-weight:400;color:var(--muted)}
 .guide-styles{margin-top:14px}
 .card .guide-styles h2{font-size:18px;letter-spacing:.02em;line-height:1.5;margin:0 0 8px}
-.guide-routes{display:grid;gap:6px;grid-auto-rows:1fr}
-.guide-routes .route{display:grid;min-width:0;grid-template-columns:104px minmax(0,1fr);align-items:center;align-content:center;gap:8px;padding:6px 9px;
+.guide-routes{display:grid;gap:6px;grid-auto-rows:1fr;--route-columns:104px minmax(0,1fr);--route-gap:8px;--route-padding:6px 9px}
+.guide-routes .route,.guide-routes .style-choice-heading{display:grid;min-width:0;grid-template-columns:var(--route-columns);
+  align-items:center;align-content:center;gap:var(--route-gap);padding:var(--route-padding)}
+.guide-routes .route{
   border:3px solid var(--style-color);border-radius:7px;background:var(--style-color);color:#fff;text-align:left}
 .guide-routes .route.clean{--style-color:#2e6b45}
 .guide-routes .route.gray{--style-color:#666}
 .card .guide-routes .who{margin:0;font-size:13px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
 .card .guide-routes .ds{margin:0;font-size:12px;line-height:1.45}
+.stylelist.guide-routes .route{grid-template-columns:minmax(0,1fr);gap:0;padding:0}
+.guide-routes .style-choice-heading{background:transparent}
+.guide-routes .style-list-metrics{border-top:1px solid rgb(255 255 255 / .25)}
+.guide-routes .style-list-effects{color:inherit}
+.guide-routes .route[aria-pressed="true"]::before{color:var(--ink)}
 @media (min-width:690px){
-  .guide-routes{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .guide-routes .route{grid-template-columns:minmax(0,1fr);align-content:start;gap:4px;padding:8px 10px}
-  .card .guide-routes .who{font-size:15px}
-  .card .guide-routes .ds{font-size:13px}
-  .guide-route-break{display:none}
+  .title-guide .guide-routes{grid-template-columns:repeat(3,minmax(0,1fr));--route-columns:minmax(0,1fr);--route-gap:4px;--route-padding:8px 10px}
+  .title-guide .guide-routes .route{align-content:start}
+  .card .title-guide .guide-routes .who{font-size:15px}
+  .card .title-guide .guide-routes .ds{font-size:13px}
+  .title-guide .guide-route-break{display:none}
 }
 @media (max-width:360px){
-  .guide-routes .route{grid-template-columns:90px minmax(0,1fr);gap:6px;padding-inline:7px}
+  .guide-routes{--route-columns:90px minmax(0,1fr);--route-gap:6px;--route-padding:6px 7px}
 }
 
 .card .guide-risk{margin:16px 0 0;padding:8px 10px;border-left:2px solid var(--line);background:var(--soft2);font-size:12.5px;line-height:1.65}
@@ -1676,6 +1685,12 @@ summary{cursor:pointer;color:var(--muted)}
     "悪天候が続いた",
     "SNSで根拠のない悪評が出回った"
   ],
+  "styleDisplay": {
+    "token": {
+      "name": "ポイント・独自通貨・割引",
+      "desc": "遊技の成績に応じて、人に譲れるポイントやチケット、支払いに使える独自通貨、店内割引などを提供する。店ではポイントやチケット、独自通貨を現金に交換できない。"
+    }
+  },
   "styles": {
     "note": "表示しているリスクや効果はゲーム用の設定です。",
     "list": [
@@ -6511,6 +6526,8 @@ const D = JSON.parse(document.getElementById("shop-data").textContent);
 const PROV = JSON.parse(document.getElementById("provisions-data").textContent);
 const M = D.meta, L = D.layout, O = D.operations, R = D.risk, V = D.valuation, F = D.finance, IND = D.indicators, ST = D.staff;
 const STYLES = D.styles.list, SEG = D.segments, FAC = D.facilities, TYPES = D.shopTypes;
+// プレイヤー向けの名称と説明を、ランキングで使う計算データと別に管理する。
+for (const style of STYLES) Object.assign(style, D.styleDisplay?.[style.id]);
 const SELECTABLE_STYLES = STYLES.filter((style) => style.selectable !== false);
 // セーブには従来のIDを使い、候補一覧は表示用の文字で並べる。
 const MANAGERS = [...D.managerProfiles].sort((a, b) => a.letter.localeCompare(b.letter));
@@ -6541,7 +6558,13 @@ const segOf = (id) => SEG.list.find((x) => x.id === id);
 const $ = (id) => document.getElementById(id);
 const byId = (arr, id) => arr.find((x) => x.id === id);
 const DEPOSIT_STYLE = byId(STYLES, "deposit");
-const legacyStyleIds = new Map([["預入のみ", "deposit"], ["チケット・電子ポイント発行", "token"], ["店内飲食を割り引く", "food"], ["店内飲食割引", "food"]]);
+const legacyStyleIds = new Map([
+  ["預入のみ", "deposit"],
+  ["チケット・電子ポイント発行", "token"],
+  ["店内ポイント・店内通貨など", "token"],
+  ["店内飲食を割り引く", "food"],
+  ["店内飲食割引", "food"],
+]);
 const recordedStyle = (value) => byId(STYLES, legacyStyleIds.get(value) ?? value);
 const managerProfile = (id) => byId(MANAGERS, id) || byId(MANAGERS, DEFAULT_MANAGER_ID);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -8845,6 +8868,11 @@ function costTableNow(cfg, p){
 /* ---------- 開始〜開業 ---------- */
 const CFG = { fac: [], edu: "10", interior: "simple", style: "deposit", loc: "metro", tables: 5, open: 17, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality", manager: DEFAULT_MANAGER_ID };
 const stepsBar = (n) => `<div class="steps">${["営業スタイル", "物件", "店づくり"].map((s, i) => `<span class="${i === n ? "on" : ""}">${i + 1}. ${s}</span>`).join("<span>›</span>")}</div>`;
+const GUIDE_ROUTES = [
+  { style: DEPOSIT_STYLE, label: ["コツコツ型"], description: `貰えるものは、名誉だけ。<br>${esc(DEPOSIT_STYLE.name)}。` },
+  { style: byId(STYLES, "token"), label: ["ちゃっかり型"], description: "譲れるポイントやチケット。<br>支払い用の独自通貨や店内割引。" },
+  { style: byId(STYLES, "cashout"), label: ["ハイリスク・", "ハイリターン型"], description: "換金あり。高い客単価。<br>発覚で逮捕・営業終了。" },
+];
 let titleTimer = null;
 function openTitle(){
   const r = loadRank(), best = r.final[0];
@@ -8855,8 +8883,8 @@ function openTitle(){
       <h1 id="guideTitle">ポーカー屋をつくろう！</h1>
       <p class="guide-lead"><strong>元手${yen(M.fund)}</strong>でポーカー店を開き、<strong>最長${M.months / 12}年</strong>で手元に残せるお金を競います。</p>
     </header>
-    <section class="guide-flow" aria-labelledby="guideFlowTitle">
-      <h2 id="guideFlowTitle">ゲームの進め方</h2>
+    <details class="guide-flow">
+      <summary><h2>ゲームの進め方</h2></summary>
       <ol class="guide-steps" role="list">
         <li><div><h3>店を作る</h3>
           <p>営業スタイルと立地を選び、卓数・内装・料金・店長を決めます。</p></div></li>
@@ -8866,13 +8894,11 @@ function openTitle(){
           <p>健全な営業で直近の利益が出ている店は、DCFなどで売却額を評価します。営業利益がゼロ以下の店や、グレー・ブラックの営業歴がある店は、ハコの価値で売却します。</p>
           <p class="guide-score"><span class="guide-score-label">売却時のスコア</span>手元資金 ＋ 売却額 − 借入残高</p></div></li>
       </ol>
-    </section>
+    </details>
     <section class="guide-styles" aria-labelledby="guideStylesTitle">
       <h2 id="guideStylesTitle">営業スタイル</h2>
       <div class="guide-routes">
-        <section class="route clean"><h3 class="who">コツコツ型</h3><p class="ds">貰えるものは、名誉だけ。<br>${esc(DEPOSIT_STYLE.name)}。</p></section>
-        <section class="route gray"><h3 class="who">ちゃっかり型</h3><p class="ds">${esc(byId(STYLES, "token").name)}<br>遊技の成績に応じて付与。</p></section>
-        <section class="route black"><h3 class="who" aria-label="ハイリスク・ハイリターン型">ハイリスク・<br class="guide-route-break">ハイリターン型</h3><p class="ds">換金あり。高い客単価。<br>発覚で逮捕・営業終了。</p></section>
+        ${GUIDE_ROUTES.map(({ style, label, description }) => `<section class="route ${style.tier}"><h3 class="who" aria-label="${label.join("")}">${label.join('<br class="guide-route-break">')}</h3><p class="ds">${description}</p></section>`).join("")}
       </div>
     </section>
     <div class="guide-actions">${sv ? `<button class="btn primary start" id="contBtn">つづきから（${monthLabel(sv.month)}・${esc(byId(D.locations, sv.loc).name)}）</button>` : ""}
@@ -8913,11 +8939,12 @@ function styleDetectionLabel(s, months){
   const rate = styleMonthlyDetectionRate(s, months);
   return rate ? pct(rate, rate < 0.01 ? 2 : 1) : "0%";
 }
-function styleComparisonHTML(selectedId){
+function styleComparisonHTML(selectedId, { opening = false } = {}){
+  const routes = opening ? GUIDE_ROUTES : SELECTABLE_STYLES.map((style) => ({ style }));
   return `<section class="style-comparison" aria-labelledby="styleComparisonTitle">
     <p class="style-comparison-key" id="styleComparisonKey"><strong id="styleComparisonTitle">違反発覚率</strong><span>各スタイルの1か月あたりの基本確率</span></p>
     <div class="style-comparison-columns" aria-hidden="true"><span>営業効果</span><span>営業開始月</span><span>${STYLE_RATE_COMPARISON_MONTHS}か月営業後</span></div>
-    <div class="stylelist opts" data-k="style" role="group" aria-label="営業スタイル" aria-describedby="styleComparisonKey">${SELECTABLE_STYLES.map((s) => {
+    <div class="stylelist opts${opening ? " guide-routes" : ""}" data-k="style" role="group" aria-label="営業スタイル" aria-describedby="styleComparisonKey">${routes.map(({ style: s, label }) => {
       const effects = [];
       if (s.effect.spend !== 1) effects.push(`客単価×${s.effect.spend}`);
       if (s.effect.demand !== 1) effects.push(`来店需要×${s.effect.demand}`);
@@ -8926,8 +8953,8 @@ function styleComparisonHTML(selectedId){
       if (!effects.length) effects.push("チップを次回に持ち越せる");
       const startRate = styleDetectionLabel(s, 0);
       const laterRate = styleDetectionLabel(s, STYLE_RATE_COMPARISON_MONTHS);
-      return `<button type="button" data-v="${s.id}" aria-pressed="${s.id === selectedId}" class="opt style-choice ${s.tier}" aria-label="${esc(s.name)}" aria-describedby="styleMetrics-${s.id}">
-          <span class="style-choice-heading"><b>${esc(s.name)}</b></span>
+      return `<button type="button" data-v="${s.id}" aria-pressed="${s.id === selectedId}" class="opt style-choice ${s.tier}${opening ? " route" : ""}" aria-label="${label ? label.join("") + "、" : ""}${esc(s.name)}" aria-describedby="styleMetrics-${s.id}">
+          <span class="style-choice-heading">${label ? `<strong class="who">${label.join('<br class="guide-route-break">')}</strong><span class="ds">${esc(s.name)}</span>` : `<b>${esc(s.name)}</b>`}</span>
           <span id="styleMetrics-${s.id}" class="style-list-metrics">
             <span class="style-list-effects">${effects.map((effect) => `<span class="style-effect">${esc(effect)}</span>`).join("")}</span>
             <span class="style-list-rate num"><span class="style-rate-context">営業開始月 </span><span>${startRate}</span></span>
@@ -8947,7 +8974,7 @@ function styleEnforcementHTML(){
     </div>
     <div class="style-enforcement-rule">
       <h3 class="style-enforcement-chip">風営法違反</h3>
-      <p>成績に応じて店内ポイントなどの賞品を提供。時間外営業なども対象。</p>
+      <p>成績に応じたポイント・チケット・独自通貨・割引の提供や、時間外営業などが対象。</p>
       <dl class="style-enforcement-effects">
         <div><dt>初回</dt><dd><strong>${esc(R.labels.order)}</strong> ・ 費用が発生、営業続行</dd></div>
         <div><dt>${R.businessArrestAt}回目</dt><dd><strong class="style-game-end">逮捕・営業終了</strong></dd></div>
@@ -8961,7 +8988,8 @@ function openStyle(){
   const token = byId(STYLES, "token");
   const references = [...new Set([...SELECTABLE_STYLES.flatMap((s) => s.provisionIds), ...O.legalCloseProvisionIds])];
   show(`${stepsBar(0)}<h1>営業スタイルを選ぶ</h1>
-    ${styleComparisonHTML(CFG.style)}
+    ${styleComparisonHTML(CFG.style, { opening: true })}
+    <div class="row style-comparison-actions"><button class="btn" id="backBtn">戻る</button><button class="btn primary start" id="goBtn">物件を選ぶ</button></div>
     ${styleEnforcementHTML()}
     <details class="style-rule-details style-comparison-details"><summary>詳しい営業ルール・参考条文</summary>
     <ul class="style-rules">
@@ -8975,8 +9003,7 @@ function openStyle(){
     </ul>
     <p class="muted">${esc(D.styles.note)}</p>
     <details><summary>参考条文</summary>${provHTML(references)}</details>
-    </details>
-    <div class="row style-comparison-actions"><button class="btn" id="backBtn">戻る</button><button class="btn primary" id="goBtn">物件を選ぶ</button></div>`);
+    </details>`);
   wireGroups(CFG);
   $("backBtn").onclick = openTitle; $("goBtn").onclick = openProperty;
 }
