@@ -529,10 +529,11 @@ summary{cursor:pointer;color:var(--muted)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--annual-news-blue:#9999ff}}
 :root[data-theme="dark"]{--annual-news-blue:#9999ff}
 .annual-news-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
-.annual-news-choices .btn{min-height:48px;padding:8px}
+.annual-news-choices .btn{min-height:48px;padding:8px 6px;border:1px solid var(--line);border-radius:2px;font-weight:700;line-height:1.4}
+.annual-news-choices .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);box-shadow:none}
 .annual-news-response{border-top:1px solid var(--soft);margin-top:12px;padding-top:12px}
 .annual-news-response h3{margin:0 0 4px;font-size:15px}
-.annual-news-response .btn{margin-top:8px;min-height:44px}
+.annual-news-response > .btn{margin-top:8px;min-height:44px}
 .annual-growth{margin:16px 0}
 .card .annual-growth h2{margin:0 0 4px}
 .card .annual-growth-note{margin:0 0 8px;color:var(--muted);font-size:13px}
@@ -7569,8 +7570,10 @@ function annual(){
       ${offerNewsStyles ? `<div class="annual-news-response">
         <h3>来期の営業スタイルをどうする？</h3>
         <p>設定中の営業スタイルは${esc(S.style.name)}。「${esc(DEPOSIT_STYLE.name)}」に替えた場合の客単価 <b>${yenExact(customerSpend(S.style, S.price))} → ${yenExact(customerSpend(DEPOSIT_STYLE, S.price))}</b></p>
-        <div class="annual-news-choices"><button type="button" class="btn" id="newsDepositBtn">「${esc(DEPOSIT_STYLE.name)}」に替える</button>
-          <button type="button" class="btn" id="newsKeepBtn">今の営業を続ける</button></div>
+        <div class="annual-news-choices">
+          <button type="button" class="btn primary" id="newsDepositBtn">預入に変更</button>
+          <button type="button" class="btn" id="newsKeepBtn">現状を維持</button>
+        </div>
       </div>` : ""}
       ${newsStyleChosen ? `<p class="annual-news-response">来期の営業スタイル <b>${esc(S.style.name)}</b></p>` : ""}
       ${policyReview ? `<div class="annual-news-response"><button type="button" class="btn" id="newsPolicyBtn">料金・営業時間を見直す</button></div>` : ""}
