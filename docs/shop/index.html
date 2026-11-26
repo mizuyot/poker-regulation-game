@@ -177,7 +177,7 @@ button{font-family:inherit;color:inherit}
 .roomPreview figcaption{padding:0 0 8px;color:var(--muted);font-size:12px;line-height:1.6}
 .setup-disclosure summary{padding:4px 0}
 .opts[data-k="loc"]{margin-top:12px}
-.location-costs{overflow-x:auto}
+.location-costs,.valuation-comps{overflow-x:auto}
 .location-costs th,.location-costs td{white-space:nowrap}
 .setup-finances{display:grid;gap:16px;margin-top:24px;min-width:0}
 .setup-finance,.setup-outlook{min-width:0;padding:12px;border:1px solid var(--soft)}
@@ -588,8 +588,9 @@ summary{cursor:pointer;color:var(--muted)}
   .tdate b{font-size:18px}
 }
 @media (max-width:360px){
-  .shop-hud{padding-inline:10px;font-size:11px}
+  .shop-hud{width:calc(100% - 32px);padding-inline:10px;font-size:11px}
   .shop-hud-main,.shop-hud-stats{gap:8px}
+  .shop-hud-stats{flex-wrap:wrap}
   .shop-hud small{font-size:10px}
   .shop-hud-stats dd,.money{font-size:18px}
 }
@@ -649,7 +650,8 @@ summary{cursor:pointer;color:var(--muted)}
 @media (max-width:360px){
   .manager-card-head span{font-size:10px}
   .build-setup .opts[data-k="interior"] .opt b{font-size:11.5px}
-  .build-price-read dd{font-size:11px}
+  .build-setup .build-price-read{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1.2fr)}
+  .build-setup .build-price-read dd{font-size:11px}
 }
 .build-setup #calc{
   gap:16px;
@@ -720,6 +722,8 @@ summary{cursor:pointer;color:var(--muted)}
   font-size:12px;
   line-height:1.6;
 }
+.build-setup .build-investment .build-finance-result{padding-bottom:3px}
+.build-setup .build-investment .build-finance-note{margin:0}
 .build-setup .build-ramp-note{
   margin:8px 0 0;
   padding-top:12px;
@@ -728,20 +732,46 @@ summary{cursor:pointer;color:var(--muted)}
 .build-setup .build-finance-details{
   margin:0;
 }
-.build-setup .build-investment .build-finance-details > summary{
-  padding-top:0;
-}
-.build-setup .build-investment-total{
-  float:inline-end;
-  font-size:18px;
-  line-height:1.5;
-  white-space:nowrap;
-}
 .build-setup .build-finance-details > summary{
   padding:10px 0;
   font-size:13px;
   line-height:1.6;
   cursor:pointer;
+}
+.build-setup .build-investment .build-finance-details{
+  border-top:0;
+  padding-top:0;
+}
+.build-setup .build-investment .build-finance-details > summary{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) max-content;
+  align-items:center;
+  column-gap:6px;
+  min-height:44px;
+  padding:0;
+  color:var(--ink);
+  list-style:none;
+}
+.build-investment summary::-webkit-details-marker{display:none}
+.build-setup #calc .build-investment summary h2{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:0;
+}
+.build-investment summary h2::before{
+  content:"";
+  flex:0 0 6px;
+  height:6px;
+  border-right:1.5px solid;
+  border-bottom:1.5px solid;
+  transform:rotate(45deg);
+}
+.build-investment details[open] > summary h2::before{transform:rotate(225deg)}
+.build-setup .build-investment-total{
+  font-size:18px;
+  line-height:1.5;
+  white-space:nowrap;
 }
 .build-setup .build-full-pl .build-finance-details > summary{
   padding:0;
@@ -793,6 +823,10 @@ summary{cursor:pointer;color:var(--muted)}
   }
   .build-setup .build-finance-summary > div{
     column-gap:10px;
+  }
+  .build-setup #calc .build-finance-details > summary h2,
+  .build-setup .build-investment-total{
+    font-size:16px;
   }
   .build-setup .build-finance-summary dd{
     font-size:16px;
@@ -7220,9 +7254,9 @@ function valuationReport(v, opts = {}){
       <table class="t" style="font-size:12px"><tr><th>割引率＼成長率</th>${gi.map((x) => `<th>${x}</th>`).join("")}</tr>${v.dcf.sens.map((row, i) => `<tr><td>${ri[i]}</td>${row.map((x, j) => `<td style="${i === 1 && j === 1 ? "font-weight:700" : ""}">${yen(x)}</td>`).join("")}</tr>`).join("")}</table>
       ${rDetail()}</details>
     <details><summary>類似取引比較：${yen(c.point)}（補正 ×${c.adj.toFixed(2)}${c.distress < 1 ? "・赤字のため割引" : ""}）</summary>
-      <table class="t" style="font-size:12px"><tr><th>事例（架空）</th><th>年商</th><th>EBITDA</th><th>EV</th><th>EV/EBITDA</th><th>EV/売上</th></tr>
+      <div class="valuation-comps" role="region" aria-label="類似取引の比較表" tabindex="0"><table class="t" style="font-size:12px"><tr><th>事例（架空）</th><th>年商</th><th>EBITDA</th><th>EV</th><th>EV/EBITDA</th><th>EV/売上</th></tr>
         ${CP.deals.map((x) => `<tr><td>${esc(x.name)}</td><td>${yen(x.sales)}</td><td>${yen(x.ebitda)}</td><td>${yen(x.ev)}</td><td>${(x.ev / x.ebitda).toFixed(1)}x</td><td>${(x.ev / x.sales).toFixed(2)}x</td></tr>`).join("")}
-        <tr class="total"><td>中央値</td><td></td><td></td><td></td><td>${c.mult.ebitda.toFixed(1)}x</td><td>${c.mult.sales.toFixed(2)}x</td></tr></table>
+        <tr class="total"><td>中央値</td><td></td><td></td><td></td><td>${c.mult.ebitda.toFixed(1)}x</td><td>${c.mult.sales.toFixed(2)}x</td></tr></table></div>
       <p class="muted" style="font-size:12px">あなたの店：直近12か月の売上 ${yen(c.L12.sales)}・EBITDA ${yen(c.L12.ebitda)}・${c.seats}席（1席あたりEVの中央値 ${yen(c.mult.seat)}）。3つの倍率から出した値の中央をとり、常連の比率と運営体制で補正し、敷金を足した。${esc(CP.note)}</p></details>
     <details><summary>清算価値：${yen(q.liquid)}（帳簿の純資産 ${yen(q.book)}）</summary>
       <table class="t"><tr><td>敷金</td><td>${yen(q.dep)}</td></tr><tr><td>内装（帳簿価額）</td><td>${yen(q.fitBook)}</td></tr><tr><td>卓・設備（帳簿価額）</td><td>${yen(q.tabBook)}</td></tr><tr class="total"><td>帳簿の純資産</td><td>${yen(q.book)}</td></tr>
@@ -9140,8 +9174,9 @@ function buildCalc(loc){
       </table>
     </details>
     <dl class="build-finance-summary">
-      <div class="build-finance-result"><dt>残りの手元資金<small>元手 ${yen(M.fund)} − 初期投資</small></dt><dd class="num${left < 1500 ? " negc" : ""}">${yen(left)}</dd></div>
+      <div class="build-finance-result"><dt>残りの手元資金</dt><dd class="num${left < 1500 ? " negc" : ""}" aria-describedby="buildCashNote">${yen(left)}</dd></div>
     </dl>
+    <p class="build-finance-note" id="buildCashNote">元手 ${yen(M.fund)} − 初期投資</p>
   </section>
   <section class="setup-outlook build-outlook" aria-labelledby="outlookHeading">
     <h2 id="outlookHeading">成熟時の営業見込み</h2>
