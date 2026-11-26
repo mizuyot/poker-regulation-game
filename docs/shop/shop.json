@@ -4934,56 +4934,56 @@
         "tables": 4,
         "sales": 7200,
         "ebitda": 1500,
-        "ev": 6300
+        "ev": 4410
       },
       {
         "name": "事例B（都心・7卓）",
         "tables": 7,
         "sales": 13000,
         "ebitda": 2400,
-        "ev": 11500
+        "ev": 8050
       },
       {
         "name": "事例C（大都市・5卓）",
         "tables": 5,
         "sales": 7800,
         "ebitda": 1700,
-        "ev": 6100
+        "ev": 4270
       },
       {
         "name": "事例D（大都市・3卓）",
         "tables": 3,
         "sales": 4300,
         "ebitda": 800,
-        "ev": 2900
+        "ev": 2030
       },
       {
         "name": "事例E（地方都市・6卓）",
         "tables": 6,
         "sales": 6400,
         "ebitda": 1400,
-        "ev": 4800
+        "ev": 3360
       },
       {
         "name": "事例F（地方都市・4卓）",
         "tables": 4,
         "sales": 4100,
         "ebitda": 700,
-        "ev": 2300
+        "ev": 1610
       },
       {
         "name": "事例G（郊外・5卓）",
         "tables": 5,
         "sales": 4000,
         "ebitda": 900,
-        "ev": 3100
+        "ev": 2170
       },
       {
         "name": "事例H（郊外・3卓）",
         "tables": 3,
         "sales": 2500,
         "ebitda": 450,
-        "ev": 1500
+        "ev": 1050
       }
     ],
     "adjust": {
