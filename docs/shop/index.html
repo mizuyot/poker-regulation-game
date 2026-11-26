@@ -396,12 +396,17 @@ summary{cursor:pointer;color:var(--muted)}
 .title-guide{font-family:"Helvetica Neue","Noto Sans JP","Hiragino Sans",sans-serif}
 .card .guide-intro h1{font-size:clamp(20px,6.5vw,36px);line-height:1.4;letter-spacing:.015em;margin:0;white-space:nowrap}
 .card .guide-intro .guide-lead{margin:10px 0 0;font-size:15px;line-height:1.65}
-.guide-flow{margin-top:18px;padding-top:0}
-.guide-flow > summary{min-height:44px;padding:8px 0;color:var(--ink)}
-.card .guide-flow h2{display:inline;font-size:18px;letter-spacing:.02em;line-height:1.5;margin:0}
+.guide-flow{margin-top:18px}
+.card .guide-flow h2{font-size:18px;letter-spacing:.02em;line-height:1.5;margin:0 0 8px}
 .guide-steps{margin:0;padding:0;list-style:none;counter-reset:guide-step}
-.guide-steps li{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:start;column-gap:10px;border-top:1px solid var(--soft);padding:7px 0;counter-increment:guide-step}
-.guide-steps li::before{content:counter(guide-step);display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line);border-radius:50%;font:700 13px/1 var(--mono)}
+.guide-steps li{min-width:0;counter-increment:guide-step}
+.guide-steps details{margin:0;padding:0}
+.guide-steps summary{display:grid;grid-template-columns:26px minmax(0,1fr) 12px;align-items:center;column-gap:10px;min-height:44px;padding:7px 2px 7px 0;color:var(--ink);list-style:none}
+.guide-steps summary::-webkit-details-marker{display:none}
+.guide-steps summary::before{content:counter(guide-step);display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line);border-radius:50%;font:700 13px/1 var(--mono)}
+.guide-steps summary::after{content:"";width:6px;height:6px;border-right:1.5px solid;border-bottom:1.5px solid;justify-self:center;transform:rotate(45deg)}
+.guide-steps details[open] > summary::after{transform:rotate(225deg)}
+.guide-step-body{padding:0 0 8px 36px}
 .card .guide-steps h3{margin:0;font-size:16px;line-height:1.5}
 .card .guide-steps p{margin:2px 0 0;font-size:14px;line-height:1.6}
 .card .guide-steps .guide-score{display:block;margin-top:7px;font-size:13px;font-weight:700;line-height:1.55}
@@ -445,7 +450,6 @@ summary{cursor:pointer;color:var(--muted)}
 @media (min-width:690px){
   .guide-flow{margin-top:32px}
   .guide-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-  .guide-steps li{row-gap:8px;grid-template-columns:minmax(0,1fr);grid-template-rows:24px 1fr}
   .guide-actions{grid-template-columns:minmax(0,340px);justify-content:start;margin-top:20px}
   .guide-more{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
 }
@@ -8883,18 +8887,26 @@ function openTitle(){
       <h1 id="guideTitle">ポーカー屋をつくろう！</h1>
       <p class="guide-lead"><strong>元手${yen(M.fund)}</strong>でポーカー店を開き、<strong>最長${M.months / 12}年</strong>で手元に残せるお金を競います。</p>
     </header>
-    <details class="guide-flow">
-      <summary><h2>ゲームの進め方</h2></summary>
+    <section class="guide-flow" aria-labelledby="guideFlowTitle">
+      <h2 id="guideFlowTitle">ゲームの進め方</h2>
       <ol class="guide-steps" role="list">
-        <li><div><h3>店を作る</h3>
-          <p>営業スタイルと立地を選び、卓数・内装・料金・店長を決めます。</p></div></li>
-        <li><div><h3>年末に方針を決める</h3>
-          <p>営業は自動で進み、年末の決算で止まります。成績とニュースを見て、方針変更・改装・店長交代を選べます。</p></div></li>
-        <li><div><h3>売却した後の手元現金総額を競う</h3>
-          <p>健全な営業で直近の利益が出ている店は、DCFなどで売却額を評価します。営業利益がゼロ以下の店や、グレー・ブラックの営業歴がある店は、ハコの価値で売却します。</p>
-          <p class="guide-score"><span class="guide-score-label">売却時のスコア</span>手元資金 ＋ 売却額 − 借入残高</p></div></li>
+        <li><details>
+          <summary><h3>店を作る</h3></summary>
+          <div class="guide-step-body"><p>営業スタイルと立地を選び、卓数・内装・料金・店長を決めます。</p></div>
+        </details></li>
+        <li><details>
+          <summary><h3>年末に方針を決める</h3></summary>
+          <div class="guide-step-body"><p>営業は自動で進み、年末の決算で止まります。成績とニュースを見て、方針変更・改装・店長交代を選べます。</p></div>
+        </details></li>
+        <li><details>
+          <summary><h3>売却した後の手元現金総額を競う</h3></summary>
+          <div class="guide-step-body">
+            <p>健全な営業で直近の利益が出ている店は、DCFなどで売却額を評価します。営業利益がゼロ以下の店や、グレー・ブラックの営業歴がある店は、ハコの価値で売却します。</p>
+            <p class="guide-score"><span class="guide-score-label">売却時のスコア</span>手元資金 ＋ 売却額 − 借入残高</p>
+          </div>
+        </details></li>
       </ol>
-    </details>
+    </section>
     <section class="guide-styles" aria-labelledby="guideStylesTitle">
       <h2 id="guideStylesTitle">営業スタイル</h2>
       <div class="guide-routes">
