@@ -915,7 +915,7 @@ summary{cursor:pointer;color:var(--muted)}
     "parameterNote": "数値は遊びの釣り合いのための架空パラメータで、実在の市場や物件の統計ではない。売上・集客・費用の前提はゲーム内の「計算の前提と式」に表示する。条文の逐語は docs/questions.json の provisions（正本）から build_shop.py で埋め込む。",
     "months": 60,
     "secondsPerMonth": 6,
-    "fund": 5000,
+    "fund": 3000,
     "bankruptAt": 0
   },
   "layout": {
@@ -926,7 +926,7 @@ summary{cursor:pointer;color:var(--muted)}
     "openingCost": 200,
     "lateTableMarkup": 1.3,
     "minTables": 1,
-    "maxTables": 12,
+    "maxTables": 8,
     "layoutNote": "床の広さは家賃の計算と同じ（卓×4坪＋10坪、1マス＝1m）。卓数×内装ごとに scripts/gen_layouts.py で生成。"
   },
   "locations": [
@@ -1171,6 +1171,8 @@ summary{cursor:pointer;color:var(--muted)}
     "orderCostMin": 100,
     "tailMonths": 12,
     "tailFactor": 0.5,
+    "cashoutActiveStartRate": 0.04,
+    "cashoutValuationCleanMonths": 36,
     "ddStart": 54,
     "labels": {
       "order": "業務改善命令",
@@ -1183,17 +1185,17 @@ summary{cursor:pointer;color:var(--muted)}
     "heatWarn": 0.03,
     "raidNote": "ゲーム内では、逮捕時に店内客の2倍の機動隊員、初回の業務改善命令では命令書を持った警察官を含む5人が入店する。",
     "ddAlways": true,
-    "ddNote": "買収前調査は全営業履歴を確認する。黒・グレーの営業歴があればハコの価値で売却し、売り抜け成功となる。摘発は営業中の月次処理で判定する。",
+    "ddNote": "換金終了後に36か月連続で健全営業すると、DCFの査定に戻る。条件に達するまでと、換金以外の違反営業歴がある場合はハコの価値で売却する。摘発は営業中の月次処理で判定する。",
     "grayReferenceCurve": {
       "months": 24,
       "rate": 0.327,
       "power": 3.75,
       "cap": 0.9
     },
-    "curveNote": "換金ありの月次基本発覚率は営業した月数に応じて上昇し、後半は増加が緩やかになりarrestCurve.capに近づく。開始率とarrestCurve.months時点のarrestCurve.rateを基準に、arrestCurve.powerで増加の形を決める。グレーは開始月の基本率にorderReference.factorを掛け、orderReference.target.monthsでtarget.rateになるよう、grayReferenceCurveの増加分に比例して上がる。グレーの取締り強化時も同じ参照曲線を使って発覚率の下限を計算する。換金終了後には残存リスクがある。その他の風営法違反は命令の基礎値＋orderGrowth×累積月数。発覚時の処分は命令歴で決まる。"
+    "curveNote": "換金ありの月次基本発覚率はcashoutActiveStartRateから始まり、換金営業月数に応じてarrestCurve.capに近づく。arrestCurve.months時点のarrestCurve.rateとarrestCurve.powerで増加の形を決める。換金終了後の残存リスクとグレーの参照曲線にはstyles.listのcashout.arrestを使う。グレーは開始月の基本率にorderReference.factorを掛け、orderReference.target.monthsでtarget.rateになるよう、grayReferenceCurveの増加分に比例して上がる。グレーの取締り強化時も同じ参照曲線を使って発覚率の下限を計算する。その他の風営法違反は命令の基礎値＋orderGrowth×累積月数。発覚時の処分は命令歴で決まる。"
   },
   "valuation": {
-    "discountBase": 0.25,
+    "discountBase": 0.28,
     "discountPerOrder": 0.1,
     "discountLowSlack": 0.03,
     "growthBase": 0.02,
@@ -6090,7 +6092,7 @@ summary{cursor:pointer;color:var(--muted)}
       "desc": "集客と店内の回転を改善する。人件費は高い。",
       "monthlyCost": 45,
       "demand": 1.05,
-      "turns": 1.08,
+      "turns": 1.1,
       "troubleMultiplier": 1,
       "misconductChance": 0,
       "misconductSalesRate": 0
@@ -6134,7 +6136,7 @@ summary{cursor:pointer;color:var(--muted)}
     "runsPerLocation": 64,
     "seedPrefix": "REF",
     "config": {
-      "tables": 5,
+      "tables": 3,
       "open": 17,
       "close": 24,
       "price": 1,
@@ -6149,262 +6151,262 @@ summary{cursor:pointer;color:var(--muted)}
     },
     "binWidth": 1000,
     "values": [
-      3319.795563290979,
-      3055.4922553215783,
       0,
-      1717.8666504954952,
       0,
-      6123.423542080055,
-      2349.8854338250526,
-      6239.785948453792,
-      4794.927803097999,
-      4782.112240410749,
-      5546.167999939112,
-      5490.682084234706,
-      6344.215585062968,
-      2852.1396025176273,
       0,
-      4871.270122806611,
       0,
       0,
       0,
+      1028.6382994118671,
       0,
-      4599.96014908119,
       0,
-      5762.090423797838,
       0,
       0,
-      4956.8761523415,
-      5229.465731212058,
+      891.2965113744195,
       0,
-      2965.003933823282,
-      2970.5950689264296,
       0,
-      5907.331045773721,
       0,
       0,
-      7485.0640659034725,
-      6885.369713412629,
-      3903.993674355632,
       0,
-      3517.933462708122,
-      1707.9515552750822,
-      3675.26353217996,
       0,
       0,
-      6430.155188820236,
-      3804.1003086111423,
       0,
-      3133.320674106958,
       0,
-      3409.5180108622408,
-      7159.884562402625,
       0,
-      4188.828519031241,
-      3021.66278449353,
+      955.919926601933,
       0,
       0,
       0,
-      7327.160996089365,
-      5715.794416935043,
-      7010.553790716172,
-      4727.741932269069,
+      1354.9565313591766,
       0,
       0,
+      1284.6819497733213,
       0,
+      1129.5609822522624,
       0,
-      9720.514830925245,
-      7686.652719128996,
-      8971.745297283323,
-      9436.668878293116,
-      12655.891599716064,
-      8561.615567008526,
-      12547.095630170792,
       0,
-      10813.191241814151,
-      7090.262387878665,
+      890.8596269661826,
       0,
-      10271.388763298435,
-      13199.219046917335,
-      9129.250218044039,
-      12695.83366526449,
-      10133.455782114514,
       0,
-      13019.383958568105,
-      8676.837451390575,
-      9777.192990345133,
       0,
       0,
-      12782.462405976526,
       0,
-      8321.167352854223,
-      12210.127867850868,
-      12946.113951221334,
-      10675.36171185027,
       0,
-      10655.598194926803,
-      10695.07678601284,
-      12092.247187281291,
       0,
-      12173.690627764921,
-      13691.569651414236,
-      10979.666596707659,
-      11390.088834709139,
-      12982.520498731497,
-      11638.998473680618,
       0,
-      10576.231205692016,
-      10894.095771592587,
       0,
-      6058.390923526518,
-      11144.151159622968,
       0,
       0,
-      8655.677759920216,
-      11909.460175479555,
-      14265.219353325789,
-      9671.76514591077,
-      11142.931283412257,
       0,
-      1710.2817620052433,
-      10394.753206440106,
       0,
-      13406.069553891786,
-      11638.772155592414,
-      12480.193188424311,
       0,
-      12284.297991077325,
-      2244.480866153663,
+      1540.0034371262816,
       0,
-      10242.69044440483,
       0,
       0,
       0,
-      8357.833559234532,
-      1559.8026456978125,
-      16111.618910625692,
       0,
       0,
-      999.2745306282435,
+      1320.3863222946056,
       0,
+      1224.8968983245402,
       0,
       0,
       0,
       0,
-      570.5661806553702,
-      2471.6989571742506,
-      4628.8085154949895,
       0,
+      2662.6582590936823,
+      2100.281676018256,
+      3091.7898072096027,
+      3225.970820275854,
+      5072.396204301691,
+      4439.405793585687,
+      5299.590367833745,
+      4460.476314108151,
+      4175.743852539452,
+      4130.729291587137,
       0,
+      4619.805169983452,
+      5466.9235766634,
+      2750.0026154810703,
+      5431.76623975698,
+      3963.6200538920734,
+      2559.6588504208476,
+      5044.6106449451945,
       0,
+      3022.6321074990215,
+      2246.012345557899,
+      3845.769389388428,
+      5013.747937452309,
       0,
+      4579.796376700217,
+      4142.859889724452,
+      5191.325008255526,
       0,
       0,
+      5444.738873611134,
       0,
-      7004.988300761092,
+      5217.619967456306,
       0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      17998.27125316099,
-      4559.763335213088,
-      2318.2137484042996,
-      12065.417035695242,
-      5394.618696762056,
-      0,
-      4705.570073417805,
-      0,
-      0,
-      5493.406142236959,
-      0,
-      3987.705563138,
-      0,
-      718.0274661071131,
-      8630.023474831625,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      672.7241343547635,
-      0,
-      0,
-      15726.252898778012,
-      0,
-      3545.4671506044824,
-      0,
-      6309.0510099961275,
-      7241.1554397952605,
-      626.9675364394174,
-      0,
-      0,
-      0,
-      979.7188133565047,
-      0,
-      540.5960772107869,
-      0,
-      0,
-      5211.623522677413,
-      472.51074430531315,
-      0,
-      6319.256095125891,
-      2629.4757289504505,
-      9100.651879087818,
-      0,
-      1587.5858922180478,
-      404.63780524592613,
-      0,
-      4495.12456240136,
-      0,
-      0,
-      0,
-      1309.3906838691794,
-      720.339481248418,
-      0,
-      4919.133422004306,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      1958.6109957073536,
-      0,
-      1462.811457862562,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      1454.0611824673576,
-      798.3419096817522,
-      1126.2257689517771,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      2260.798260493267,
-      0,
-      1833.6126423193625,
-      1548.8585810947943,
-      0,
-      3156.91216727871,
-      2108.4646115463033,
-      0,
-      5572.314318568946
+      4260.988888718215,
+      5690.647983117611,
+      5606.992238240538,
+      4681.14434942172,
+      4808.000850962988,
+      4864.03482463596,
+      0,
+      5054.145058554988,
+      2595.7437187912374,
+      4289.551900263028,
+      4525.98190692149,
+      3864.1702875145256,
+      2572.236629632808,
+      0,
+      3705.2943225609256,
+      4707.354562334298,
+      5966.84535534657,
+      3821.5892354636308,
+      3394.207577375378,
+      0,
+      3822.981971177077,
+      2598.8385128669966,
+      3124.8143580815204,
+      5746.217948100665,
+      4985.990462458536,
+      5459.350122351831,
+      4135.27566637139,
+      5269.2539612989285,
+      3552.485393862664,
+      3191.086272332829,
+      5299.0489672086605,
+      0,
+      0,
+      4658.030799510827,
+      12946.090386317495,
+      8417.319632196573,
+      13979.661587733597,
+      2473.3453827635676,
+      1971.2754415521645,
+      7414.802248380778,
+      4520.969423086408,
+      2815.5899338192016,
+      2446.0770393293114,
+      9045.79403379384,
+      4405.428596928562,
+      6762.089532366603,
+      9567.14314299985,
+      11050.388110999047,
+      0,
+      6917.535428820724,
+      2587.7613063701156,
+      5076.572226308861,
+      1780.1386376606329,
+      4161.609815274727,
+      0,
+      11893.121750583974,
+      2101.557217046395,
+      1863.596081391393,
+      0,
+      5472.775535003539,
+      3179.5111735006544,
+      0,
+      14541.391824361683,
+      11347.640143451583,
+      9299.677621056544,
+      14848.880444205834,
+      11303.250204028467,
+      5504.134864284676,
+      11370.743267052287,
+      530.057027822471,
+      0,
+      11692.503965090727,
+      0,
+      9588.145529298226,
+      3381.083648642777,
+      6663.415699541153,
+      13711.623845494381,
+      0,
+      0,
+      7580.38418391034,
+      2317.709864526463,
+      7730.560522643087,
+      3877.187087149069,
+      5089.744145689865,
+      5838.267465390241,
+      8275.169405026105,
+      2720.068801267455,
+      14661.064929601493,
+      6824.042467848969,
+      10307.829158606333,
+      4106.416446326404,
+      12651.789829959172,
+      11632.94323756643,
+      5324.619806941102,
+      2335.5301142450776,
+      4254.79106265833,
+      3962.6912563818614,
+      5764.947681192419,
+      5287.730178347219,
+      5654.224074141939,
+      9940.598696773948,
+      2948.4551533758076,
+      10548.467366178143,
+      5076.4159579340885,
+      559.3130000139861,
+      11538.236870240287,
+      7452.920494906295,
+      12387.707971517775,
+      4720.558576365738,
+      7086.206652812587,
+      5234.714526464222,
+      4818.214226787584,
+      9902.314796249153,
+      0,
+      4543.5485952130875,
+      3681.329576337842,
+      6530.277319714904,
+      6101.88533334987,
+      4791.47168930133,
+      10317.709153696625,
+      1393.9464959612865,
+      2655.704466123718,
+      0,
+      2413.1424830969154,
+      1386.255007197792,
+      0,
+      7114.672006302431,
+      4793.605678837502,
+      3326.5744075336256,
+      7982.0621330359345,
+      4005.1879560535854,
+      7438.415313407668,
+      1834.855154667775,
+      4443.427571343241,
+      6525.092410015155,
+      2406.993672529279,
+      5226.096649072249,
+      3402.3005150938716,
+      2241.1754413495346,
+      3600.473111911408,
+      7094.213697418348,
+      7303.696549906159,
+      6761.5978193586125,
+      4483.7010990889685,
+      3767.076262875066,
+      2806.7225416275805,
+      5118.861303353322,
+      3335.477229220326,
+      1273.5843474777134,
+      6478.889869566636,
+      5998.737563885258,
+      4938.760139387021,
+      7389.830873361065,
+      6485.190056494945,
+      2712.9870285219076,
+      8757.35117792044,
+      8119.3685525513165,
+      2644.986388661374,
+      10889.944728003662
     ]
   }
 }
@@ -6644,6 +6646,11 @@ function build(loc, tables, it){
   const rent = area * loc.tsuboRent, deposit = rent * L.depositMonths, fitout = area * fitoutRate(loc, it), tablesCost = tables * L.tablePrice;
   return { area, rent, deposit, fitout, tablesCost, invest: deposit + fitout + tablesCost + L.openingCost };
 }
+function openingBudget(property, unlicensed){
+  const invest = property.invest + (unlicensed ? 0 : D.license.fee);
+  const waitingRent = unlicensed ? 0 : property.rent * D.license.waitMonths;
+  return { invest, waitingRent, remaining: M.fund - invest - waitingRent };
+}
 /* 時間帯の客入りの重み。grow（0〜1.2）＝店の成熟度：朝・昼は店が続き知名度が上がるほど客が増える（v1.5） */
 function bandWeight(open, close, grow = 0){ let w = 0; for (const b of O.bands){ const a = Math.max(open, b.from), z = Math.min(close, b.to); if (z > a) w += (z - a) * b.w * (1 + (b.growMax || 0) * grow); } return w; }
 const offpeakGrow = () => !S || S.openedAt == null ? 0 : Math.min(1, (S.month - S.openedAt) / O.offpeakYears) * Math.min(1.2, S.ind.fame / O.offpeakFame);
@@ -6682,7 +6689,7 @@ function newState(cfg){
     cfg: { ...cfg, manager: manager.id }, loc, hiring, policy, edu: cfg.edu || "10", interior: cfg.interior || "simple", fac: (cfg.fac || []).filter((id) => byId(FAC, id)) /* 設備・企画は v1.9 で削除。古いセーブや設定に残っていても無視する */, mix: { ...D.mixStart }, mixStart: { ...D.mixStart }, choke: [], chokeCount: { seat: 0, staff: 0, demand: 0, retain: 0 }, lostGuests: 0, style: byId(STYLES, cfg.style),
     tables: cfg.tables, capacity: cfg.tables, area: b.area, rent: b.rent, deposit: b.deposit, fitout: b.fitout, tablesValue: b.tablesCost,
     open: cfg.open, close: cfg.close, price: cfg.price,
-    cash: M.fund - b.invest - (cfg.unlicensed ? 0 : D.license.fee), debt: 0,
+    startFund: M.fund, cash: M.fund - openingBudget(b, cfg.unlicensed).invest, debt: 0,
     month: 0, monthT: 0, openedAt: null,
     licensed: false, licenseWait: cfg.unlicensed ? 0 : D.license.waitMonths, unlicensed: !!cfg.unlicensed,
     used: {}, lastUsed: {}, stopUntil: {}, riskMonths: [], orders: 0, businessOrders: 0, violationNet: 0, rumor: 0, shock: 0,
@@ -6861,6 +6868,9 @@ function gamblingArrestRate(style, months, curve = style.arrestCurve){
   const progress = (months / curve.months) ** curve.power;
   return style.arrest + range * -Math.expm1(Math.log1p(-anchorShare) * progress);
 }
+function activeCashoutArrestRate(style, months){
+  return gamblingArrestRate({ ...style, arrest: R.cashoutActiveStartRate }, months);
+}
 function businessDetectionRate(source, months){
   const reference = source.orderReference;
   if (!reference) return source.order + (source.orderGrowth || 0) * months;
@@ -6881,7 +6891,7 @@ function risks(){
   const rm = FX().riskMult;
   const floorId = annualNewsFor(S.loc)?.grayRiskFloor;
   const grayRiskFloor = floorId && byId(STYLES, floorId);
-  if (gambling) arrest = gamblingArrestRate(gambling, S.used[gambling.id] || 0) * jump * rm;
+  if (gambling) arrest = activeCashoutArrestRate(gambling, S.used[gambling.id] || 0) * jump * rm;
   else if (S.month - S.lastUsed.cashout <= R.tailMonths){
     arrest = byId(STYLES, "cashout").arrest * R.tailFactor * jump;
   }
@@ -7200,8 +7210,9 @@ function valuation(dd){
 }
 function saleValuationMethod(v){
   if (!v.use || v.dd?.kind === "cut") return v.note;
-  if (v.dcf.d.fcfMonth <= 0) return "維持費を差し引くと営業の手残りが出ていないため、ハコの価値で査定します。";
-  return `DCFの査定額は${yen(v.dcf.point)}です。売却額はDCFの査定額とハコの価値のうち高い方です。類似取引比較は相場の参考です。`;
+  const recovery = v.dd?.cashoutRecovered ? `換金終了後の${cashoutCleanYears}期連続の健全営業を確認しました。` : "";
+  if (v.dcf.d.fcfMonth <= 0) return `${recovery}維持費を差し引くと営業の手残りが出ていないため、ハコの価値で査定します。`;
+  return `${recovery}DCFの査定額は${yen(v.dcf.point)}です。売却額はDCFの査定額とハコの価値のうち高い方です。類似取引比較は相場の参考です。`;
 }
 function footballField(v, { compact = false } = {}){
   const items = [
@@ -7639,8 +7650,10 @@ function saleValuationSummary(v){
   // 売却額と内訳は同じ万円表示に揃える。
   const premium = Math.round(v.adopted) - shell;
   if (v.dd?.kind === "shell"){
+    const reason = v.dd.cashoutRecoveryMonthsLeft == null ? "違反のある営業歴が査定に反映されます。"
+      : `換金を終了し、${cashoutCleanYears}期連続で健全に営業するとDCFで査定します。条件まであと${v.dd.cashoutRecoveryMonthsLeft}か月です。`;
     return `<div class="sale-valuation-summary"><p><b>ハコの価値で売却</b></p>
-      <p>違反のある営業歴が査定に反映されます。健全に切り替えた後も、ハコの価値での売却になります。</p></div>`;
+      <p>${esc(reason)}</p></div>`;
   }
   if (!premium){
     return `<div class="sale-valuation-summary"><p><b>現在の査定はハコの価値</b></p>
@@ -7664,10 +7677,20 @@ function sellConfirm(onCancel, { dd, v, amount }){
   $("backBtn").onclick = onCancel;
   $("doSell").onclick = () => commitAnnualDecision("sell");
 }
+const cashoutCleanYears = R.cashoutValuationCleanMonths / 12;
 function ddCheck(){
-  if (S.riskMonths.some(({ tier }) => tier === "black")) return { kind: "shell" };
+  if (S.riskMonths.some(({ id, tier }) => tier === "black" && id !== "cashout")) return { kind: "shell" };
   const gray = S.riskMonths.find(({ tier }) => tier === "gray");
-  return gray ? { kind: "shell", gray: true, name: byId(STYLES, gray.id)?.name || "グレーの営業" } : { kind: "none" };
+  if (gray) return { kind: "shell", gray: true, name: byId(STYLES, gray.id)?.name || "グレーの営業" };
+  const lastCashout = S.riskMonths.findLast(({ id }) => id === "cashout");
+  if (!lastCashout) return { kind: "none" };
+  if (!S.licensed || S.style.tier !== "clean" || isLate(S.open, S.close)){
+    return { kind: "shell", cashoutRecoveryMonthsLeft: R.cashoutValuationCleanMonths };
+  }
+  const lastInactive = S.recs.findLast(({ open }) => !open);
+  const lastUncleanMonth = Math.max(lastCashout.t, lastInactive?.t ?? -1);
+  const monthsLeft = R.cashoutValuationCleanMonths - (S.month - lastUncleanMonth - 1);
+  return monthsLeft > 0 ? { kind: "shell", cashoutRecoveryMonthsLeft: monthsLeft } : { kind: "none", cashoutRecovered: true };
 }
 function completeSale(){
   if (S.over) return;
@@ -7870,7 +7893,7 @@ function finish(kind){
         <div class="result-deviation">
           <h2>偏差値</h2><strong class="num">${deviationScore(amount)}</strong>
         </div>
-        <div class="result-gain ${amount - M.fund >= 0 ? "pos" : "negc"}">元手${yen(M.fund)}から ${yen(amount - M.fund, true)}</div>
+        <div class="result-gain ${amount - S.startFund >= 0 ? "pos" : "negc"}">元手${yen(S.startFund)}から ${yen(amount - S.startFund, true)}</div>
       </div>
       ${takeHome}
       ${resultScoreHTML(amount)}
@@ -7905,12 +7928,11 @@ function finish(kind){
     </section>
     <h2>SNS用の画像</h2><img id="shareImg" alt="結果の画像" style="width:100%;max-width:420px;display:block;margin:0 auto;border:1.5px solid var(--soft);border-radius:10px">
     <p class="muted" style="font-size:12px;text-align:center">画像を長押し（パソコンは右クリック）で保存できる。</p>
-    <div class="row"><button class="btn" id="dlBtn">プレイログを保存（JSONL）</button></div>
-    <div class="foot">プレイログと端末内ランキングはこの端末に保存される。${esc(M.disclaimer)}</div>`);
+    <div class="foot">端末内ランキングの記録はこの端末に保存されます。${esc(M.disclaimer)}</div>`);
   prepareResultImage(kind, amount);
   if (MINIMAL_NATIONAL_RANKING) loadGlobal($("globalRank"));
   if (pendingScore) postPendingScore(pendingScore);
-  $("dlBtn").onclick = exportLog; $("againBtn").onclick = () => { S = null; resetScene(); openTitle(); };
+  $("againBtn").onclick = () => { S = null; resetScene(); openTitle(); };
 }
 
 
@@ -7975,7 +7997,7 @@ function simChart(){
   const n = Math.max(R0.length, 6), w = 680, h = 250, left = 64, right = w - 12, y0 = 26, y1 = 150, b0 = 172, b1 = 228;
   const X = (t) => left + (t + 0.5) / n * (right - left);
   const cashes = [S.startCash, ...R0.map((r) => r.cash)];
-  const cmax = Math.max(...cashes, M.fund * 0.2), cmin = Math.min(0, ...cashes);
+  const cmax = Math.max(...cashes, S.startFund * 0.2), cmin = Math.min(0, ...cashes);
   const Yc = (v) => y1 - (v - cmin) / (cmax - cmin) * (y1 - y0);
   const flows = R0.map((r) => r.net + r.extra), fabs = Math.max(50, ...flows.map(Math.abs));
   const bz = (b0 + b1) / 2, Yb = (v) => bz - v / fabs * (b1 - b0) / 2;
@@ -8010,7 +8032,7 @@ function simTable(){
 /* 物件と競合による最終需要倍率を固定し、預入スタイルで卓数を比較する簡易試算 */
 function planFor(tables){
   const loc = S.loc, interior = S.interior || "simple", b = build(loc, tables, interior), fee = S.cfg.unlicensed ? 0 : D.license.fee;
-  let cash = M.fund - b.invest - fee, minCash = cash, ops = [];
+  let cash = S.startFund - b.invest - fee, minCash = cash, ops = [];
   const style = DEPOSIT_STYLE, fx = FX(S.fac, interior), edu = EDU(S.edu || "10");
   const manager = currentManager();
   const seats = tables * SEATS_PER_TABLE - fx.seatsLoss, turns = turnsFor(S.open, S.close, S.policy) * manager.turns;
@@ -8041,7 +8063,7 @@ function diagnoseHTML(kind){
   const style = styleNow();
   const perOcc = seats * turns * O.days * customerSpend(style, S.price) * (1 - sellingCostRates(style, fx).total);
   const be = perOcc ? (rent + staff + other) / perOcc : 1;
-  const plans = []; for (let t = L.minTables; t <= L.maxTables; t++) plans.push(planFor(t));
+  const plans = []; for (let t = L.minTables; t <= Math.max(L.maxTables, S.cfg.tables); t++) plans.push(planFor(t));
   const best = plans.reduce((a, x) => x.final > a.final ? x : a, plans[0]), mine = plans.find((x) => x.tables === S.cfg.tables);
   const share = S.recs.length ? S.recs.at(-1).share : S.share;
   const lossRamp = open.filter((r) => isRamping(r.t, r.tables ?? S.tables)).reduce((a, r) => a + Math.min(0, r.net), 0);
@@ -8052,8 +8074,8 @@ function diagnoseHTML(kind){
   }
   if (open.length && occ < be)
     items.push([5, "卓が多すぎて、満席率が損益分岐に届いていない", `直近の満席率は${Math.round(occ * 100)}%、この卓数・営業時間・料金での損益分岐は${be > 1 ? "100%超" : Math.round(be * 100) + "%"}。空いた卓のぶんも家賃と人件費がかかっている。次のプレイでは、開業時の卓数を抑える手もある。`]);
-  if (S.invest > 2500 || S.startCash < 2000)
-    items.push([4, "初期投資が大きく、手元資金が薄かった", `初期投資 ${yen(S.invest)}、開業時の手元資金 ${yen(S.startCash)}。立ち上がりの赤字とトラブルに備えて、手元に2,000万円以上残すのが目安（初期投資は1,500〜2,000万円が目安）。`]);
+  if (S.invest > S.startFund / 2)
+    items.push([4, "初期投資が大きく、手元資金が薄かった", `初期投資 ${yen(S.invest)}、投資後の手元資金 ${yen(S.startCash)}。立ち上がりの赤字とトラブルに備えて、初期投資は元手の半分の${yen(S.startFund / 2)}を目安に抑える。`]);
   if (best && mine && best.tables !== mine.tables && best.final > mine.final * 1.05)
     items.push([4, `この物件なら${best.tables}卓が良かった（試算）`, `この物件の最終需要倍率を固定して${M.months}か月を回すと、${mine.tables}卓は${mine.final > 0 ? "手取り " + yen(mine.final) : "途中で資金が尽きる"}、${best.tables}卓（初期投資 ${yen(best.invest)}）は手取り ${yen(best.final)}。「${DEPOSIT_STYLE.name}」で、事件・借入・税金・多店舗展開を省いた簡易試算。`]);
   if (share < 0.85)
@@ -8193,7 +8215,7 @@ async function makeShareImage(kind, amount){
   } else {
     label(displayed, 72, 345, 112, { width: 682 });
   }
-  label(`元手${yen(M.fund)}から ${yen(amount - M.fund, true)}`, 75, 409, 32, { color: muted, weight: 500, width: 668 });
+  label(`元手${yen(S.startFund)}から ${yen(amount - S.startFund, true)}`, 75, 409, 32, { color: muted, weight: 500, width: 668 });
   rect(781, 198, 227, 208, scoreBg);
   rect(781, 198, 227, 3, accent);
   label("偏差値", 895, 253, 30, { align: "center" });
@@ -8322,6 +8344,7 @@ function savedViolationNet(save){
 function resumeGame(o){
   clearInterval(titleTimer); card.classList.remove("titlecard");
   S = { ...o, loc: byId(D.locations, o.loc), style: byId(STYLES, o.style), fac: (o.fac || []).filter((id) => byId(FAC, id)), hiring: byId(ST.hiring, o.hiring) || byId(ST.hiring, "exp"), policy: byId(ST.policy, o.policy) || byId(ST.policy, "hospitality"), mix: o.mix || { ...D.mixStart }, branch: o.branch ? { ...o.branch, loc: byId(D.locations, o.branch.loc) } : null,
+    startFund: o.startFund ?? (Number.isFinite(o.startCash) && Number.isFinite(o.invest) ? o.startCash + o.invest : M.fund),
     interior: o.interior || o.cfg?.interior || "simple", edu: o.edu || o.cfg?.edu || "10",
     managerId: managerProfile(o.managerId ?? o.cfg?.manager).id,
     timeline: (o.timeline ?? []).map((entry) => ({
@@ -8755,15 +8778,6 @@ function rankHTML(r, { global = false } = {}){
   }).join("")}</ol>` : '<p class="muted">まだ記録がありません。</p>';
   return `<h3>最終手取り額</h3>${list(r.final || [])}`;
 }
-function exportLog(){
-  const meta = { type: "run", game: "poker-shop", version: M.version, cfg: S.cfg, outcome: S.over, dd: S.dd ? S.dd.kind : null, at: new Date().toISOString(), note: "ゲームの架空パラメータによるプレイログ。実データではない。" };
-  const lines = [meta, ...S.log.map((x) => ({ type: "event", ...x })), ...S.timeline.map((x) => ({ type: "story", ...x }))].map((x) => JSON.stringify(x)).join("\n") + "\n";
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([lines], { type: "application/jsonl" }));
-  a.download = `poker-shop-run-${Date.now()}.jsonl`; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
-
 /* ---------- 画面の共通部品 ---------- */
 const ov = $("ov"), card = $("card");
 function show(html, after){ card.innerHTML = html; ov.classList.add("show"); card.scrollTop = 0; if (after) after(); }
@@ -8946,7 +8960,7 @@ function costTableNow(cfg, p){
 }
 
 /* ---------- 開始〜開業 ---------- */
-const CFG = { fac: [], edu: "10", interior: "simple", style: "deposit", loc: "metro", tables: 5, open: 17, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality", manager: DEFAULT_MANAGER_ID };
+const CFG = { fac: [], edu: "10", interior: "simple", style: "deposit", loc: "metro", tables: 3, open: 17, close: 24, price: 1, unlicensed: false, hiring: "exp", policy: "hospitality", manager: DEFAULT_MANAGER_ID };
 const stepsBar = (n) => `<div class="steps">${["営業スタイル", "物件", "店づくり"].map((s, i) => `<span class="${i === n ? "on" : ""}">${i + 1}. ${s}</span>`).join("<span>›</span>")}</div>`;
 const GUIDE_ROUTES = [
   { style: DEPOSIT_STYLE, label: ["コツコツ型"], description: `貰えるものは、名誉だけ。<br>${esc(DEPOSIT_STYLE.name)}。` },
@@ -8968,7 +8982,7 @@ function openTitle(){
       <ol class="guide-steps" role="list">
         <li><details>
           <summary><h3>店を作る</h3></summary>
-          <div class="guide-step-body"><p>営業スタイルと立地を選び、卓数・内装・料金・店長を決めます。</p></div>
+          <div class="guide-step-body"><p>営業スタイルと立地を選び、最大${L.maxTables}卓までの店を作ります。内装・料金・店長も決めます。</p></div>
         </details></li>
         <li><details>
           <summary><h3>年末に方針を決める</h3></summary>
@@ -8977,7 +8991,7 @@ function openTitle(){
         <li><details>
           <summary><h3>売却した後の手元現金総額を競う</h3></summary>
           <div class="guide-step-body">
-            <p>維持費を引いても利益が出ている健全な店は、将来の収益力をDCFで査定します。売却額はDCFの査定額とハコの価値のうち高い方です。利益が出ていない店や違反営業の履歴がある店は、ハコの価値で売却します。</p>
+            <p>維持費を引いても利益が出ている健全な店は、将来の収益力をDCFで査定します。売却額はDCFの査定額とハコの価値のうち高い方です。換金をやめた店は、${cashoutCleanYears}期連続で健全に営業するとDCFの査定に戻ります。</p>
             <p class="guide-score"><span class="guide-score-label">売却時のスコア</span>手元資金 ＋ 売却額 − 借入残高</p>
           </div>
         </details></li>
@@ -8989,12 +9003,12 @@ function openTitle(){
         ${GUIDE_ROUTES.map(({ style, label, description }) => `<section class="route ${style.tier}"><h3 class="who" aria-label="${label.join("")}">${label.join('<br class="guide-route-break">')}</h3><p class="ds">${description}</p></section>`).join("")}
       </div>
     </section>
-    <p class="guide-risk"><b>健全な店は、将来の収益力も売却額に。</b><br>違反営業の履歴がある店は、健全に切り替えてもハコの価値で売却します。</p>
+    <p class="guide-risk"><b>健全な店は、将来の収益力も売却額に。</b><br>換金をやめた店も、${cashoutCleanYears}期連続の健全営業でDCFの査定に戻ります。</p>
     <div class="guide-actions">${sv ? `<button class="btn primary start" id="contBtn">つづきから（${monthLabel(sv.month)}・${esc(byId(D.locations, sv.loc).name)}）</button>` : ""}
       <button class="btn ${sv ? "" : "primary start"}" id="goBtn">${sv ? "新しく始める" : "店を作る"}</button></div>
     <div class="guide-more">
       <figure class="guide-room">
-        <canvas id="heroCv" role="img" aria-label="1卓から12卓までの店舗のレイアウト例"></canvas>
+        <canvas id="heroCv" role="img" aria-label="${L.minTables}卓から${L.maxTables}卓までの店舗のレイアウト例"></canvas>
         <figcaption><span id="heroLux"></span><span><span class="n" id="heroN">1</span> 卓</span></figcaption>
       </figure>
       <div>
@@ -9008,9 +9022,9 @@ function openTitle(){
       </div>
     </div>
   </main>`);
-  // 店が1卓から12卓へ育っていくアニメーション（最後は少し止まってから最初に戻る）
-  const seq = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 12];
-  let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } const n = seq[k % seq.length]; const it = n <= 3 ? "none" : n <= 8 ? "simple" : "lux"; drawPreview(c, n, 11 + k * 7, false, 0.20, ["clean", "gray", "black"][Math.floor(k / seq.length) % 3], it); $("heroN").textContent = n; $("heroLux").textContent = `${layoutFor(n, it).tsubo}坪 ・ ${IV(it).name}`; k++; };
+  const seq = Array.from({ length: L.maxTables - L.minTables + 1 }, (_, i) => L.minTables + i);
+  seq.push(L.maxTables, L.maxTables);
+  let k = 0; const paint = () => { const c = $("heroCv"); if (!c){ clearInterval(titleTimer); return; } const n = seq[k % seq.length]; const it = n <= 3 ? "none" : n <= 6 ? "simple" : "lux"; drawPreview(c, n, 11 + k * 7, false, 0.20, ["clean", "gray", "black"][Math.floor(k / seq.length) % 3], it); $("heroN").textContent = n; $("heroLux").textContent = `${layoutFor(n, it).tsubo}坪 ・ ${IV(it).name}`; k++; };
   clearInterval(titleTimer); paint(); titleTimer = setInterval(paint, 900);
   $("goBtn").onclick = () => { CFG.seed = null; clearInterval(titleTimer); card.classList.remove("titlecard"); openStyle(); };
   if (sv) $("contBtn").onclick = () => resumeGame(sv);
@@ -9020,7 +9034,7 @@ function openTitle(){
 const STYLE_RATE_COMPARISON_MONTHS = 24;
 function styleMonthlyDetectionRate(s, months){
   if (!s.offense) return 0;
-  const rate = s.offense === "gambling" ? gamblingArrestRate(s, months) : businessDetectionRate(s, months);
+  const rate = s.offense === "gambling" ? activeCashoutArrestRate(s, months) : businessDetectionRate(s, months);
   return Math.min(MAX_ENFORCEMENT_RATE, rate);
 }
 function styleDetectionLabel(s, months){
@@ -9087,7 +9101,7 @@ function openStyle(){
       <li>ゲーム内では${hhLong(O.legalOpen)}より前に開店、または${hhLong(O.legalClose)}を過ぎて営業すると時間外営業。許可を待たずに開くと無許可営業。</li>
       <li>賞品の提供で改善命令を受けたあと、時間外営業が発覚しても店全体で${R.businessArrestAt}回目になる。改善命令を受けると対応費がかかり、来店需要が減る。営業スタイルへの初回命令なら${R.orderStopMonths}か月間「${esc(DEPOSIT_STYLE.name)}」で営業する。</li>
       <li>換金をやめた後も${R.tailMonths}か月は逮捕の可能性がある。逮捕されると違反した月の利益を通算し、合計がプラスなら${pct(PN.black.forfeitRate, 0)}を没収する。</li>
-      <li>違反のある営業歴が残る店を売却すると、売却額はハコの価値（敷金・内装・卓など）になる。営業スタイルは年1回の決算で変更できる。</li>
+      <li>換金を終了して${cashoutCleanYears}期連続で健全に営業すると、DCFの査定に戻る。その期間中や、換金以外の違反営業歴がある店は、ハコの価値（敷金・内装・卓など）で売却する。営業スタイルは年1回の決算で変更できる。</li>
     </ul>
     <p class="muted">${esc(D.styles.note)}</p>
     <details><summary>参考条文</summary>${provHTML(references)}</details>
@@ -9194,7 +9208,7 @@ function openProperty(){
 function buildCalc(loc){
   const { b, occ, seats, turns, spend, staff, utility, edu, fixed, vr, costRates, rev100, rev, net, manager } = buildEst(loc, CFG.price);
   const days = O.days, lic = !CFG.unlicensed, h = CFG.close - CFG.open;
-  const invest = b.invest + (lic ? D.license.fee : 0), left = M.fund - invest;
+  const { invest, waitingRent, remaining: left } = openingBudget(b, CFG.unlicensed);
   const cogs = rev100 * vr, gross = rev100 - cogs, op = gross - fixed;
   const be = gross ? fixed / gross : 1;
   const ramp = openingDemandProfile(loc, CFG.tables);
@@ -9216,9 +9230,11 @@ function buildCalc(loc){
       </table>
     </details>
     <dl class="build-finance-summary">
-      <div class="build-finance-result"><dt>残りの手元資金</dt><dd class="num${left < 1500 ? " negc" : ""}" aria-describedby="buildCashNote">${yen(left)}</dd></div>
+      ${lic ? `<div><dt>許可待ちの家賃<small>${D.license.waitMonths}か月分</small></dt><dd class="num">${yen(waitingRent)}</dd></div>` : ""}
+      <div class="build-finance-result"><dt>開業時の手元資金</dt><dd class="num${left < M.fund / 2 ? " negc" : ""}" aria-describedby="buildCashNote">${yen(left)}</dd></div>
     </dl>
-    <p class="build-finance-note" id="buildCashNote">元手 ${yen(M.fund)} − 初期投資</p>
+    <p class="build-finance-note" id="buildCashNote">元手 ${yen(M.fund)} − 初期投資${lic ? " − 許可待ちの家賃" : ""}</p>
+    ${left < 0 ? `<p class="warn">${lic && M.fund >= invest ? "許可待ちの家賃まで払うには手元資金が足りません。" : "初期投資に必要な資金が足りません。"}</p>` : ""}
   </section>
   <section class="setup-outlook build-outlook" aria-labelledby="outlookHeading">
     <h2 id="outlookHeading">成熟時の営業見込み</h2>
@@ -9304,7 +9320,10 @@ function openBuild(){
     <div class="row build-actions"><button class="btn" id="backBtn">戻る</button><button class="btn primary" id="goBtn">この店で開業する</button></div>
   </main>`);
   const refresh = () => {
-    const b = build(loc, CFG.tables);
+    const b = build(loc, CFG.tables, CFG.interior);
+    $("goBtn").disabled = openingBudget(b, CFG.unlicensed).remaining < 0;
+    card.querySelector('[data-s="-1"]').disabled = CFG.tables <= L.minTables;
+    card.querySelector('[data-s="1"]').disabled = CFG.tables >= L.maxTables;
     $("tblOut").textContent = CFG.tables; $("areaNote").textContent = `面積 ${b.area}坪（${m2(b.area)}㎡）・ 家賃 ${yen(b.rent)}/月 ・ ${CFG.tables * SEATS_PER_TABLE}席`;
     const interiorDesc = IV(CFG.interior).desc || "";
     $("interiorNote").textContent = interiorDesc;
@@ -9335,6 +9354,7 @@ function openBuild(){
 }
 async function startConfiguredGame(button){
   const cfg = { ...CFG };
+  if (cfg.tables < L.minTables || cfg.tables > L.maxTables || openingBudget(build(byId(D.locations, cfg.loc), cfg.tables, cfg.interior), cfg.unlicensed).remaining < 0) return;
   if (!MINIMAL_NATIONAL_RANKING || TEST || QS.has("seed") || !RANKED_RULESET || !navigator.onLine){
     startGame(cfg);
     return;
@@ -9839,7 +9859,10 @@ let C = {};
 function readColors(){ C = { ink: css("--ink"), bg: css("--bg"), wall: css("--wall"), wallD: css("--wall-dark"), sh: css("--shadow"), muted: css("--muted"), good: css("--good"), danger: css("--danger"), soft: css("--soft"), soft2: css("--soft2"), gray: css("--gray"), font: css("--font"), mono: css("--mono") }; }
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); drawFlowTrend(); });
 const curInterior = () => (typeof S !== "undefined" && S && !S.over && S.interior) || (typeof CFG !== "undefined" && CFG.interior) || "simple";
-const layoutFor = (n, it) => (D.layouts[it || curInterior()] || D.layouts.simple)[String(clamp(n, L.minTables, L.maxTables))];
+function layoutFor(n, it){
+  const layouts = D.layouts[it || curInterior()] || D.layouts.simple;
+  return layouts[String(n)] ?? layouts[String(clamp(n, L.minTables, L.maxTables))];
+}
 const IV = (id) => byId(D.interiors, id || curInterior()) || D.interiors[1];
 /* スタッフ教育の予算（v1.9）。採用・教育方針の選択の代わり */
 const EDU = (id) => byId(ST.eduBudget, id || (typeof S !== "undefined" && S && !S.over && S.edu) || (typeof CFG !== "undefined" && CFG.edu) || "10") || ST.eduBudget[1];
